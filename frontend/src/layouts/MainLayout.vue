@@ -8,7 +8,7 @@
       <div class="flex-1 flex flex-col overflow-hidden">
         <!-- Logo -->
         <div class="h-16 mb-[18px] flex justify-center items-center">
-          <img class="h-16" src="@/assets/logo.png" alt="Logo">
+          <img class="h-16 rounded-full" src="@/assets/logo.png" alt="Logo">
         </div>
 
         <!-- Menu -->
@@ -141,7 +141,7 @@
           <DialogTitle>{{ log.type }}</DialogTitle>
         </DialogHeader>
         <pre class="whitespace-pre-wrap text-xs bg-muted p-4 rounded-md max-h-[60vh] overflow-auto font-mono">{{ log.message
-      }}</pre>
+        }}</pre>
       </DialogContent>
     </Dialog>
 
@@ -164,6 +164,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useCommentStore } from '@/stores/comment'
+import { useMemoStore } from '@/stores/memo'
 import { useSiteStore } from '@/stores/site'
 import AppSystem from '@/components/AppSystem/Index.vue'
 import { Button } from '@/components/ui/button'
@@ -183,6 +184,7 @@ import {
   RocketLaunchIcon,
   ChatBubbleLeftRightIcon,
   CogIcon,
+  LightBulbIcon,
 } from '@heroicons/vue/24/outline'
 import pkg from '../../package.json'
 
@@ -191,6 +193,7 @@ const route = useRoute()
 const router = useRouter()
 const siteStore = useSiteStore()
 const commentStore = useCommentStore()
+const memoStore = useMemoStore()
 console.log('MainLayout initialized, siteStore:', siteStore)
 
 const version = pkg.version
@@ -214,6 +217,12 @@ const sideMenus = computed(() => {
       text: t('nav.article'),
       count: siteStore.posts?.length || 0,
       router: '/articles',
+    },
+    {
+      icon: LightBulbIcon,
+      text: t('nav.memo'),
+      count: memoStore.totalMemos || 0,
+      router: '/memo',
     },
     {
       icon: ChatBubbleLeftRightIcon,
@@ -320,6 +329,7 @@ onMounted(() => {
 
   // 初始化加载评论并开启全局轮询（用于更新侧边栏红点）
   commentStore.fetchComments()
+  memoStore.fetchMemos()
   const commentInterval = setInterval(() => {
     // 如果不在评论页面（避免与 Index.vue 的高频轮询重叠过多），则执行低频轮询
     if (route.path !== '/comments') {

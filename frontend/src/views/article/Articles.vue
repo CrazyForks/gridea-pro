@@ -17,16 +17,7 @@
         </Transition>
       </div>
       <div class="flex items-center gap-3" style="--wails-draggable: no-drag">
-        <div v-if="searchInputVisible" class="relative">
-          <Input v-model="keyword" class="w-[200px] h-8 pl-8 text-xs rounded-full" :placeholder="t('article.search')"
-            @blur="handleSearchInputBlur" ref="searchInputRef" autofocus />
-          <MagnifyingGlassIcon class="absolute left-2.5 top-2 size-4 text-muted-foreground" />
-        </div>
-        <div v-else
-          class="flex items-center justify-center w-8 h-8 rounded-full hover:bg-primary/10 cursor-pointer transition-colors text-muted-foreground hover:text-foreground"
-          @click="showSearchInput" :title="t('article.search')">
-          <MagnifyingGlassIcon class="size-4" />
-        </div>
+        <SearchInput v-model="keyword" :placeholder="t('article.search')" />
         <div
           class="flex items-center justify-center w-8 h-8 rounded-full hover:bg-primary/10 cursor-pointer transition-colors text-muted-foreground hover:text-foreground"
           @click="newArticle" :title="t('article.new')">
@@ -170,6 +161,7 @@ import DeleteConfirmDialog from '@/components/ConfirmDialog/DeleteConfirmDialog.
 import dayjs from 'dayjs'
 import { toast } from 'vue-sonner'
 import { Input } from '@/components/ui/input'
+import SearchInput from '@/components/Base/SearchInput.vue'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -204,18 +196,11 @@ const articleUpdateVisible = ref<boolean>(false)
 const currentArticleFileName = ref<string>('')
 const selectedPost = ref<IPost[]>([])
 const keyword = ref<string>('')
-const searchInputVisible = ref<boolean>(false)
 const currentPage = ref<number>(1)
 const PAGE_SIZE = PAGINATION.DEFAULT_PAGE_SIZE
-const searchInputRef = ref()
 const deleteModalVisible = ref(false)
 
 const listVersion = ref(Date.now())
-
-const showSearchInput = async () => {
-  searchInputVisible.value = true
-  await nextTick()
-}
 
 watch(() => siteStore.posts, () => {
   listVersion.value = Date.now()
@@ -293,11 +278,7 @@ const visiblePages = computed(() => {
   return rangeWithDots
 })
 
-const handleSearchInputBlur = () => {
-  if (!keyword.value) {
-    searchInputVisible.value = false
-  }
-}
+
 
 const onSelectChange = (post: IPost) => {
   const foundIndex = selectedPost.value.findIndex((item) => item.fileName === post.fileName)
@@ -307,6 +288,8 @@ const onSelectChange = (post: IPost) => {
     selectedPost.value.push(post)
   }
 }
+
+
 
 const handlePageChanged = (page: number) => {
   currentPage.value = page
@@ -356,7 +339,8 @@ const confirmDelete = () => {
   })
 }
 
-watch(keyword, () => {
+watch(keyword, (val) => {
+  console.log('Articles keyword:', val)
   currentPage.value = 1
 })
 

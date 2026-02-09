@@ -1,14 +1,18 @@
 {
     "common": {
         "edit": "编辑",
+        "new": "新建",
         "help": "帮助",
         "save": "保存",
         "undo": "撤销",
         "redo": "重做",
         "cut": "剪切",
         "copy": "复制",
+        "copied": "已复制",
+        "copyFailed": "复制失败",
         "paste": "粘贴",
         "delete": "删除",
+        "deleteWarning": "确定要删除吗？",
         "select": "选择",
         "selectAll": "全选",
         "cancel": "取 消",
@@ -21,7 +25,8 @@
         "change": "更 换",
         "or": "或",
         "close": "关闭",
-        "saved": "已保存"
+        "saved": "已保存",
+        "search": "搜索"
     },
     "nativeMenu": {
         "edit": "编辑",
@@ -46,6 +51,7 @@
         "tag": "标 签",
         "category": "分 类",
         "comment": "评 论",
+        "memo": "闪 念",
         "theme": "主 题",
         "server": "配 置",
         "system": "系 统",
@@ -184,7 +190,8 @@
             "modeDesc": "选择应用的外观模式",
             "light": "浅色",
             "dark": "深色",
-            "personalization": "个性化"
+            "personalization": "个性化",
+            "appearance": "外观"
         },
         "network": {
             "title": "配 置",
@@ -221,5 +228,30 @@
         "replyFail": "回复失败，请重试",
         "emptyContent": "请输入回复内容",
         "notAvailable": "请刷新页面以加载新功能"
+    },
+    "memo": {
+        "inputPlaceholder": "记录当下的想法...",
+        "selectCategory": "选择分类",
+        "default": "默认",
+        "justNow": "刚刚",
+        "minutesAgo": "{min} 分钟前",
+        "hoursAgo": "{hour} 小时前",
+        "yesterday": "昨天 {time}",
+        "totalMemos": "总记录",
+        "todayMemos": "今日记录",
+        "monthMemos": "本月记录",
+        "totalTags": "总标签",
+        "categoryName": "请输入分类名称",
+        "categories": "分类",
+        "tags": "标签",
+        "publish": "发布",
+        "published": "已发布",
+        "saved": "已保存",
+        "deleted": "闪念已删除",
+        "empty": "暂无闪念",
+        "allTags": "全部标签",
+        "allMemos": "全部",
+        "less": "少",
+        "more": "多"
     }
 }

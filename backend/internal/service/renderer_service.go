@@ -511,9 +511,9 @@ func (s *RendererService) convertPost(post domain.Post, config domain.ThemeConfi
 	// 解析日期
 	var postDate time.Time
 	if post.Data.Date != "" {
-		postDate, _ = time.Parse("2006-01-02 15:04:05", post.Data.Date)
+		postDate, _ = time.Parse(domain.TimeLayout, post.Data.Date)
 		if postDate.IsZero() {
-			postDate, _ = time.Parse("2006-01-02", post.Data.Date)
+			postDate, _ = time.Parse(domain.DateLayout, post.Data.Date)
 		}
 	}
 

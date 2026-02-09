@@ -8,6 +8,7 @@ import Links from '@/views/links/Index.vue'
 import Theme from '@/views/theme/Index.vue'
 import Setting from '@/views/setting/Index.vue'
 import Comment from '@/views/comment/Index.vue'
+import Memo from '@/views/memo/Index.vue'
 import Loading from '@/views/loading/Index.vue'
 
 const routes: RouteRecordRaw[] = [
@@ -26,6 +27,11 @@ const routes: RouteRecordRaw[] = [
         path: '/comments',
         name: 'comments',
         component: Comment,
+      },
+      {
+        path: '/memo',
+        name: 'memo',
+        component: Memo,
       },
       {
         path: '/menu',

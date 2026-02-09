@@ -46,6 +46,7 @@
         "tag": "Tag",
         "category": "Category",
         "comment": "Comments",
+        "memo": "Memos",
         "theme": "Theme",
         "server": "Server",
         "system": "System",
@@ -221,5 +222,17 @@
         "replyFail": "Reply failed, please try again",
         "emptyContent": "Please enter reply content",
         "notAvailable": "Please refresh the page to load new features"
+    },
+    "memo": {
+        "inputPlaceholder": "Capture your thoughts...",
+        "heatmap": "Daily Records",
+        "totalMemos": "Total Memos",
+        "totalTags": "Total Tags",
+        "tags": "Tags",
+        "save": "Save",
+        "saved": "Saved",
+        "deleted": "Memo deleted",
+        "empty": "No memos yet",
+        "allTags": "All Tags"
     }
 }

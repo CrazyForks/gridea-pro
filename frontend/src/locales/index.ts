@@ -12,6 +12,7 @@ import es from './es.json'
 import ptBR from './pt-BR.json'
 import de from './de.json'
 import ko from './ko.json'
+import it from './it.json'
 
 // 1. Definition of supported languages and messages
 const messages = {
@@ -25,6 +26,7 @@ const messages = {
     'pt-BR': ptBR,
     'de': de,
     'ko': ko,
+    'it': it,
 }
 
 export type LocaleType = keyof typeof messages

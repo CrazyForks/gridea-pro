@@ -19,6 +19,7 @@ type AppServices struct {
 	Theme    *ThemeFacade
 	Setting  *SettingFacade
 	Comment  *CommentFacade
+	Memo     *MemoFacade
 	// Internal services for event/update handling
 	Services struct {
 		Category *service.CategoryService
@@ -32,6 +33,7 @@ type AppServices struct {
 		Setting  *service.SettingService
 		Scaffold *service.ScaffoldService
 		Comment  *service.CommentService
+		Memo     *service.MemoService
 	}
 	assets embed.FS // Keep reference for UpdateAppDir
 }
@@ -46,6 +48,7 @@ func NewAppServices(appDir string, assets embed.FS) *AppServices {
 	themeRepo := repository.NewThemeRepository(appDir)
 	settingRepo := repository.NewSettingRepository(appDir)
 	mediaRepo := repository.NewMediaRepository(appDir)
+	memoRepo := repository.NewMemoRepository(appDir)
 
 	// 2. Init Services
 	tagService := service.NewTagService(tagRepo)
@@ -63,6 +66,7 @@ func NewAppServices(appDir string, assets embed.FS) *AppServices {
 	// CommentService
 	commentRepo := repository.NewCommentRepository(appDir)
 	commentService := service.NewCommentService(appDir, commentRepo, postRepo, themeRepo)
+	memoService := service.NewMemoService(memoRepo)
 	// Set CommentRepo on RendererService for template injection
 	rendererService.SetCommentRepo(commentRepo)
 
@@ -78,6 +82,7 @@ func NewAppServices(appDir string, assets embed.FS) *AppServices {
 		Theme:    NewThemeFacade(themeService),
 		Setting:  NewSettingFacade(settingService),
 		Comment:  NewCommentFacade(commentService),
+		Memo:     NewMemoFacade(memoService),
 		Services: struct {
 			Category *service.CategoryService
 			Post     *service.PostService
@@ -90,6 +95,7 @@ func NewAppServices(appDir string, assets embed.FS) *AppServices {
 			Setting  *service.SettingService
 			Scaffold *service.ScaffoldService
 			Comment  *service.CommentService
+			Memo     *service.MemoService
 		}{
 			Category: categoryService,
 			Post:     postService,
@@ -102,6 +108,7 @@ func NewAppServices(appDir string, assets embed.FS) *AppServices {
 			Setting:  settingService,
 			Scaffold: scaffoldService,
 			Comment:  commentService,
+			Memo:     memoService,
 		},
 		assets: assets,
 	}
@@ -120,9 +127,11 @@ func (s *AppServices) UpdateAppDir(appDir string) {
 	s.Theme.internal = newServices.Services.Theme
 	s.Setting.internal = newServices.Services.Setting
 	s.Comment.internal = newServices.Services.Comment
+	s.Memo.internal = newServices.Services.Memo
 	// Scaffold service doesn't need update generally, but good to keep in sync
 	s.Services.Scaffold = newServices.Services.Scaffold
 	s.Services.Comment = newServices.Services.Comment
+	s.Services.Memo = newServices.Services.Memo
 }
 
 func (s *AppServices) RegisterEvents(ctx context.Context) {
@@ -146,4 +155,7 @@ func (s *AppServices) RegisterEvents(ctx context.Context) {
 
 	// Register tag events
 	s.Tag.RegisterEvents(ctx)
+
+	// Register memo events
+	s.Memo.RegisterEvents(ctx)
 }

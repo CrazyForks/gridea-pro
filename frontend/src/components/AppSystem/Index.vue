@@ -116,7 +116,8 @@ const languageOptions: { value: LocaleType; label: string }[] = [
   { value: 'de', label: 'Deutsch' },
   { value: 'ru', label: 'Русский' },
   { value: 'es', label: 'Español' },
-  { value: 'pt-BR', label: 'Português (Brasil)' },
+  { value: 'it', label: 'Italiano' },
+  { value: 'pt-BR', label: 'Português' },
 ]
 
 const navItems = computed(() => [

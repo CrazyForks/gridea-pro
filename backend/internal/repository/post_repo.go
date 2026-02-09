@@ -61,8 +61,8 @@ func (r *postRepository) GetAll(ctx context.Context) ([]domain.Post, error) {
 
 	// Sort by date desc
 	sort.Slice(posts, func(i, j int) bool {
-		ti, _ := time.Parse("2006-01-02 15:04:05", posts[i].Data.Date)
-		tj, _ := time.Parse("2006-01-02 15:04:05", posts[j].Data.Date)
+		ti, _ := time.Parse(domain.TimeLayout, posts[i].Data.Date)
+		tj, _ := time.Parse(domain.TimeLayout, posts[j].Data.Date)
 		return ti.After(tj)
 	})
 
@@ -234,7 +234,7 @@ func (r *postRepository) parsePost(content string, filename string) (domain.Post
 	}
 
 	if post.Data.Date == "" {
-		post.Data.Date = time.Now().Format("2006-01-02 15:04:05")
+		post.Data.Date = time.Now().Format(domain.TimeLayout)
 	}
 
 	return post, nil
