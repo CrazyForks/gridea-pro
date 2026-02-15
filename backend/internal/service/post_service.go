@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"gridea-pro/backend/internal/domain"
 	"sync"
 )
@@ -25,37 +26,28 @@ func NewPostService(repo domain.PostRepository, tagRepo domain.TagRepository, ta
 	}
 }
 
-// LoadPosts Pure read operation. No side effects.
+// LoadPosts Pure read operation.
 func (s *PostService) LoadPosts(ctx context.Context) ([]domain.Post, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	return s.repo.GetAll(ctx)
+	// 假设默认分页大小足够大，或者我们实现一个新的 GetAll for internal use if needed
+	// 但 Repository interface 只有 List(page, size).
+	// 为了兼容 LoadPosts 语义 (返回所有)，我们传递大数
+	posts, _, err := s.repo.List(ctx, 1, 10000)
+	return posts, err
 }
 
 func (s *PostService) LoadTags(ctx context.Context) ([]domain.Tag, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	// This was originally in PostService, but ideally should be in TagService or just use Repo.
-	// Since the requirement didn't ask to move it, we keep it but ensure it's safe.
-	// However, the original code had side effects (saving tags).
-	// We will keep it as read-only or strictly simple aggregation if possible,
-	// but the original logic synced 'Used' status.
-	// If we must be pure read, we shouldn't save.
-	// But resetting 'Used' status is a write operation conceptually.
-	// Given the instructions for LoadPosts were CQS, lets assume LoadTags also shouldn't arbitrarily mutate state if it's a "Load".
-	// But if the "Used" status is calculated on the fly, it's fine.
-	// The original code SAVED the modifications.
-	// We will RLock here, so we CANNOT save.
-	// If 'Used' status is needed, we should calculate it and return it, but NOT save it to disk during a Load.
-
-	posts, err := s.repo.GetAll(ctx)
+	posts, _, err := s.repo.List(ctx, 1, 10000)
 	if err != nil {
 		return nil, err
 	}
 
-	tags, err := s.tagRepo.GetAll(ctx)
+	tags, err := s.tagRepo.List(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -63,10 +55,9 @@ func (s *PostService) LoadTags(ctx context.Context) ([]domain.Tag, error) {
 	// Calculate 'Used' status in memory
 	tagUsage := make(map[string]bool)
 	for _, p := range posts {
-		for _, tagID := range p.Data.TagIDs {
+		for _, tagID := range p.TagIDs { // Updated field access
 			tagUsage[tagID] = true
 		}
-		// Also check names for backward compatibility if needed, but PostService Save guarantees IDs now.
 	}
 
 	for i := range tags {
@@ -80,33 +71,49 @@ func (s *PostService) LoadTags(ctx context.Context) ([]domain.Tag, error) {
 	return tags, nil
 }
 
-func (s *PostService) SavePost(ctx context.Context, input *domain.PostInput) error {
+func (s *PostService) SavePost(ctx context.Context, post *domain.Post) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	// 1. Resolve TagIDs from Tags (Names)
-	// This ensures that whenever we save, we have the latest IDs for the names provided
 	var ids []string
-
-	// We need to call TagService.GetOrCreateTag.
-	// Since TagService likely has its own locks, this is fine, but we must be careful of deadlocks if TagService calls back to PostService.
-	// TagService only depends on TagRepository, so it should be fine.
-	for _, tagName := range input.Tags {
+	for _, tagName := range post.Tags {
 		tag, err := s.tagService.GetOrCreateTag(ctx, tagName)
 		if err == nil {
 			ids = append(ids, tag.ID)
 		}
 	}
-	input.TagIDs = ids
+	post.TagIDs = ids
 
 	// 2. Ensure Categories Exist
-	for _, catName := range input.Categories {
+	for _, catName := range post.Categories {
 		if _, err := s.categoryService.GetOrCreateCategory(ctx, catName); err != nil {
 			return err
 		}
 	}
 
-	return s.repo.Save(ctx, input)
+	// Check if update or create by trying to get by filename
+	// Or simply call Update if we know it exists.
+	// But `post` arg is generic.
+	// If it's a new post, user might not provide "DeleteFileName" (rename source).
+	// Let's try GetByFileName to see if it exists.
+	// 3. check for rename
+	if post.DeleteFileName != "" && post.DeleteFileName != post.FileName {
+		if _, err := s.repo.GetByFileName(ctx, post.DeleteFileName); err == nil {
+			if err := s.repo.Delete(ctx, post.DeleteFileName); err != nil {
+				return fmt.Errorf("failed to delete old file during rename: %w", err)
+			}
+		}
+		return s.repo.Create(ctx, post)
+	}
+
+	// 4. Standard Create/Update check
+	_, err := s.repo.GetByFileName(ctx, post.FileName)
+	if err == nil {
+		return s.repo.Update(ctx, post)
+	}
+
+	return s.repo.Create(ctx, post)
 }
 
 func (s *PostService) DeletePost(ctx context.Context, fileName string) error {

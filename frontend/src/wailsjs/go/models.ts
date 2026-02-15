@@ -20,16 +20,17 @@ export namespace domain {
 	    id: string;
 	    avatar: string;
 	    nickname: string;
-	    email?: string;
-	    url?: string;
+	    email: string;
+	    url: string;
 	    content: string;
-	    createdAt: string;
+	    // Go type: time
+	    createdAt: any;
 	    articleId: string;
 	    articleTitle: string;
-	    articleUrl?: string;
-	    parentId?: string;
-	    parentNick?: string;
-	    isNew?: boolean;
+	    articleUrl: string;
+	    parentId: string;
+	    parentNick: string;
+	    isNew: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new Comment(source);
@@ -43,7 +44,7 @@ export namespace domain {
 	        this.email = source["email"];
 	        this.url = source["url"];
 	        this.content = source["content"];
-	        this.createdAt = source["createdAt"];
+	        this.createdAt = this.convertValues(source["createdAt"], null);
 	        this.articleId = source["articleId"];
 	        this.articleTitle = source["articleTitle"];
 	        this.articleUrl = source["articleUrl"];
@@ -51,6 +52,24 @@ export namespace domain {
 	        this.parentNick = source["parentNick"];
 	        this.isNew = source["isNew"];
 	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 	export class CommentSettings {
 	    enable: boolean;
@@ -107,8 +126,10 @@ export namespace domain {
 	    content: string;
 	    tags: string[];
 	    images: string[];
-	    createdAt: string;
-	    updatedAt: string;
+	    // Go type: time
+	    createdAt: any;
+	    // Go type: time
+	    updatedAt: any;
 	
 	    static createFrom(source: any = {}) {
 	        return new Memo(source);
@@ -120,9 +141,27 @@ export namespace domain {
 	        this.content = source["content"];
 	        this.tags = source["tags"];
 	        this.images = source["images"];
-	        this.createdAt = source["createdAt"];
-	        this.updatedAt = source["updatedAt"];
+	        this.createdAt = this.convertValues(source["createdAt"], null);
+	        this.updatedAt = this.convertValues(source["updatedAt"], null);
 	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 	export class TagStat {
 	    name: string;
@@ -206,6 +245,7 @@ export namespace domain {
 	}
 	
 	export class Menu {
+	    id: string;
 	    name: string;
 	    link: string;
 	    openType: string;
@@ -216,6 +256,7 @@ export namespace domain {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
 	        this.name = source["name"];
 	        this.link = source["link"];
 	        this.openType = source["openType"];
@@ -259,39 +300,23 @@ export namespace domain {
 		    return a;
 		}
 	}
-	export class PostData {
+	export class Post {
 	    title: string;
-	    date: string;
+	    // Go type: time
+	    date: any;
 	    tags: string[];
 	    tagIds: string[];
 	    categories: string[];
 	    published: boolean;
 	    hideInList: boolean;
-	    feature: string;
 	    isTop: boolean;
-	
-	    static createFrom(source: any = {}) {
-	        return new PostData(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.title = source["title"];
-	        this.date = source["date"];
-	        this.tags = source["tags"];
-	        this.tagIds = source["tagIds"];
-	        this.categories = source["categories"];
-	        this.published = source["published"];
-	        this.hideInList = source["hideInList"];
-	        this.feature = source["feature"];
-	        this.isTop = source["isTop"];
-	    }
-	}
-	export class Post {
-	    data: PostData;
+	    feature: string;
+	    featureImagePath: string;
+	    featureImage: FileInfo;
 	    content: string;
-	    abstract: string;
 	    fileName: string;
+	    deleteFileName: string;
+	    abstract: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Post(source);
@@ -299,65 +324,21 @@ export namespace domain {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.data = this.convertValues(source["data"], PostData);
-	        this.content = source["content"];
-	        this.abstract = source["abstract"];
-	        this.fileName = source["fileName"];
-	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
-	}
-	
-	export class PostInput {
-	    title: string;
-	    date: string;
-	    tags: string[];
-	    tagIds: string[];
-	    categories: string[];
-	    published: boolean;
-	    hideInList: boolean;
-	    isTop: boolean;
-	    content: string;
-	    fileName: string;
-	    deleteFileName: string;
-	    featureImage: FileInfo;
-	    featureImagePath: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new PostInput(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.title = source["title"];
-	        this.date = source["date"];
+	        this.date = this.convertValues(source["date"], null);
 	        this.tags = source["tags"];
 	        this.tagIds = source["tagIds"];
 	        this.categories = source["categories"];
 	        this.published = source["published"];
 	        this.hideInList = source["hideInList"];
 	        this.isTop = source["isTop"];
+	        this.feature = source["feature"];
+	        this.featureImagePath = source["featureImagePath"];
+	        this.featureImage = this.convertValues(source["featureImage"], FileInfo);
 	        this.content = source["content"];
 	        this.fileName = source["fileName"];
 	        this.deleteFileName = source["deleteFileName"];
-	        this.featureImage = this.convertValues(source["featureImage"], FileInfo);
-	        this.featureImagePath = source["featureImagePath"];
+	        this.abstract = source["abstract"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -614,6 +595,60 @@ export namespace facade {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.posts = this.convertValues(source["posts"], domain.Post);
 	        this.tags = this.convertValues(source["tags"], domain.Tag);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class PostForm {
+	    title: string;
+	    date: string;
+	    tags: string[];
+	    tagIds: string[];
+	    categories: string[];
+	    published: boolean;
+	    hideInList: boolean;
+	    isTop: boolean;
+	    content: string;
+	    fileName: string;
+	    deleteFileName: string;
+	    featureImage: domain.FileInfo;
+	    featureImagePath: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new PostForm(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.title = source["title"];
+	        this.date = source["date"];
+	        this.tags = source["tags"];
+	        this.tagIds = source["tagIds"];
+	        this.categories = source["categories"];
+	        this.published = source["published"];
+	        this.hideInList = source["hideInList"];
+	        this.isTop = source["isTop"];
+	        this.content = source["content"];
+	        this.fileName = source["fileName"];
+	        this.deleteFileName = source["deleteFileName"];
+	        this.featureImage = this.convertValues(source["featureImage"], domain.FileInfo);
+	        this.featureImagePath = source["featureImagePath"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

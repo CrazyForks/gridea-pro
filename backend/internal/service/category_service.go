@@ -18,7 +18,7 @@ func NewCategoryService(repo domain.CategoryRepository) *CategoryService {
 func (s *CategoryService) LoadCategories(ctx context.Context) ([]domain.Category, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return s.repo.GetAll(ctx)
+	return s.repo.List(ctx)
 }
 
 func (s *CategoryService) SaveCategories(ctx context.Context, categories []domain.Category) error {
@@ -31,7 +31,7 @@ func (s *CategoryService) SaveCategory(ctx context.Context, category domain.Cate
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	categories, err := s.repo.GetAll(ctx)
+	categories, err := s.repo.List(ctx)
 	if err != nil {
 		return err
 	}
@@ -56,7 +56,7 @@ func (s *CategoryService) DeleteCategory(ctx context.Context, slug string) error
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	categories, err := s.repo.GetAll(ctx)
+	categories, err := s.repo.List(ctx)
 	if err != nil {
 		return err
 	}
@@ -76,7 +76,7 @@ func (s *CategoryService) GetOrCreateCategory(ctx context.Context, name string) 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	categories, err := s.repo.GetAll(ctx)
+	categories, err := s.repo.List(ctx)
 	if err != nil {
 		return domain.Category{}, err
 	}

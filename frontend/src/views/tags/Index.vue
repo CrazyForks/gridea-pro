@@ -29,7 +29,7 @@
 
             <div class="flex-shrink-0 ml-2 h-6 flex items-center">
               <div class="text-xs text-muted-foreground opacity-70 group-hover:hidden">
-                {{siteStore.posts.filter(p => p.data.published && (p.data.tags || []).includes(tag.name)).length}}
+                {{siteStore.posts.filter(p => p.published && (p.tags || []).includes(tag.name)).length}}
               </div>
               <div class="hidden group-hover:flex items-center gap-1">
                 <button

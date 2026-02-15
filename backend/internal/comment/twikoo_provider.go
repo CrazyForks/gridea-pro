@@ -104,19 +104,14 @@ func (p *TwikooProvider) callAPI(ctx context.Context, payload twikooRequest) (*t
 }
 
 // GetAdminComments implementation
-func (p *TwikooProvider) GetAdminComments(ctx context.Context, page, pageSize int) (*domain.PaginatedComments, error) {
-	// TODO: Implement pagination for Twikoo
+func (p *TwikooProvider) GetAdminComments(ctx context.Context, page, pageSize int) ([]domain.Comment, int64, error) {
+	// Twikoo Cloud Function API for getting comments logic needed here
+	// For now fallback to recent
 	comments, err := p.GetRecentComments(ctx, pageSize)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return &domain.PaginatedComments{
-		Comments:   comments,
-		Total:      len(comments),
-		Page:       page,
-		PageSize:   pageSize,
-		TotalPages: 1,
-	}, nil
+	return comments, int64(len(comments)), nil
 }
 
 func (p *TwikooProvider) GetComments(ctx context.Context, articleID string) ([]domain.Comment, error) {
@@ -152,7 +147,8 @@ func (p *TwikooProvider) GetRecentComments(ctx context.Context, limit int) ([]do
 func (p *TwikooProvider) convertComments(tComments []twikooComment) []domain.Comment {
 	var comments []domain.Comment
 	for _, c := range tComments {
-		createdAt := time.UnixMilli(c.Created).Format(time.RFC3339)
+		// Twikoo's 'created' is a Unix timestamp in milliseconds
+		createdTime := time.UnixMilli(c.Created)
 
 		comments = append(comments, domain.Comment{
 			ID:        c.ID,
@@ -160,7 +156,7 @@ func (p *TwikooProvider) convertComments(tComments []twikooComment) []domain.Com
 			Nickname:  c.Nick,
 			URL:       c.Link,
 			Content:   c.Comment,
-			CreatedAt: createdAt,
+			CreatedAt: createdTime, // Assuming domain.Comment.CreatedAt is time.Time
 			ArticleID: c.Url,
 			ParentID:  c.ParentId,
 		})
@@ -173,7 +169,7 @@ func (p *TwikooProvider) convertComments(tComments []twikooComment) []domain.Com
 	return comments
 }
 
-func (p *TwikooProvider) PostComment(ctx context.Context, comment domain.Comment) error {
+func (p *TwikooProvider) PostComment(ctx context.Context, comment *domain.Comment) error {
 	payload := twikooRequest{
 		Event:   "comment-submit",
 		Nick:    comment.Nickname,

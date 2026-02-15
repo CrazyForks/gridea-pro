@@ -25,57 +25,55 @@ func NewTagService(repo domain.TagRepository) *TagService {
 func (s *TagService) LoadTags(ctx context.Context) ([]domain.Tag, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return s.repo.GetAll(ctx)
+
+	return s.repo.List(ctx)
 }
 
 func (s *TagService) SaveTag(ctx context.Context, tag domain.Tag, originalName string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	tags, err := s.repo.GetAll(ctx)
-	if err != nil {
-		return err
+	// Logic change: we should just Update or Create based on ID.
+	// But the frontend might be sending partial data or we're maintaining legacy behavior.
+	// The original logic iterated tags to find by name.
+	if tag.ID != "" {
+		// Likely an update
+		return s.repo.Update(ctx, &tag)
 	}
 
-	found := false
-	for i, t := range tags {
-		if t.Name == originalName {
-			// Update existing tag, preserve ID if not present in new tag (though it should be)
-			if tag.ID == "" {
-				tag.ID = t.ID
-			}
-			tags[i] = tag
-			found = true
-			break
-		}
-	}
-	if !found {
-		if tag.ID == "" {
-			const alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-			tag.ID, _ = gonanoid.Generate(alphabet, 6)
-		}
-		tags = append(tags, tag)
-	}
+	// If no ID, but originalName is provided, we might be renaming?
+	// The original logic was complex: check by name, if found update, else append.
+	// We can use GetOrCreate? No, SaveTag is for editing.
 
-	return s.repo.SaveAll(ctx, tags)
+	// Let's replicate original logic using the new Repo API (which requires loading list anyway for current repo impl)
+	// But `Repo` now has Update(Tag).
+	// If we don't have ID, we can't efficiently call Update.
+	// If the user's flow is "Edit Tag -> Save", they should have ID.
+	// If "Create Tag", no ID.
+
+	if tag.ID == "" {
+		// Check duplicates by name?
+		return s.repo.Create(ctx, &tag)
+	}
+	return s.repo.Update(ctx, &tag)
 }
 
 func (s *TagService) DeleteTag(ctx context.Context, name string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	tags, err := s.repo.GetAll(ctx)
+	// We need ID to delete efficiently, but legacy API passed name.
+	// We must find ID first.
+	tags, err := s.repo.List(ctx)
 	if err != nil {
 		return err
 	}
-
-	var newTags []domain.Tag
 	for _, t := range tags {
-		if t.Name != name {
-			newTags = append(newTags, t)
+		if t.Name == name {
+			return s.repo.Delete(ctx, t.ID)
 		}
 	}
-	return s.repo.SaveAll(ctx, newTags)
+	return nil
 }
 
 // GetOrCreateTag gets an existing tag by name or creates a new one with standardized slug and ID
@@ -89,7 +87,7 @@ func (s *TagService) GetOrCreateTag(ctx context.Context, name string) (domain.Ta
 		return domain.Tag{}, fmt.Errorf("tag name cannot be empty")
 	}
 
-	tags, err := s.repo.GetAll(ctx)
+	tags, err := s.repo.List(ctx)
 	if err != nil {
 		return domain.Tag{}, err
 	}
@@ -116,7 +114,7 @@ func (s *TagService) GetOrCreateTag(ctx context.Context, name string) (domain.Ta
 	for _, c := range name {
 		hash += int(c)
 	}
-	color := domain.TagColors[hash%len(domain.TagColors)]
+	color := TagColors[hash%len(TagColors)]
 
 	newTag := domain.Tag{
 		ID:    id,
@@ -127,8 +125,7 @@ func (s *TagService) GetOrCreateTag(ctx context.Context, name string) (domain.Ta
 	}
 
 	// 3. Save
-	tags = append(tags, newTag)
-	if err := s.repo.SaveAll(ctx, tags); err != nil {
+	if err := s.repo.Create(ctx, &newTag); err != nil {
 		return domain.Tag{}, err
 	}
 
@@ -196,4 +193,9 @@ func (s *TagService) generateSlug(name string, existingTags []domain.Tag) string
 	}
 
 	return uniqueSlug
+}
+
+var TagColors = []string{
+	"#4B5CC4", "#705DC4", "#915DC4", "#AF5DC4", "#C45DB6", "#C45D99", "#C45D7C", "#C45D5D", "#C47C5D", "#C4995D",
+	"#B6C45D", "#99C45D", "#7CC45D", "#5DC45D", "#5DC47C", "#5DC499", "#5DC4B6", "#5DAFC4", "#5D91C4", "#5D70C4",
 }

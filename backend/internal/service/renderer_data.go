@@ -22,7 +22,7 @@ func (s *RendererService) buildTemplateData(ctx context.Context, posts []domain.
 	// 1. Filter published posts first to know the exact count
 	var publishedPosts []domain.Post
 	for _, post := range posts {
-		if post.Data.Published {
+		if post.Published {
 			publishedPosts = append(publishedPosts, post)
 		}
 	}
@@ -47,7 +47,7 @@ func (s *RendererService) buildTemplateData(ctx context.Context, posts []domain.
 	// 获取菜单
 	var menuViews []template.MenuView
 	if s.menuRepo != nil {
-		menus, _ := s.menuRepo.GetAll(ctx)
+		menus, _ := s.menuRepo.List(ctx)
 		for _, menu := range menus {
 			menuViews = append(menuViews, template.MenuView{
 				Name:     menu.Name,
@@ -83,7 +83,7 @@ func (s *RendererService) buildTemplateData(ctx context.Context, posts []domain.
 
 	// 从 linkRepo 获取友链数据，注入到 customConfig.friends
 	if s.linkRepo != nil {
-		links, err := s.linkRepo.GetAll(ctx)
+		links, err := s.linkRepo.List(ctx)
 		if err == nil && len(links) > 0 {
 			var friendList []map[string]interface{}
 			for _, link := range links {
@@ -256,7 +256,7 @@ func (s *RendererService) convertPost(post domain.Post, config domain.ThemeConfi
 	// 转换标签
 	var tags []template.TagView
 	var tagNames []string
-	for _, tag := range post.Data.Tags {
+	for _, tag := range post.Tags {
 		tagView := template.TagView{
 			Name: tag,
 			Slug: tag,
@@ -268,7 +268,7 @@ func (s *RendererService) convertPost(post domain.Post, config domain.ThemeConfi
 
 	// 转换分类
 	var categories []template.CategoryView
-	for _, category := range post.Data.Categories {
+	for _, category := range post.Categories {
 		categoryView := template.CategoryView{
 			Name: category,
 			Slug: category,                                    // 简单起见，暂用 name 作为 slug
@@ -284,14 +284,8 @@ func (s *RendererService) convertPost(post domain.Post, config domain.ThemeConfi
 		readingTime = 1
 	}
 
-	// 解析日期
-	var postDate time.Time
-	if post.Data.Date != "" {
-		postDate, _ = time.Parse(domain.TimeLayout, post.Data.Date)
-		if postDate.IsZero() {
-			postDate, _ = time.Parse(domain.DateLayout, post.Data.Date)
-		}
-	}
+	// 解析日期 - 已经是 time.Time
+	postDate := post.Date
 
 	// 格式化日期
 	dateFormat := config.DateFormat
@@ -311,18 +305,18 @@ func (s *RendererService) convertPost(post domain.Post, config domain.ThemeConfi
 	abstractHTML := utils.ToHTML(abstract)
 
 	return template.PostView{
-		Title:       post.Data.Title,
+		Title:       post.Title,
 		FileName:    post.FileName,
 		Content:     htmlTemplate.HTML(contentHTML),  // 转换为 template.HTML 类型
 		Abstract:    htmlTemplate.HTML(abstractHTML), // 转换为 template.HTML 类型
 		Description: "",                              // TODO: 从文章 frontmatter 读取
 		Link:        link,
-		Feature:     post.Data.Feature,
+		Feature:     post.Feature,
 		Date:        postDate,
 		DateFormat:  formattedDate,
-		Published:   post.Data.Published,
-		HideInList:  post.Data.HideInList,
-		IsTop:       post.Data.IsTop,
+		Published:   post.Published,
+		HideInList:  post.HideInList,
+		IsTop:       post.IsTop,
 		Tags:        tags,
 		Categories:  categories,
 		TagsString:  strings.Join(tagNames, ","),
@@ -357,7 +351,7 @@ func (s *RendererService) buildMemoViews(ctx context.Context, config domain.Them
 		return nil
 	}
 
-	memos, err := s.memoRepo.GetAll(ctx)
+	memos, err := s.memoRepo.List(ctx)
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "警告：获取闪念数据失败: %v\n", err)
 		return nil
@@ -374,17 +368,13 @@ func (s *RendererService) buildMemoViews(ctx context.Context, config domain.Them
 		htmlContent := utils.ToHTML(m.Content)
 
 		// 格式化时间
-		formatted := m.CreatedAt
-		t, err := time.Parse(time.RFC3339, m.CreatedAt)
-		if err == nil {
-			formatted = t.Format(dateFormat)
-		}
+		formatted := formatDate(m.CreatedAt, dateFormat)
 
 		views = append(views, template.MemoView{
 			ID:         m.ID,
 			Content:    htmlTemplate.HTML(htmlContent),
 			Tags:       m.Tags,
-			CreatedAt:  m.CreatedAt,
+			CreatedAt:  formatted,
 			DateFormat: formatted,
 		})
 	}

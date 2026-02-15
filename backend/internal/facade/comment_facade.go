@@ -22,7 +22,11 @@ func (f *CommentFacade) GetSettings() (domain.CommentSettings, error) {
 	if ctx == nil {
 		ctx = context.TODO()
 	}
-	return f.internal.GetSettings(ctx)
+	settings, err := f.internal.GetSettings(ctx)
+	if err != nil {
+		return domain.CommentSettings{}, err
+	}
+	return *settings, nil
 }
 
 // SaveSettings 保存评论设置

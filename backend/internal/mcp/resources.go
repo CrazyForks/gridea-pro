@@ -66,11 +66,11 @@ func (s *Server) registerResources() {
 			var summary []map[string]interface{}
 			for _, p := range posts {
 				summary = append(summary, map[string]interface{}{
-					"title":     p.Data.Title,
-					"date":      p.Data.Date,
+					"title":     p.Title,
+					"date":      p.Date,
 					"fileName":  p.FileName,
-					"tags":      p.Data.Tags,
-					"published": p.Data.Published,
+					"tags":      p.Tags,
+					"published": p.Published,
 				})
 			}
 

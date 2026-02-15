@@ -1,4 +1,4 @@
-export interface IPostData {
+export interface IPost {
   title: string
   date: string
   published: boolean
@@ -7,12 +7,6 @@ export interface IPostData {
   categories?: string[]
   feature: string
   isTop: boolean
-}
-
-export interface IPost {
   content: string
-
-  data: IPostData
-
   fileName: string
 }

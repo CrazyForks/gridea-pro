@@ -36,7 +36,7 @@
             </div>
             <div class="flex items-center px-4">
               <div class="text-xs text-muted-foreground opacity-70 group-hover:hidden">
-                {{siteStore.posts.filter(p => p.data.published && (p.data.categories ||
+                {{siteStore.posts.filter(p => p.published && (p.categories ||
                   []).includes(category.name)).length}}
               </div>
               <div class="hidden group-hover:flex items-center gap-2">

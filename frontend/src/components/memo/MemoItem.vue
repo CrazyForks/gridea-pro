@@ -43,7 +43,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, nextTick } from 'vue'
+import { computed, ref, nextTick, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ClipboardDocumentIcon, PencilIcon, TrashIcon } from '@heroicons/vue/24/outline'
 import type { IMemo } from '@/interfaces/memo'
@@ -66,6 +66,20 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const isEditing = ref(false)
 const editorRef = ref<InstanceType<typeof MemoInput> | null>(null)
+
+// Auto-update every 5 seconds for "just now" / "minutes ago"
+const now = ref(new Date())
+let timer: ReturnType<typeof setInterval> | null = null
+
+onMounted(() => {
+    timer = setInterval(() => {
+        now.value = new Date()
+    }, 5000)
+})
+
+onUnmounted(() => {
+    if (timer) clearInterval(timer)
+})
 
 const highlightedContent = computed(() => {
     return highlightTags(props.memo.content || '', 'text-primary font-medium cursor-pointer')
@@ -91,8 +105,8 @@ const handleSave = (content: string) => {
 
 function formatTime(timestamp: string): string {
     const date = new Date(timestamp)
-    const now = new Date()
-    const diff = now.getTime() - date.getTime()
+    const current = now.value
+    const diff = current.getTime() - date.getTime()
 
     // 一分钟内
     if (diff < 60 * 1000) {
@@ -105,19 +119,19 @@ function formatTime(timestamp: string): string {
     }
 
     // 24小时内
-    if (diff < 24 * 60 * 60 * 1000 && date.getDate() === now.getDate()) {
+    if (diff < 24 * 60 * 60 * 1000 && date.getDate() === current.getDate()) {
         return t('memo.hoursAgo', { hour: Math.floor(diff / (60 * 60 * 1000)) })
     }
 
     // 昨天
-    const yesterday = new Date(now)
+    const yesterday = new Date(current)
     yesterday.setDate(yesterday.getDate() - 1)
     if (date.toDateString() === yesterday.toDateString()) {
         return t('memo.yesterday', { time: date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) })
     }
 
     // 今年内
-    if (date.getFullYear() === now.getFullYear()) {
+    if (date.getFullYear() === current.getFullYear()) {
         return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
     }
 

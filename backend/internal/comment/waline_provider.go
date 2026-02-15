@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 )
 
 // WalineProvider Waline 评论提供者
@@ -107,8 +108,33 @@ func parseWalineData(data json.RawMessage) ([]walineComment, int, error) {
 	return nil, 0, fmt.Errorf("failed to parse waline data: %s", string(data))
 }
 
+// parseWalineTime converts various time formats to time.Time
+func parseWalineTime(v interface{}) time.Time {
+	if v == nil {
+		return time.Time{}
+	}
+	switch val := v.(type) {
+	case string:
+		// Try parsing common formats
+		if t, err := time.Parse(time.RFC3339, val); err == nil {
+			return t
+		}
+		if t, err := time.Parse("2006-01-02 15:04:05", val); err == nil {
+			return t
+		}
+		return time.Time{}
+	case float64:
+		// Milliseconds? Seconds? Usually ms in JS
+		return time.UnixMilli(int64(val))
+	case int64:
+		return time.UnixMilli(val)
+	default:
+		return time.Time{}
+	}
+}
+
 // GetAdminComments implementation
-func (p *WalineProvider) GetAdminComments(ctx context.Context, page, pageSize int) (*domain.PaginatedComments, error) {
+func (p *WalineProvider) GetAdminComments(ctx context.Context, page, pageSize int) ([]domain.Comment, int64, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -127,38 +153,30 @@ func (p *WalineProvider) GetAdminComments(ctx context.Context, page, pageSize in
 			fmt.Fprintf(os.Stderr, "[Waline] Admin Auth failed (401), falling back to public recent comments.\n")
 			recentComments, err := p.GetRecentComments(ctx, pageSize)
 			if err != nil {
-				return nil, fmt.Errorf("Waline 认证失败且无法获取公开评论: %v", err)
+				return nil, 0, fmt.Errorf("Waline 认证失败且无法获取公开评论: %v", err)
 			}
-			return &domain.PaginatedComments{
-				Comments:   recentComments,
-				Total:      len(recentComments),
-				Page:       1,
-				PageSize:   pageSize,
-				TotalPages: 1,
-			}, nil
+			return recentComments, int64(len(recentComments)), nil
 		}
-		return nil, err
+		return nil, 0, err
 	}
 	defer resp.Body.Close()
 
-	// resp is guaranteed to be non-401 by executeAuthRequest unless it returns the specific error
-
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Waline API error status: %d", resp.StatusCode)
+		return nil, 0, fmt.Errorf("Waline API error status: %d", resp.StatusCode)
 	}
 
 	var result walineResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	if result.Errno != 0 {
-		return nil, fmt.Errorf("Waline API error: %s", toString(result.Errmsg))
+		return nil, 0, fmt.Errorf("Waline API error: %s", toString(result.Errmsg))
 	}
 
 	commentsList, count, err := parseWalineData(result.Data)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	var comments []domain.Comment
@@ -173,7 +191,7 @@ func (p *WalineProvider) GetAdminComments(ctx context.Context, page, pageSize in
 			Nickname:  c.Nick,
 			URL:       c.Link,
 			Content:   content,
-			CreatedAt: toString(c.CreatedAt),
+			CreatedAt: parseWalineTime(c.CreatedAt),
 			ArticleID: c.Url,
 			ParentID:  toString(c.Pid),
 			Email:     c.Mail,
@@ -181,18 +199,7 @@ func (p *WalineProvider) GetAdminComments(ctx context.Context, page, pageSize in
 		})
 	}
 
-	totalPages := 0
-	if pageSize > 0 {
-		totalPages = (count + pageSize - 1) / pageSize
-	}
-
-	return &domain.PaginatedComments{
-		Comments:   comments,
-		Total:      count,
-		Page:       page,
-		PageSize:   pageSize,
-		TotalPages: totalPages,
-	}, nil
+	return comments, int64(count), nil
 }
 
 func (p *WalineProvider) GetComments(ctx context.Context, articleID string) ([]domain.Comment, error) {
@@ -249,7 +256,7 @@ func (p *WalineProvider) GetComments(ctx context.Context, articleID string) ([]d
 			Nickname:  c.Nick,
 			URL:       c.Link,
 			Content:   content,
-			CreatedAt: toString(c.CreatedAt),
+			CreatedAt: parseWalineTime(c.CreatedAt),
 			ArticleID: c.Url,
 			ParentID:  toString(c.Pid),
 			Email:     c.Mail,
@@ -311,7 +318,7 @@ func (p *WalineProvider) GetRecentComments(ctx context.Context, limit int) ([]do
 			Nickname:  c.Nick,
 			URL:       c.Link,
 			Content:   content,
-			CreatedAt: toString(c.CreatedAt),
+			CreatedAt: parseWalineTime(c.CreatedAt),
 			ArticleID: c.Url,
 			ParentID:  toString(c.Pid),
 			Email:     c.Mail,
@@ -321,7 +328,7 @@ func (p *WalineProvider) GetRecentComments(ctx context.Context, limit int) ([]do
 	return comments, nil
 }
 
-func (p *WalineProvider) PostComment(ctx context.Context, comment domain.Comment) error {
+func (p *WalineProvider) PostComment(ctx context.Context, comment *domain.Comment) error {
 	payload := map[string]interface{}{
 		"nick":    comment.Nickname,
 		"comment": comment.Content,

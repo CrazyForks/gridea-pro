@@ -1,6 +1,12 @@
 package domain
 
-import "context"
+// Added Validate() method.
+
+import (
+	"context"
+	"errors"
+	"strings"
+)
 
 // Theme 主题结构
 type Theme struct {
@@ -38,6 +44,14 @@ type ThemeConfig struct {
 	LinkPath         string                 `json:"linkPath"`
 	MemosPath        string                 `json:"memosPath"`
 	CustomConfig     map[string]interface{} `json:"customConfig,omitempty"`
+}
+
+// Validate 校验主题配置
+func (c *ThemeConfig) Validate() error {
+	if strings.TrimSpace(c.ThemeName) == "" {
+		return errors.New("theme name is required")
+	}
+	return nil
 }
 
 // ThemeRepository 定义主题存储接口

@@ -56,8 +56,14 @@ func (f *LinkFacade) SaveLinkFromFrontend(form LinkForm) ([]domain.Link, error) 
 		Description: form.Description,
 	}
 
-	if err := f.internal.SaveLink(ctx, newLink); err != nil {
-		return nil, err
+	if newLink.ID == "" {
+		if err := f.internal.CreateLink(ctx, newLink); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := f.internal.UpdateLink(ctx, newLink); err != nil {
+			return nil, err
+		}
 	}
 
 	return f.internal.LoadLinks(ctx)

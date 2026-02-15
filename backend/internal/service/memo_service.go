@@ -29,7 +29,7 @@ func NewMemoService(repo domain.MemoRepository) *MemoService {
 func (s *MemoService) LoadMemos(ctx context.Context) ([]domain.Memo, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return s.repo.GetAll(ctx)
+	return s.repo.List(ctx)
 }
 
 func (s *MemoService) SaveMemos(ctx context.Context, memos []domain.Memo) error {
@@ -49,7 +49,7 @@ func (s *MemoService) CreateMemo(ctx context.Context, content string) (*domain.M
 		return nil, err
 	}
 
-	now := time.Now().Format(domain.TimeLayout)
+	now := time.Now()
 	newMemo := domain.Memo{
 		ID:        id,
 		Content:   content,
@@ -62,7 +62,7 @@ func (s *MemoService) CreateMemo(ctx context.Context, content string) (*domain.M
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	memos, err := s.repo.GetAll(ctx)
+	memos, err := s.repo.List(ctx)
 	if err != nil {
 		memos = []domain.Memo{}
 	}
@@ -81,14 +81,14 @@ func (s *MemoService) UpdateMemo(ctx context.Context, memo domain.Memo) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	memos, err := s.repo.GetAll(ctx)
+	memos, err := s.repo.List(ctx)
 	if err != nil {
 		return err
 	}
 
 	// Parse content for tags
 	memo.Tags = extractTags(memo.Content)
-	memo.UpdatedAt = time.Now().Format(domain.TimeLayout)
+	memo.UpdatedAt = time.Now()
 
 	found := false
 	for i := range memos {
@@ -113,7 +113,7 @@ func (s *MemoService) DeleteMemo(ctx context.Context, id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	memos, err := s.repo.GetAll(ctx)
+	memos, err := s.repo.List(ctx)
 	if err != nil {
 		return err
 	}
@@ -139,7 +139,7 @@ func (s *MemoService) RenameTag(ctx context.Context, oldName, newName string) er
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	memos, err := s.repo.GetAll(ctx)
+	memos, err := s.repo.List(ctx)
 	if err != nil {
 		return err
 	}
@@ -163,7 +163,7 @@ func (s *MemoService) RenameTag(ctx context.Context, oldName, newName string) er
 		if hasTag {
 			memos[i].Content = re.ReplaceAllString(memos[i].Content, "#"+newName+"$1")
 			memos[i].Tags = extractTags(memos[i].Content)
-			memos[i].UpdatedAt = time.Now().Format(domain.TimeLayout)
+			memos[i].UpdatedAt = time.Now()
 			count++
 		}
 		updatedMemos = append(updatedMemos, memos[i])
@@ -179,7 +179,7 @@ func (s *MemoService) DeleteTag(ctx context.Context, tagName string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	memos, err := s.repo.GetAll(ctx)
+	memos, err := s.repo.List(ctx)
 	if err != nil {
 		return err
 	}
@@ -202,7 +202,7 @@ func (s *MemoService) DeleteTag(ctx context.Context, tagName string) error {
 		if hasTag {
 			memos[i].Content = re.ReplaceAllString(memos[i].Content, tagName+"$1")
 			memos[i].Tags = extractTags(memos[i].Content)
-			memos[i].UpdatedAt = time.Now().Format(domain.TimeLayout)
+			memos[i].UpdatedAt = time.Now()
 			count++
 		}
 		updatedMemos = append(updatedMemos, memos[i])
@@ -243,17 +243,15 @@ func (s *MemoService) GetMemoStats(ctx context.Context) (*domain.MemoStats, erro
 	heatmap := make(map[string]int)
 	now := time.Now()
 	for i := 0; i < 365; i++ {
-		date := now.AddDate(0, 0, -i).Format(domain.DateLayout)
+		date := now.AddDate(0, 0, -i).Format("2006-01-02") // Use direct format string or domain constant if available
 		heatmap[date] = 0
 	}
 
 	for _, memo := range memos {
-		t, err := time.Parse(domain.TimeLayout, memo.CreatedAt)
-		if err == nil {
-			date := t.Format(domain.DateLayout)
-			if _, exists := heatmap[date]; exists {
-				heatmap[date]++
-			}
+		// memo.CreatedAt is now time.Time, no parsing needed
+		date := memo.CreatedAt.Format("2006-01-02")
+		if _, exists := heatmap[date]; exists {
+			heatmap[date]++
 		}
 	}
 

@@ -43,7 +43,7 @@ func createMemoHandler(s *service.MemoService) server.ToolHandlerFunc {
 
 		memos, _ := s.LoadMemos(ctx)
 		id, _ := gonanoid.New(6)
-		now := time.Now().Format("2006-01-02 15:04:05")
+		now := time.Now()
 
 		newMemo := domain.Memo{
 			ID:        id,
@@ -150,7 +150,7 @@ func updateMemoHandler(s *service.MemoService) server.ToolHandlerFunc {
 		for i, m := range memos {
 			if m.ID == id {
 				memos[i].Content = content
-				memos[i].UpdatedAt = time.Now().Format("2006-01-02 15:04:05")
+				memos[i].UpdatedAt = time.Now()
 				memos[i].Tags = extractMemoTags(content)
 				found = true
 				break
@@ -187,10 +187,7 @@ func getMemoStatsHandler(s *service.MemoService) server.ToolHandlerFunc {
 		dailyCounts := make(map[string]int)
 		for _, m := range memos {
 			// 提取日期部分 (YYYY-MM-DD)
-			date := m.CreatedAt
-			if len(date) >= 10 {
-				date = date[:10]
-			}
+			date := m.CreatedAt.Format("2006-01-02")
 			dailyCounts[date]++
 		}
 

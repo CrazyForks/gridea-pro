@@ -28,7 +28,7 @@ func NewCommentService(appDir string, repo domain.CommentRepository, postRepo do
 }
 
 // GetSettings 获取评论设置
-func (s *CommentService) GetSettings(ctx context.Context) (domain.CommentSettings, error) {
+func (s *CommentService) GetSettings(ctx context.Context) (*domain.CommentSettings, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.repo.GetSettings(ctx)
@@ -38,7 +38,7 @@ func (s *CommentService) GetSettings(ctx context.Context) (domain.CommentSetting
 func (s *CommentService) SaveSettings(ctx context.Context, settings domain.CommentSettings) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.repo.SaveSettings(ctx, settings)
+	return s.repo.SaveSettings(ctx, &settings)
 }
 
 // FetchComments 获取管理端评论列表
@@ -62,31 +62,41 @@ func (s *CommentService) FetchComments(ctx context.Context, page, pageSize int) 
 		return emptyResult, nil
 	}
 
-	provider, err := comment.NewProvider(settings)
+	provider, err := comment.NewProvider(*settings)
 	if err != nil {
 		return emptyResult, fmt.Errorf("provider init failed: %w", err)
 	}
 
-	result, err := provider.GetAdminComments(ctx, page, pageSize)
+	comments, count, err := provider.GetAdminComments(ctx, page, pageSize)
 	if err != nil {
 		return nil, err
 	}
 
+	result := &domain.PaginatedComments{
+		Comments: comments,
+		Total:    count,
+		Page:     page,
+		PageSize: pageSize,
+	}
+	if pageSize > 0 {
+		result.TotalPages = int((count + int64(pageSize) - 1) / int64(pageSize))
+	}
+
 	// 填充文章标题 - 优化 O(1) 查找
-	posts, _ := s.postRepo.GetAll(ctx)
-	postMap := make(map[string]string) // Key: URL Path / ID, Value: Title
+	posts, _, _ := s.postRepo.List(ctx, 1, 10000) // Revert to GetAll as PostRepository uses GetAll
+	postMap := make(map[string]string)            // Key: URL Path / ID, Value: Title
 	if len(posts) > 0 {
 		for _, p := range posts {
 			// 匹配常见路径格式
 			key1 := fmt.Sprintf("/post/%s/", p.FileName)
 			key2 := fmt.Sprintf("/post/%s", p.FileName)
-			postMap[key1] = p.Data.Title
-			postMap[key2] = p.Data.Title
+			postMap[key1] = p.Title
+			postMap[key2] = p.Title
 			// 兼容可能得根路径配置
 			key3 := fmt.Sprintf("/%s/", p.FileName)
 			key4 := fmt.Sprintf("/%s", p.FileName)
-			postMap[key3] = p.Data.Title
-			postMap[key4] = p.Data.Title
+			postMap[key3] = p.Title
+			postMap[key4] = p.Title
 		}
 	}
 
@@ -121,7 +131,7 @@ func (s *CommentService) ReplyComment(ctx context.Context, parentID string, cont
 		return err
 	}
 
-	provider, err := comment.NewProvider(settings)
+	provider, err := comment.NewProvider(*settings)
 	if err != nil {
 		return err
 	}
@@ -140,7 +150,7 @@ func (s *CommentService) ReplyComment(ctx context.Context, parentID string, cont
 		Avatar:    siteInfo.Avatar,
 	}
 
-	return provider.PostComment(ctx, newComment)
+	return provider.PostComment(ctx, &newComment)
 }
 
 func (s *CommentService) getSiteOwnerInfo(ctx context.Context) domain.Comment {
@@ -189,7 +199,7 @@ func (s *CommentService) DeleteComment(ctx context.Context, commentID string) er
 		return err
 	}
 
-	provider, err := comment.NewProvider(settings)
+	provider, err := comment.NewProvider(*settings)
 	if err != nil {
 		return err
 	}

@@ -1,8 +1,13 @@
 package domain
 
-import "context"
+import (
+	"context"
+	"errors"
+	"strings"
+)
 
 // Tag 标签结构
+// Added json tags for frontend compatibility.
 type Tag struct {
 	ID    string `json:"id"`
 	Name  string `json:"name"`
@@ -11,9 +16,22 @@ type Tag struct {
 	Color string `json:"color,omitempty"`
 }
 
-// TagRepository 定义标签存储接口
+// Validate checking
+func (t *Tag) Validate() error {
+	if strings.TrimSpace(t.Name) == "" {
+		return errors.New("tag name is required")
+	}
+	if strings.TrimSpace(t.Slug) == "" {
+		return errors.New("tag slug is required")
+	}
+	return nil
+}
+
+// TagRepository defines interface
 type TagRepository interface {
-	GetAll(ctx context.Context) ([]Tag, error)
-	// SaveAll 通常在从文章重新计算标签后使用
-	SaveAll(ctx context.Context, tags []Tag) error
+	List(ctx context.Context) ([]Tag, error)
+	// Standard CRUD additions if needed
+	Create(ctx context.Context, tag *Tag) error
+	Update(ctx context.Context, tag *Tag) error
+	Delete(ctx context.Context, id string) error
 }

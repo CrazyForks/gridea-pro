@@ -2,8 +2,11 @@ package facade
 
 import (
 	"context"
+	"fmt"
 	"gridea-pro/backend/internal/domain"
 	"gridea-pro/backend/internal/service"
+	"gridea-pro/backend/internal/utils"
+	"time"
 )
 
 // PostFacade wraps PostService
@@ -19,6 +22,23 @@ func NewPostFacade(s *service.PostService) *PostFacade {
 type PostDashboardDTO struct {
 	Posts []domain.Post `json:"posts"`
 	Tags  []domain.Tag  `json:"tags"`
+}
+
+// PostForm DTO for frontend input
+type PostForm struct {
+	Title            string          `json:"title"`
+	Date             string          `json:"date"`
+	Tags             []string        `json:"tags"`
+	TagIDs           []string        `json:"tagIds"`
+	Categories       []string        `json:"categories"`
+	Published        bool            `json:"published"`
+	HideInList       bool            `json:"hideInList"`
+	IsTop            bool            `json:"isTop"`
+	Content          string          `json:"content"`
+	FileName         string          `json:"fileName"`
+	DeleteFileName   string          `json:"deleteFileName"`
+	FeatureImage     domain.FileInfo `json:"featureImage"`
+	FeatureImagePath string          `json:"featureImagePath"`
 }
 
 func (f *PostFacade) LoadPosts() ([]domain.Post, error) {
@@ -37,12 +57,18 @@ func (f *PostFacade) LoadTags() ([]domain.Tag, error) {
 	return f.internal.LoadTags(ctx)
 }
 
-func (f *PostFacade) SavePost(input domain.PostInput) error {
+func (f *PostFacade) SavePost(form PostForm) error {
 	ctx := WailsContext
 	if ctx == nil {
 		ctx = context.TODO()
 	}
-	return f.internal.SavePost(ctx, &input)
+
+	post, err := f.mapFormToPost(form)
+	if err != nil {
+		return err
+	}
+
+	return f.internal.SavePost(ctx, post)
 }
 
 func (f *PostFacade) DeletePost(fileName string) error {
@@ -62,13 +88,18 @@ func (f *PostFacade) UploadImages(files []domain.UploadedFile) ([]string, error)
 }
 
 // SavePostFromFrontend handles post saving from the frontend
-func (f *PostFacade) SavePostFromFrontend(input domain.PostInput) (*PostDashboardDTO, error) {
+func (f *PostFacade) SavePostFromFrontend(form PostForm) (*PostDashboardDTO, error) {
 	ctx := WailsContext
 	if ctx == nil {
 		ctx = context.TODO()
 	}
 
-	if err := f.internal.SavePost(ctx, &input); err != nil {
+	post, err := f.mapFormToPost(form)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := f.internal.SavePost(ctx, post); err != nil {
 		return nil, err
 	}
 
@@ -104,4 +135,39 @@ func (f *PostFacade) DeletePostFromFrontend(fileName string) ([]domain.Post, err
 func (f *PostFacade) UploadImagesFromFrontend(files []domain.UploadedFile) ([]string, error) {
 	// reuse wrapper with context logic
 	return f.UploadImages(files)
+}
+
+// Helper to map Form to Domain Entity
+func (f *PostFacade) mapFormToPost(form PostForm) (*domain.Post, error) {
+	// Time Parsing with proper error handling
+	var parsedDate time.Time
+	if form.Date == "" {
+		parsedDate = time.Now()
+	} else {
+		var err error
+		parsedDate, err = utils.ParseTime(form.Date)
+		if err != nil {
+			return nil, fmt.Errorf("invalid date format: %w", err)
+		}
+	}
+
+	return &domain.Post{
+		Title:            form.Title,
+		Date:             parsedDate,
+		Tags:             form.Tags,
+		TagIDs:           form.TagIDs,
+		Categories:       form.Categories,
+		Published:        form.Published,
+		HideInList:       form.HideInList,
+		IsTop:            form.IsTop,
+		Content:          form.Content,
+		FileName:         form.FileName,
+		DeleteFileName:   form.DeleteFileName,
+		FeatureImage:     form.FeatureImage,
+		FeatureImagePath: form.FeatureImagePath,
+		// Feature field might need logic if it comes from FeatureImagePath or FeatureImage?
+		// In previous logic, Feature was derived.
+		// Here we map Feature from FeatureImagePath as default if Feature is empty in form (Form doesn't have Feature field, relying on Path)
+		Feature: form.FeatureImagePath,
+	}, nil
 }

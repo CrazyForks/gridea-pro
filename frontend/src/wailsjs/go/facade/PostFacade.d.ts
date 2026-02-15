@@ -11,9 +11,9 @@ export function LoadPosts():Promise<Array<domain.Post>>;
 
 export function LoadTags():Promise<Array<domain.Tag>>;
 
-export function SavePost(arg1:domain.PostInput):Promise<void>;
+export function SavePost(arg1:facade.PostForm):Promise<void>;
 
-export function SavePostFromFrontend(arg1:domain.PostInput):Promise<facade.PostDashboardDTO>;
+export function SavePostFromFrontend(arg1:facade.PostForm):Promise<facade.PostDashboardDTO>;
 
 export function UploadImages(arg1:Array<domain.UploadedFile>):Promise<Array<string>>;
 

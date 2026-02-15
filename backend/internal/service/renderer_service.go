@@ -98,7 +98,7 @@ func (s *RendererService) SetTheme(themeName string) error {
 func (s *RendererService) RenderAll(ctx context.Context) error {
 	startTime := time.Now()
 	// 获取数据
-	posts, err := s.postRepo.GetAll(ctx)
+	posts, _, err := s.postRepo.List(ctx, 1, 10000) // Use List with large page size
 	if err != nil {
 		return fmt.Errorf("获取文章失败: %w", err)
 	}
@@ -152,7 +152,7 @@ func (s *RendererService) RenderAll(ctx context.Context) error {
 	sem := make(chan struct{}, concurrency)
 
 	for _, post := range posts {
-		if !post.Data.Published {
+		if !post.Published {
 			continue
 		}
 
@@ -165,9 +165,9 @@ func (s *RendererService) RenderAll(ctx context.Context) error {
 			if err := s.renderPost(buildDir, p, templateData); err != nil {
 				// Thread-safe error collection
 				errMutex.Lock()
-				errs = errors.Join(errs, fmt.Errorf("rendering post %s: %w", p.Data.Title, err))
+				errs = errors.Join(errs, fmt.Errorf("rendering post %s: %w", p.Title, err))
 				errMutex.Unlock()
-				_, _ = fmt.Fprintf(os.Stderr, "Error rendering post %s: %v\n", p.Data.Title, err)
+				_, _ = fmt.Fprintf(os.Stderr, "Error rendering post %s: %v\n", p.Title, err)
 			}
 		}(post)
 	}

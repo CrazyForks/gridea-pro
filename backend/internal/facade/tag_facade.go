@@ -40,7 +40,7 @@ func (f *TagFacade) DeleteTag(name string) error {
 }
 
 func (f *TagFacade) GetTagColors() []string {
-	return domain.TagColors
+	return service.TagColors
 }
 
 // TagForm for frontend usage

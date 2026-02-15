@@ -2,54 +2,57 @@ package domain
 
 import (
 	"context"
+	"errors"
+	"strings"
+	"time"
 )
 
-// PostData 文章元数据
-type PostData struct {
-	Title      string   `json:"title" yaml:"title"`
-	Date       string   `json:"date" yaml:"date"`
-	Tags       []string `json:"tags" yaml:"tags"`
-	TagIDs     []string `json:"tagIds" yaml:"tag_ids"` // Hidden field for robust linking
-	Categories []string `json:"categories" yaml:"categories"`
-	Published  bool     `json:"published" yaml:"published"`
-	HideInList bool     `json:"hideInList" yaml:"hideInList"`
-	Feature    string   `json:"feature" yaml:"feature"`
-	IsTop      bool     `json:"isTop" yaml:"isTop"`
-}
-
-// Post 文章结构
+// Post represents a blog post
 type Post struct {
-	Data     PostData `json:"data"`
-	Content  string   `json:"content"`
-	Abstract string   `json:"abstract"`
-	FileName string   `json:"fileName"`
+	// Metadata
+	Title            string    `json:"title"`
+	Date             time.Time `json:"date"`
+	Tags             []string  `json:"tags"`
+	TagIDs           []string  `json:"tagIds"`
+	Categories       []string  `json:"categories"`
+	Published        bool      `json:"published"`
+	HideInList       bool      `json:"hideInList"`
+	IsTop            bool      `json:"isTop"`
+	Feature          string    `json:"feature"`
+	FeatureImagePath string    `json:"featureImagePath"`
+	FeatureImage     FileInfo  `json:"featureImage"`
+
+	// Content
+	Content        string `json:"content"`
+	FileName       string `json:"fileName"`
+	DeleteFileName string `json:"deleteFileName"` // 用于重命名/删除
+	Abstract       string `json:"abstract"`
 }
 
-// PostInput 文章输入（DTO for Create/Update）
-type PostInput struct {
-	Title            string   `json:"title"`
-	Date             string   `json:"date"`
-	Tags             []string `json:"tags"`
-	TagIDs           []string `json:"tagIds"`
-	Categories       []string `json:"categories"`
-	Published        bool     `json:"published"`
-	HideInList       bool     `json:"hideInList"`
-	IsTop            bool     `json:"isTop"`
-	Content          string   `json:"content"`
-	FileName         string   `json:"fileName"`
-	DeleteFileName   string   `json:"deleteFileName"`
-	FeatureImage     FileInfo `json:"featureImage"`
-	FeatureImagePath string   `json:"featureImagePath"`
+// Validate validates the post
+func (p *Post) Validate() error {
+	if strings.TrimSpace(p.Title) == "" {
+		return errors.New("title is required")
+	}
+	if strings.TrimSpace(p.FileName) == "" {
+		return errors.New("filename is required")
+	}
+	return nil
 }
 
-// PostRepository 定义文章存储接口
+// PostRepository defines the interface for post persistence
 type PostRepository interface {
-	// GetAll 获取所有文章
-	GetAll(ctx context.Context) ([]Post, error)
-	// Save 保存文章
-	Save(ctx context.Context, post *PostInput) error
-	// Delete 删除文章
+	// Standard CRUD
+	Create(ctx context.Context, post *Post) error
+	Update(ctx context.Context, post *Post) error
 	Delete(ctx context.Context, fileName string) error
-	// GetByFileName 获取单篇文章
 	GetByFileName(ctx context.Context, fileName string) (*Post, error)
+
+	// List returns paginated posts.
+	// page is 1-based. size is items per page.
+	// Returns posts, total count, and error.
+	List(ctx context.Context, page, size int) ([]Post, int64, error)
+
+	// Deprecated: Use List instead
+	GetAll(ctx context.Context) ([]Post, error)
 }

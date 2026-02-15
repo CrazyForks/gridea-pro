@@ -18,7 +18,7 @@ func NewMenuService(repo domain.MenuRepository) *MenuService {
 func (s *MenuService) LoadMenus(ctx context.Context) ([]domain.Menu, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return s.repo.GetAll(ctx)
+	return s.repo.List(ctx)
 }
 
 func (s *MenuService) SaveMenus(ctx context.Context, menus []domain.Menu) error {

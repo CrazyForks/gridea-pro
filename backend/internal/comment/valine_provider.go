@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 // ValineProvider LeanCloud/Valine 评论提供者
@@ -20,6 +21,36 @@ type ValineProvider struct {
 	AppKey     string
 	MasterKey  string
 	ServerURLs string
+}
+
+func (p *ValineProvider) DeleteComment(ctx context.Context, commentID string) error {
+	if p.MasterKey == "" {
+		return fmt.Errorf("master key is required to delete comments")
+	}
+
+	// LeanCloud DELETE /1.1/classes/Comment/:objectId
+	apiURL := fmt.Sprintf("%s/1.1/classes/Comment/%s", strings.TrimRight(p.ServerURLs, "/"), commentID)
+	req, err := http.NewRequestWithContext(ctx, "DELETE", apiURL, nil)
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("X-LC-Id", p.AppID)
+	req.Header.Set("X-LC-Key", p.MasterKey)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("failed to delete comment: %s", string(body))
+	}
+
+	return nil
 }
 
 // NewValineProvider 创建 Valine Provider
@@ -96,7 +127,7 @@ func (p *ValineProvider) GetComments(ctx context.Context, articleID string) ([]d
 			Nickname:   c.Nick,
 			URL:        c.Link,
 			Content:    c.Comment,
-			CreatedAt:  c.CreatedAt,
+			CreatedAt:  parseValineTime(c.CreatedAt),
 			ArticleID:  c.Url,
 			ParentID:   c.Pid,
 			ParentNick: c.Pnick,
@@ -145,7 +176,7 @@ func (p *ValineProvider) GetRecentComments(ctx context.Context, limit int) ([]do
 			Nickname:   c.Nick,
 			URL:        c.Link,
 			Content:    c.Comment,
-			CreatedAt:  c.CreatedAt,
+			CreatedAt:  parseValineTime(c.CreatedAt),
 			ArticleID:  c.Url,
 			ParentID:   c.Pid,
 			ParentNick: c.Pnick,
@@ -158,49 +189,39 @@ func (p *ValineProvider) GetRecentComments(ctx context.Context, limit int) ([]do
 	return comments, nil
 }
 
-func (p *ValineProvider) GetAdminComments(ctx context.Context, page, pageSize int) (*domain.PaginatedComments, error) {
+func (p *ValineProvider) GetAdminComments(ctx context.Context, page, pageSize int) ([]domain.Comment, int64, error) {
+	// Valine (LeanCloud) doesn't have a direct "Get All Comments" for admin easily without querying all classes.
+	// But usually we just list 'Comment' class.
+	// We need to implement pagination.
+
 	if page < 1 {
 		page = 1
 	}
-	if pageSize < 1 {
-		pageSize = 50
-	}
+	skip := (page - 1) * pageSize
+	limit := pageSize
 
-	params := url.Values{}
-	params.Add("limit", fmt.Sprintf("%d", pageSize))
-	params.Add("skip", fmt.Sprintf("%d", (page-1)*pageSize))
-	params.Add("order", "-createdAt")
-	params.Add("count", "1") // 请求返回总量
-
-	apiURL := fmt.Sprintf("%s/1.1/classes/Comment?%s", p.ServerURLs, params.Encode())
-
+	// 1. Get List
+	apiURL := fmt.Sprintf("%s/1.1/classes/Comment?skip=%d&limit=%d&order=-createdAt", strings.TrimRight(p.ServerURLs, "/"), skip, limit)
 	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-
 	p.setHeaders(req)
 
-	resp, err := http.DefaultClient.Do(req)
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("LeanCloud API error: %d %s", resp.StatusCode, string(body))
+		return nil, 0, fmt.Errorf("failed to fetch admin comments: %d", resp.StatusCode)
 	}
 
-	// LeanCloud Response with Count
-	type leanCloudCountResponse struct {
-		Results []leanCloudComment `json:"results"`
-		Count   int                `json:"count"`
-	}
-
-	var result leanCloudCountResponse
+	var result leanCloudResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	comments := make([]domain.Comment, 0, len(result.Results))
@@ -210,72 +231,75 @@ func (p *ValineProvider) GetAdminComments(ctx context.Context, page, pageSize in
 			Nickname:   c.Nick,
 			URL:        c.Link,
 			Content:    c.Comment,
-			CreatedAt:  c.CreatedAt,
+			CreatedAt:  parseValineTime(c.CreatedAt),
 			ArticleID:  c.Url,
 			ParentID:   c.Pid,
 			ParentNick: c.Pnick,
 			Email:      c.Mail,
 			Avatar:     p.getGravatar(c.Mail),
-			// IsNew: true, // TODO: logic
 		})
 	}
 
-	totalPages := 0
-	if pageSize > 0 {
-		totalPages = (result.Count + pageSize - 1) / pageSize
+	// 2. Get Count
+	countURL := fmt.Sprintf("%s/1.1/classes/Comment?count=1&limit=0", strings.TrimRight(p.ServerURLs, "/"))
+	reqCount, err := http.NewRequestWithContext(ctx, "GET", countURL, nil)
+	if err != nil {
+		return comments, 0, nil // Return comments even if count fails
+	}
+	p.setHeaders(reqCount)
+	respCount, err := client.Do(reqCount)
+	if err == nil {
+		defer respCount.Body.Close()
+		if respCount.StatusCode == http.StatusOK {
+			var countResult struct {
+				Count int64 `json:"count"`
+			}
+			if err := json.NewDecoder(respCount.Body).Decode(&countResult); err == nil {
+				return comments, countResult.Count, nil
+			}
+		}
 	}
 
-	return &domain.PaginatedComments{
-		Comments:   comments,
-		Total:      result.Count,
-		Page:       page,
-		PageSize:   pageSize,
-		TotalPages: totalPages,
-	}, nil
+	return comments, int64(len(comments)), nil // Fallback count
 }
 
-func (p *ValineProvider) PostComment(ctx context.Context, comment domain.Comment) error {
-	// 构造 LeanCloud Comment 对象
+func (p *ValineProvider) PostComment(ctx context.Context, comment *domain.Comment) error {
+	// Valine Create Comment
+	// POST /1.1/classes/Comment
+	apiURL := fmt.Sprintf("%s/1.1/classes/Comment", strings.TrimRight(p.ServerURLs, "/"))
+
 	lcComment := map[string]interface{}{
-		"nick":    comment.Nickname,
-		"comment": comment.Content,
-		"url":     comment.ArticleID,
+		"nick":      comment.Nickname,
+		"comment":   comment.Content,
+		"mail":      comment.Email,
+		"link":      comment.URL,
+		"url":       comment.ArticleID,
+		"createdAt": time.Now().UTC().Format(time.RFC3339),
+		"updatedAt": time.Now().UTC().Format(time.RFC3339),
 	}
 
-	// 如果是回复，需要获取父评论信息以正确设置 pid 和 rid
 	if comment.ParentID != "" {
+		// Fetch parent to get ID/RID
 		parent, err := p.getCommentByID(ctx, comment.ParentID)
 		if err != nil {
 			return fmt.Errorf("failed to fetch parent comment: %w", err)
 		}
-
 		lcComment["pid"] = parent.ObjectId
 		if parent.Rid != "" {
 			lcComment["rid"] = parent.Rid
 		} else {
 			lcComment["rid"] = parent.ObjectId
 		}
-		// 还可以设置被回复人的昵称，有些主题可能需要
 		lcComment["pnick"] = parent.Nick
 	}
 
-	// 模拟 UserAgent，包含标准头部以便 parser 识别，同时加入 Gridea Pro 标识
-	// 格式参考: Mozilla/5.0 (Platform; Security; OS-or-CPU; Localization; rv: revision-version-number) Gecko/gecko-trail User-Agent-String
 	lcComment["ua"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Safari/605.1.15"
-
-	if comment.Email != "" {
-		lcComment["mail"] = comment.Email
-	}
-	if comment.URL != "" {
-		lcComment["link"] = comment.URL
-	}
 
 	jsonData, err := json.Marshal(lcComment)
 	if err != nil {
 		return err
 	}
 
-	apiURL := fmt.Sprintf("%s/1.1/classes/Comment", p.ServerURLs)
 	req, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return err
@@ -284,7 +308,8 @@ func (p *ValineProvider) PostComment(ctx context.Context, comment domain.Comment
 	p.setHeaders(req)
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
@@ -299,14 +324,15 @@ func (p *ValineProvider) PostComment(ctx context.Context, comment domain.Comment
 }
 
 func (p *ValineProvider) getCommentByID(ctx context.Context, id string) (*leanCloudComment, error) {
-	apiURL := fmt.Sprintf("%s/1.1/classes/Comment/%s", p.ServerURLs, id)
+	apiURL := fmt.Sprintf("%s/1.1/classes/Comment/%s", strings.TrimRight(p.ServerURLs, "/"), id)
 	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
 	if err != nil {
 		return nil, err
 	}
 	p.setHeaders(req)
 
-	resp, err := http.DefaultClient.Do(req)
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -323,27 +349,14 @@ func (p *ValineProvider) getCommentByID(ctx context.Context, id string) (*leanCl
 	return &comment, nil
 }
 
-func (p *ValineProvider) DeleteComment(ctx context.Context, commentID string) error {
-	apiURL := fmt.Sprintf("%s/1.1/classes/Comment/%s", p.ServerURLs, commentID)
-	req, err := http.NewRequestWithContext(ctx, "DELETE", apiURL, nil)
-	if err != nil {
-		return err
+func parseValineTime(t string) time.Time {
+	// Try standard RFC3339 first
+	parsed, err := time.Parse(time.RFC3339, t)
+	if err == nil {
+		return parsed
 	}
-
-	p.setHeaders(req)
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("LeanCloud API error: %d %s", resp.StatusCode, string(body))
-	}
-
-	return nil
+	// Try other formats if needed, or return current time/zero time
+	return time.Now()
 }
 
 func (p *ValineProvider) setHeaders(req *http.Request) {

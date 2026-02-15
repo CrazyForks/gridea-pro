@@ -1,37 +1,63 @@
 package domain
 
-import "context"
+import (
+	"context"
+	"errors"
+	"time"
+)
 
-// Memo 闪念结构体
+// Memo 闪念实体 (Pure Entity)
+// Added json tags for frontend compatibility.
 type Memo struct {
-	ID        string   `json:"id"`        // NanoID (6字符)
-	Content   string   `json:"content"`   // Markdown 内容
-	Tags      []string `json:"tags"`      // 从内容中提取的标签
-	Images    []string `json:"images"`    // 图片路径 (V2预留)
-	CreatedAt string   `json:"createdAt"` // 创建时间
-	UpdatedAt string   `json:"updatedAt"` // 更新时间
+	ID        string    `json:"id"`
+	Content   string    `json:"content"`
+	Tags      []string  `json:"tags"`
+	Images    []string  `json:"images"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
-// MemoRepository 定义Memos存储接口
+// Validate 校验闪念数据
+func (m *Memo) Validate() error {
+	if m.Content == "" {
+		return errors.New("memo content cannot be empty")
+	}
+	return nil
+}
+
+// MemoRepository 定义Memos存储接口 (Standard CRUD)
 type MemoRepository interface {
-	GetAll(ctx context.Context) ([]Memo, error)
+	// Create 创建闪念
+	Create(ctx context.Context, memo *Memo) error
+
+	// Update 更新闪念
+	Update(ctx context.Context, id string, memo *Memo) error
+
+	// Delete 删除闪念
+	Delete(ctx context.Context, id string) error
+
+	// GetByID 获取单个闪念
+	GetByID(ctx context.Context, id string) (*Memo, error)
+
+	// List 获取闪念列表
+	List(ctx context.Context) ([]Memo, error)
+	// SaveAll 批量保存闪念
 	SaveAll(ctx context.Context, memos []Memo) error
 }
 
-// TagStat box struct for tag statistics
+// TagStat 标签统计
 type TagStat struct {
 	Name  string `json:"name"`
 	Count int    `json:"count"`
 }
 
-// MemoStats struct for statistics
+// MemoStats 闪念统计
 type MemoStats struct {
 	Total   int            `json:"total"`
 	Tags    []TagStat      `json:"tags"`
 	Heatmap map[string]int `json:"heatmap"`
 }
 
-// MemoDashboardDTO for frontend dashboard
 type MemoDashboardDTO struct {
 	Memos []Memo    `json:"memos"`
 	Stats MemoStats `json:"stats"`

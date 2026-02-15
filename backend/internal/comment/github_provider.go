@@ -89,7 +89,7 @@ func (p *GitHubProvider) GetRecentComments(ctx context.Context, limit int) ([]do
 			Nickname:  c.User.Login,
 			URL:       c.User.HtmlUrl,
 			Content:   c.Body, // Markdown
-			CreatedAt: c.CreatedAt.Format(time.RFC3339),
+			CreatedAt: c.CreatedAt,
 			ArticleID: c.IssueUrl, // 暂时用 Issue URL 代替
 			// ParentID: "",
 		})
@@ -99,23 +99,17 @@ func (p *GitHubProvider) GetRecentComments(ctx context.Context, limit int) ([]do
 }
 
 // GetAdminComments implementation
-func (p *GitHubProvider) GetAdminComments(ctx context.Context, page, pageSize int) (*domain.PaginatedComments, error) {
+func (p *GitHubProvider) GetAdminComments(ctx context.Context, page, pageSize int) ([]domain.Comment, int64, error) {
 	// TODO: Implement pagination for GitHub
 	comments, err := p.GetRecentComments(ctx, pageSize)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	// Warning: Total count is fake here
-	return &domain.PaginatedComments{
-		Comments:   comments,
-		Total:      len(comments), // Incorrect, just to pass interface
-		Page:       page,
-		PageSize:   pageSize,
-		TotalPages: 1,
-	}, nil
+	return comments, int64(len(comments)), nil
 }
 
-func (p *GitHubProvider) PostComment(ctx context.Context, comment domain.Comment) error {
+func (p *GitHubProvider) PostComment(ctx context.Context, comment *domain.Comment) error {
 	// 需要 Token 才能发送
 	return fmt.Errorf("PostComment requires authentication token")
 }

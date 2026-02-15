@@ -100,7 +100,7 @@
           <div class="keyboard-container w-full">
             <div class="item" v-for="(item, index) in shortcutKeys" :key="index">
               <div class="keyboard-group-title text-xs font-bold text-muted-foreground my-2 border-b pb-1">{{ item.name
-                }}</div>
+              }}</div>
               <div class="list">
                 <div class="list-item" v-for="(listItem, listIndex) in item.list" :key="listIndex">
                   <div class="list-item-title text-foreground">{{ listItem.title }}</div>
@@ -371,7 +371,7 @@ import { toast } from '@/helpers/toast'
 import { ITag } from '@/interfaces/tag'
 import { EventsEmit, EventsOnce, EventsOn, EventsOff, BrowserOpenURL } from '@/wailsjs/runtime'
 import { SavePostFromFrontend, UploadImagesFromFrontend } from '@/wailsjs/go/facade/PostFacade'
-import { domain } from '@/wailsjs/go/models'
+import { domain, facade } from '@/wailsjs/go/models'
 
 const props = defineProps<{
   visible: boolean
@@ -622,25 +622,25 @@ const buildCurrentForm = () => {
       const currentPost = siteStore.posts[currentPostIndex]
       originalFileName = currentPost.fileName
 
-      form.title = currentPost.data.title
+      form.title = currentPost.title
       form.fileName = currentPost.fileName
-      form.tags = currentPost.data.tags || []
-      form.category = (currentPost.data.categories && currentPost.data.categories.length > 0) ? currentPost.data.categories[0] : ''
-      form.categories = currentPost.data.categories || []
-      form.date = dayjs(currentPost.data.date).isValid() ? dayjs(currentPost.data.date) : dayjs()
+      form.tags = currentPost.tags || []
+      form.category = (currentPost.categories && currentPost.categories.length > 0) ? currentPost.categories[0] : ''
+      form.categories = currentPost.categories || []
+      form.date = dayjs(currentPost.date).isValid() ? dayjs(currentPost.date) : dayjs()
       form.content = currentPost.content
-      form.published = currentPost.data.published
-      form.hideInList = currentPost.data.hideInList
-      form.isTop = currentPost.data.isTop
+      form.published = currentPost.published
+      form.hideInList = currentPost.hideInList
+      form.isTop = currentPost.isTop
 
-      if (currentPost.data.feature && currentPost.data.feature.includes('http')) {
+      if (currentPost.feature && currentPost.feature.includes('http')) {
         // External URL
-        form.featureImagePath = currentPost.data.feature
+        form.featureImagePath = currentPost.feature
         form.featureImage = { path: '', name: '', type: '' }
-      } else if (currentPost.data.feature && currentPost.data.feature.startsWith('/post-images/')) {
+      } else if (currentPost.feature && currentPost.feature.startsWith('/post-images/')) {
         // Local image saved in post-images directory
         // Convert relative path to absolute path using appDir
-        const fileName = currentPost.data.feature.substring(13) // Remove '/post-images/'
+        const fileName = currentPost.feature.substring(13) // Remove '/post-images/'
         const absolutePath = `${siteStore.site.appDir}/post-images/${fileName}`
         form.featureImage.path = absolutePath
         form.featureImage.name = fileName
@@ -814,7 +814,7 @@ const formatForm = (published?: boolean) => {
     tagIds: [],
   }
 
-  return new domain.PostInput(formData)
+  return new facade.PostForm(formData)
 }
 
 const saveDraft = async () => {

@@ -32,10 +32,10 @@ func listPostsHandler(s *service.PostService) server.ToolHandlerFunc {
 		for _, p := range posts {
 			simplified = append(simplified, map[string]interface{}{
 				"fileName":  p.FileName,
-				"title":     p.Data.Title,
-				"date":      p.Data.Date,
-				"tags":      p.Data.Tags,
-				"published": p.Data.Published,
+				"title":     p.Title,
+				"date":      p.Date,
+				"tags":      p.Tags,
+				"published": p.Published,
 			})
 		}
 
@@ -93,38 +93,48 @@ func createPostHandler(s *service.PostService) server.ToolHandlerFunc {
 			return mcp.NewToolResultError("content is required"), nil
 		}
 
-		input := domain.PostInput{
+		post := domain.Post{
 			Title:   title,
 			Content: content,
 		}
 
-		input.Date = request.GetString("date", "")
-		input.FileName = request.GetString("fileName", "")
-		input.Published = request.GetBool("published", true)
+		dateStr := request.GetString("date", "")
+		if dateStr != "" {
+			parsed, _ := time.Parse(domain.TimeLayout, dateStr)
+			if parsed.IsZero() {
+				parsed, _ = time.Parse(domain.DateLayout, dateStr)
+			}
+			post.Date = parsed
+		} else {
+			post.Date = time.Now()
+		}
+
+		post.FileName = request.GetString("fileName", "")
+		post.Published = request.GetBool("published", true)
 
 		if v := request.GetString("tags", ""); v != "" {
-			input.Tags = strings.Split(v, ",")
-			for i := range input.Tags {
-				input.Tags[i] = strings.TrimSpace(input.Tags[i])
+			post.Tags = strings.Split(v, ",")
+			for i := range post.Tags {
+				post.Tags[i] = strings.TrimSpace(post.Tags[i])
 			}
 		}
 		if v := request.GetString("categories", ""); v != "" {
-			input.Categories = strings.Split(v, ",")
-			for i := range input.Categories {
-				input.Categories[i] = strings.TrimSpace(input.Categories[i])
+			post.Categories = strings.Split(v, ",")
+			for i := range post.Categories {
+				post.Categories[i] = strings.TrimSpace(post.Categories[i])
 			}
 		}
 
 		// 如果未提供 fileName，从标题自动生成 slug
-		if input.FileName == "" {
-			input.FileName = generateSlug(title)
+		if post.FileName == "" {
+			post.FileName = generateSlug(title)
 		}
 
-		if err := s.SavePost(ctx, &input); err != nil {
+		if err := s.SavePost(ctx, &post); err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("Failed to create post: %v", err)), nil
 		}
 
-		return mcp.NewToolResultText(fmt.Sprintf("Post created successfully: %s", input.Title)), nil
+		return mcp.NewToolResultText(fmt.Sprintf("Post created successfully: %s", post.Title)), nil
 	}
 }
 
@@ -153,35 +163,45 @@ func updatePostHandler(s *service.PostService) server.ToolHandlerFunc {
 			return mcp.NewToolResultError(fmt.Sprintf("Post not found: %s", filename)), nil
 		}
 
-		// Prepare input from existing data
-		input := domain.PostInput{
-			Title:          existing.Data.Title,
-			Date:           existing.Data.Date,
-			Tags:           existing.Data.Tags,
-			Categories:     existing.Data.Categories,
-			Published:      existing.Data.Published,
-			Content:        existing.Content,
-			FileName:       existing.FileName,
-			DeleteFileName: existing.FileName, // Crucial for update: identify original file
-		}
+		// Prepare input from existing data (Clone/Copy)
+		post := *existing // Shallow copy is fine for fields we are modifying individually, but map/slice needs care if we were to modify in place without replacement.
+		// Actually, standard usage here is overwriting fields.
 
 		// Override with new values
 		if v := request.GetString("title", ""); v != "" {
-			input.Title = v
+			post.Title = v
 		}
 		if v := request.GetString("content", ""); v != "" {
-			input.Content = v
+			post.Content = v
 		}
-		input.Published = request.GetBool("published", input.Published)
-
-		if v := request.GetString("tags", ""); v != "" {
-			input.Tags = strings.Split(v, ",")
-			for i := range input.Tags {
-				input.Tags[i] = strings.TrimSpace(input.Tags[i])
+		// mcp-go handling of boolean: returns default if missing.
+		// We need to know if it was provided or not?
+		// current lib doesn't support "check if present".
+		// Assuming if explicit tool calls usually provide arguments they want to change.
+		// BUT for booleans, false is valid.
+		// Workaround: We can't easily detect "missing vs false" with this library helper without inspecting raw JSON if needed.
+		// However, for typical "update" tools, users might send all fields or we accept logic "if not provided, keep existing".
+		// request.GetBool defaults to false (or checks key existence? No, it takes default).
+		// Let's assume if the user explicitly wants to change it they pass it.
+		// Since we can't distinguish, we might need to check RawArguments if critical.
+		// For now, let's assume published is NOT optional in update if we use Require/Get pattern indiscriminately.
+		// OR: use a different pattern.
+		// Let's look at `request.Params.Arguments` map directly if available in this library version.
+		// It is available as `request.Arguments`.
+		if args, ok := request.Params.Arguments.(map[string]interface{}); ok {
+			if _, ok := args["published"]; ok {
+				post.Published = request.GetBool("published", post.Published)
 			}
 		}
 
-		if err := s.SavePost(ctx, &input); err != nil {
+		if v := request.GetString("tags", ""); v != "" {
+			post.Tags = strings.Split(v, ",")
+			for i := range post.Tags {
+				post.Tags[i] = strings.TrimSpace(post.Tags[i])
+			}
+		}
+
+		if err := s.SavePost(ctx, &post); err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("Failed to update post: %v", err)), nil
 		}
 
@@ -212,7 +232,7 @@ func deletePostHandler(s *service.PostService) server.ToolHandlerFunc {
 			if err != nil {
 				return mcp.NewToolResultError(fmt.Sprintf("Post not found: %s", filename)), nil
 			}
-			return mcp.NewToolResultText(fmt.Sprintf("⚠️ CONFIRMATION REQUIRED\nAre you sure you want to delete post '%s'?\nCall delete_post again with confirm=true to proceed.", post.Data.Title)), nil
+			return mcp.NewToolResultText(fmt.Sprintf("⚠️ CONFIRMATION REQUIRED\nAre you sure you want to delete post '%s'?\nCall delete_post again with confirm=true to proceed.", post.Title)), nil
 		}
 
 		if err := s.DeletePost(ctx, filename); err != nil {
