@@ -16,7 +16,7 @@ import (
 const DefaultDevStartPort = 3367
 
 // DefaultProdStartPort 生产模式默认起始端口
-const DefaultProdStartPort = 6060
+const DefaultProdStartPort = 2077
 
 // PreviewService 管理预览服务器的生命周期
 type PreviewService struct {
@@ -60,12 +60,42 @@ func (s *PreviewService) StartPreviewServer(ctx context.Context) (string, error)
 		return fmt.Sprintf("http://127.0.0.1:%d", s.port), nil
 	}
 
-	// 1. 原子操作：监听端口 0，系统自动分配空闲端口
-	// 注意：我们不关闭 listener，而是直接传给 Server 使用，避免端口被抢占
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	// Determine preferred port
+	basePort := DefaultProdStartPort
+	if s.IsDevelopmentMode() {
+		basePort = DefaultDevStartPort
+	}
+
+	// Helper to try listen
+	tryListen := func(p int) (net.Listener, error) {
+		return net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", p))
+	}
+
+	// Try ports incrementally
+	var listener net.Listener
+	var err error
+	maxRetries := 20
+
+	for i := 0; i < maxRetries; i++ {
+		port := basePort + i
+		listener, err = tryListen(port)
+		if err == nil {
+			break // Successfully bound
+		}
+		// Only log if it's the specific port we wanted, to avoid spamming logs if we are just scanning
+		if i == 0 {
+			fmt.Fprintf(os.Stderr, "Preview Server: Port %d is in use, attempting to find next available port...\n", port)
+		}
+	}
+
+	// If scanning fails, fallback to random port
 	if err != nil {
-		s.sendToast(ctx, "预览服务启动失败："+err.Error(), "error")
-		return "", fmt.Errorf("无法获取空闲端口: %w", err)
+		fmt.Fprintf(os.Stderr, "Preview Server: Could not find available port in range %d-%d, falling back to random port...\n", basePort, basePort+maxRetries-1)
+		listener, err = tryListen(0)
+		if err != nil {
+			s.sendToast(ctx, "预览服务启动失败："+err.Error(), "error")
+			return "", fmt.Errorf("无法获取可用端口: %w", err)
+		}
 	}
 
 	// 2. 获取实际分配的端口

@@ -2,6 +2,7 @@ package template
 
 import (
 	htmltemplate "html/template"
+	"path"
 	"strings"
 	"time"
 )
@@ -64,10 +65,11 @@ func TemplateFuncs() htmltemplate.FuncMap {
 
 		// 截断字符串
 		"truncate": func(length int, s string) string {
-			if len(s) <= length {
+			r := []rune(s)
+			if len(r) <= length {
 				return s
 			}
-			return s[:length] + "..."
+			return string(r[:length]) + "..."
 		},
 
 		// 检查切片是否为空
@@ -111,45 +113,24 @@ func TemplateFuncs() htmltemplate.FuncMap {
 
 		// URL 路径拼接
 		"urlJoin": func(parts ...string) string {
-			var result strings.Builder
-			for i, part := range parts {
-				part = strings.TrimSpace(part)
-				if part == "" {
-					continue
-				}
-				if i > 0 {
-					part = strings.TrimPrefix(part, "/")
-				}
-				part = strings.TrimSuffix(part, "/")
-				if result.Len() > 0 && !strings.HasSuffix(result.String(), "/") {
-					result.WriteString("/")
-				}
-				result.WriteString(part)
-			}
-			return result.String()
+			return path.Join(parts...)
 		},
 	}
 }
 
 // convertDateFormat 将通用日期格式转换为 Go 格式
 func convertDateFormat(format string) string {
-	// 常见格式映射
-	replacements := map[string]string{
-		"YYYY": "2006",
-		"YY":   "06",
-		"MM":   "01",
-		"DD":   "02",
-		"HH":   "15",
-		"mm":   "04",
-		"ss":   "05",
-		"M":    "1",
-		"D":    "2",
-	}
-
-	result := format
-	for from, to := range replacements {
-		result = strings.ReplaceAll(result, from, to)
-	}
-
-	return result
+	// 必须按长度降序排列，防止 "YY" 匹配到 "YYYY"
+	replacer := strings.NewReplacer(
+		"YYYY", "2006",
+		"YY", "06",
+		"MM", "01",
+		"DD", "02",
+		"HH", "15",
+		"mm", "04",
+		"ss", "05",
+		"M", "1",
+		"D", "2",
+	)
+	return replacer.Replace(format)
 }

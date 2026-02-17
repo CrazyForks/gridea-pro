@@ -13,8 +13,8 @@ type Memo struct {
 	Content   string    `json:"content"`
 	Tags      []string  `json:"tags"`
 	Images    []string  `json:"images"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	CreatedAt time.Time `json:"createdAt" ts_type:"string"`
+	UpdatedAt time.Time `json:"updatedAt" ts_type:"string"`
 }
 
 // Validate 校验闪念数据

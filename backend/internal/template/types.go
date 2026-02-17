@@ -79,27 +79,34 @@ type SiteUtils struct {
 	Now int64 `json:"now"`
 }
 
+// SimplePostView 文章简要视图（用于上下文引用）
+type SimplePostView struct {
+	Title    string `json:"title"`
+	Link     string `json:"link"`
+	FileName string `json:"fileName"`
+}
+
 // PostView 文章视图
 type PostView struct {
-	Title       string         `json:"title"`
-	FileName    string         `json:"fileName"`
-	Content     template.HTML  `json:"content"`  // HTML 内容，不会被转义
-	Abstract    template.HTML  `json:"abstract"` // HTML 摘要，不会被转义
-	Description string         `json:"description"`
-	Link        string         `json:"link"`
-	Feature     string         `json:"feature"`
-	Date        time.Time      `json:"date"`
-	DateFormat  string         `json:"dateFormat"`
-	Published   bool           `json:"published"`
-	HideInList  bool           `json:"hideInList"`
-	IsTop       bool           `json:"isTop"`
-	Tags        []TagView      `json:"tags"`
-	Categories  []CategoryView `json:"categories"`
-	TagsString  string         `json:"tagsString"` // 标签逗号分隔字符串
-	Stats       PostStats      `json:"stats"`
-	Toc         template.HTML  `json:"toc"` // 目录 HTML，不会被转义
-	NextPost    *PostView      `json:"nextPost"`
-	PrevPost    *PostView      `json:"prevPost"`
+	Title       string          `json:"title"`
+	FileName    string          `json:"fileName"`
+	Content     template.HTML   `json:"content"`  // HTML 内容，不会被转义
+	Abstract    template.HTML   `json:"abstract"` // HTML 摘要，不会被转义
+	Description string          `json:"description"`
+	Link        string          `json:"link"`
+	Feature     string          `json:"feature"`
+	Date        time.Time       `json:"date"`
+	DateFormat  string          `json:"dateFormat"`
+	Published   bool            `json:"published"`
+	HideInList  bool            `json:"hideInList"`
+	IsTop       bool            `json:"isTop"`
+	Tags        []TagView       `json:"tags"`
+	Categories  []CategoryView  `json:"categories"`
+	TagsString  string          `json:"tagsString"` // 标签逗号分隔字符串
+	Stats       PostStats       `json:"stats"`
+	Toc         template.HTML   `json:"toc"` // 目录 HTML，不会被转义
+	NextPost    *SimplePostView `json:"nextPost"`
+	PrevPost    *SimplePostView `json:"prevPost"`
 }
 
 // PostStats 文章统计

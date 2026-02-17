@@ -109,7 +109,7 @@ func parseTime(v interface{}) time.Time {
 		if t == "" {
 			return time.Now()
 		}
-		if parsed, err := utils.ParseTime(t); err == nil {
+		if parsed, err := utils.ParseTime(t, time.Local); err == nil {
 			return parsed
 		}
 		if t2, err := time.ParseInLocation(domain.TimeLayout, t, time.Local); err == nil {

@@ -138,10 +138,17 @@ func openInTerminal(path string) {
 
 func Run(assets embed.FS) {
 	// 初始化 ConfigManager
-	configManager := config.NewConfigManager()
-	conf, err := configManager.LoadConfig()
+	configManager, err := config.NewConfigManager()
 	if err != nil {
-		log.Printf("Warning: Failed to load config: %v", err)
+		log.Printf("Warning: Failed to initialize config manager: %v", err)
+	}
+
+	var conf *config.AppConfig
+	if configManager != nil {
+		conf, err = configManager.LoadConfig()
+		if err != nil {
+			log.Printf("Warning: Failed to load config: %v", err)
+		}
 	}
 
 	// 初始化路径：优先使用配置中的路径，否则使用默认的 Documents/Gridea Pro
@@ -522,11 +529,11 @@ func buildMenu(
 	helpMenu.AddSeparator()
 
 	helpMenu.AddText(T("help.viewLogs"), nil, func(_ *menu.CallbackData) {
-		home, err := os.UserHomeDir()
+		configDir, err := os.UserConfigDir()
 		if err != nil {
 			return
 		}
-		logDir := filepath.Join(home, ".gridea pro")
+		logDir := filepath.Join(configDir, config.AppName)
 		if _, err := os.Stat(logDir); os.IsNotExist(err) {
 			_ = os.MkdirAll(logDir, 0755)
 		}

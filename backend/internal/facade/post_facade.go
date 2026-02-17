@@ -145,7 +145,7 @@ func (f *PostFacade) mapFormToPost(form PostForm) (*domain.Post, error) {
 		parsedDate = time.Now()
 	} else {
 		var err error
-		parsedDate, err = utils.ParseTime(form.Date)
+		parsedDate, err = utils.ParseTime(form.Date, time.Local)
 		if err != nil {
 			return nil, fmt.Errorf("invalid date format: %w", err)
 		}

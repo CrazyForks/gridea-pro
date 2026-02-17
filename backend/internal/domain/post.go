@@ -11,7 +11,7 @@ import (
 type Post struct {
 	// Metadata
 	Title            string    `json:"title"`
-	Date             time.Time `json:"date"`
+	Date             time.Time `json:"date" ts_type:"string"`
 	Tags             []string  `json:"tags"`
 	TagIDs           []string  `json:"tagIds"`
 	Categories       []string  `json:"categories"`

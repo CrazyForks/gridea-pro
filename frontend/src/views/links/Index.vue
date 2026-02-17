@@ -211,7 +211,7 @@ const editLink = (link: ILink, index: number) => {
 }
 
 const saveLink = async () => {
-  buildId()
+  // buildId() - Backend handles ID generation for new links.
 
   try {
     const linkForm = new facade.LinkForm({

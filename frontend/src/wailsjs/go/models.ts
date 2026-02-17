@@ -23,8 +23,7 @@ export namespace domain {
 	    email: string;
 	    url: string;
 	    content: string;
-	    // Go type: time
-	    createdAt: any;
+	    createdAt: string;
 	    articleId: string;
 	    articleTitle: string;
 	    articleUrl: string;
@@ -44,7 +43,7 @@ export namespace domain {
 	        this.email = source["email"];
 	        this.url = source["url"];
 	        this.content = source["content"];
-	        this.createdAt = this.convertValues(source["createdAt"], null);
+	        this.createdAt = source["createdAt"];
 	        this.articleId = source["articleId"];
 	        this.articleTitle = source["articleTitle"];
 	        this.articleUrl = source["articleUrl"];
@@ -52,24 +51,6 @@ export namespace domain {
 	        this.parentNick = source["parentNick"];
 	        this.isNew = source["isNew"];
 	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
 	}
 	export class CommentSettings {
 	    enable: boolean;
@@ -126,10 +107,8 @@ export namespace domain {
 	    content: string;
 	    tags: string[];
 	    images: string[];
-	    // Go type: time
-	    createdAt: any;
-	    // Go type: time
-	    updatedAt: any;
+	    createdAt: string;
+	    updatedAt: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Memo(source);
@@ -141,27 +120,9 @@ export namespace domain {
 	        this.content = source["content"];
 	        this.tags = source["tags"];
 	        this.images = source["images"];
-	        this.createdAt = this.convertValues(source["createdAt"], null);
-	        this.updatedAt = this.convertValues(source["updatedAt"], null);
+	        this.createdAt = source["createdAt"];
+	        this.updatedAt = source["updatedAt"];
 	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
 	}
 	export class TagStat {
 	    name: string;
@@ -302,8 +263,7 @@ export namespace domain {
 	}
 	export class Post {
 	    title: string;
-	    // Go type: time
-	    date: any;
+	    date: string;
 	    tags: string[];
 	    tagIds: string[];
 	    categories: string[];
@@ -325,7 +285,7 @@ export namespace domain {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.title = source["title"];
-	        this.date = this.convertValues(source["date"], null);
+	        this.date = source["date"];
 	        this.tags = source["tags"];
 	        this.tagIds = source["tagIds"];
 	        this.categories = source["categories"];

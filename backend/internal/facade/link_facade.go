@@ -2,8 +2,11 @@ package facade
 
 import (
 	"context"
+	"fmt"
 	"gridea-pro/backend/internal/domain"
 	"gridea-pro/backend/internal/service"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // LinkFacade wraps LinkService
@@ -58,6 +61,7 @@ func (f *LinkFacade) SaveLinkFromFrontend(form LinkForm) ([]domain.Link, error) 
 
 	if newLink.ID == "" {
 		if err := f.internal.CreateLink(ctx, newLink); err != nil {
+			runtime.LogError(ctx, fmt.Sprintf("Failed to create link: %v", err))
 			return nil, err
 		}
 	} else {

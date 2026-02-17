@@ -1,15 +1,12 @@
 package comment
 
 import (
-	"bytes"
 	"context"
 	"crypto/md5"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"gridea-pro/backend/internal/domain"
-	"io"
-	"net/http"
+	"log/slog"
 	"net/url"
 	"strings"
 	"time"
@@ -17,53 +14,19 @@ import (
 
 // ValineProvider LeanCloud/Valine 评论提供者
 type ValineProvider struct {
-	AppID      string
-	AppKey     string
-	MasterKey  string
-	ServerURLs string
-}
-
-func (p *ValineProvider) DeleteComment(ctx context.Context, commentID string) error {
-	if p.MasterKey == "" {
-		return fmt.Errorf("master key is required to delete comments")
-	}
-
-	// LeanCloud DELETE /1.1/classes/Comment/:objectId
-	apiURL := fmt.Sprintf("%s/1.1/classes/Comment/%s", strings.TrimRight(p.ServerURLs, "/"), commentID)
-	req, err := http.NewRequestWithContext(ctx, "DELETE", apiURL, nil)
-	if err != nil {
-		return err
-	}
-
-	req.Header.Set("X-LC-Id", p.AppID)
-	req.Header.Set("X-LC-Key", p.MasterKey)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode >= 400 {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("failed to delete comment: %s", string(body))
-	}
-
-	return nil
+	*BaseProvider
+	config *ValineConfig
 }
 
 // NewValineProvider 创建 Valine Provider
-func NewValineProvider(appID, appKey, masterKey, serverURLs string) *ValineProvider {
-	if serverURLs == "" {
+func NewValineProvider(config *ValineConfig, logger *slog.Logger) *ValineProvider {
+	if config.ServerURLs == "" {
 		// 默认 LeanCloud API 域名 (主要用于国际版，国内版通常需要自定义域名)
-		serverURLs = "https://leancloud.cn"
+		config.ServerURLs = "https://leancloud.cn"
 	}
 	return &ValineProvider{
-		AppID:      appID,
-		AppKey:     appKey,
-		MasterKey:  masterKey,
-		ServerURLs: serverURLs,
+		BaseProvider: NewBaseProvider(15*time.Second, logger),
+		config:       config,
 	}
 }
 
@@ -87,6 +50,18 @@ type leanCloudResponse struct {
 	Results []leanCloudComment `json:"results"`
 }
 
+func (p *ValineProvider) getHeaders() map[string]string {
+	headers := map[string]string{
+		"X-LC-Id": p.config.AppID,
+	}
+	if p.config.MasterKey != "" {
+		headers["X-LC-Key"] = fmt.Sprintf("%s,master", p.config.MasterKey)
+	} else {
+		headers["X-LC-Key"] = p.config.AppKey
+	}
+	return headers
+}
+
 func (p *ValineProvider) GetComments(ctx context.Context, articleID string) ([]domain.Comment, error) {
 	// Valine 使用 url 作为文章标识
 	//构建查询条件: {"url": articleID}
@@ -95,45 +70,16 @@ func (p *ValineProvider) GetComments(ctx context.Context, articleID string) ([]d
 	params.Add("where", where)
 	params.Add("order", "-createdAt")
 
-	apiURL := fmt.Sprintf("%s/1.1/classes/Comment?%s", p.ServerURLs, params.Encode())
-
-	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	p.setHeaders(req)
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("LeanCloud API error: %d %s", resp.StatusCode, string(body))
-	}
+	apiURL := fmt.Sprintf("%s/1.1/classes/Comment?%s", p.config.ServerURLs, params.Encode())
 
 	var result leanCloudResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	if err := p.DoJSON(ctx, "GET", apiURL, nil, &result, p.getHeaders()); err != nil {
 		return nil, err
 	}
 
 	comments := make([]domain.Comment, 0, len(result.Results))
 	for _, c := range result.Results {
-		comments = append(comments, domain.Comment{
-			ID:         c.ObjectId,
-			Nickname:   c.Nick,
-			URL:        c.Link,
-			Content:    c.Comment,
-			CreatedAt:  parseValineTime(c.CreatedAt),
-			ArticleID:  c.Url,
-			ParentID:   c.Pid,
-			ParentNick: c.Pnick,
-			Email:      c.Mail,
-			Avatar:     p.getGravatar(c.Mail),
-		})
+		comments = append(comments, p.convertComment(c))
 	}
 
 	return comments, nil
@@ -144,46 +90,16 @@ func (p *ValineProvider) GetRecentComments(ctx context.Context, limit int) ([]do
 	params.Add("limit", fmt.Sprintf("%d", limit))
 	params.Add("order", "-createdAt")
 
-	apiURL := fmt.Sprintf("%s/1.1/classes/Comment?%s", p.ServerURLs, params.Encode())
-
-	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	p.setHeaders(req)
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("LeanCloud API error: %d %s", resp.StatusCode, string(body))
-	}
+	apiURL := fmt.Sprintf("%s/1.1/classes/Comment?%s", p.config.ServerURLs, params.Encode())
 
 	var result leanCloudResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	if err := p.DoJSON(ctx, "GET", apiURL, nil, &result, p.getHeaders()); err != nil {
 		return nil, err
 	}
 
 	comments := make([]domain.Comment, 0, len(result.Results))
 	for _, c := range result.Results {
-		comments = append(comments, domain.Comment{
-			ID:         c.ObjectId,
-			Nickname:   c.Nick,
-			URL:        c.Link,
-			Content:    c.Comment,
-			CreatedAt:  parseValineTime(c.CreatedAt),
-			ArticleID:  c.Url,
-			ParentID:   c.Pid,
-			ParentNick: c.Pnick,
-			Email:      c.Mail,
-			Avatar:     p.getGravatar(c.Mail),
-			// IsNew: true, // TODO: 根据本地记录判断是否新评论
-		})
+		comments = append(comments, p.convertComment(c))
 	}
 
 	return comments, nil
@@ -201,81 +117,44 @@ func (p *ValineProvider) GetAdminComments(ctx context.Context, page, pageSize in
 	limit := pageSize
 
 	// 1. Get List
-	apiURL := fmt.Sprintf("%s/1.1/classes/Comment?skip=%d&limit=%d&order=-createdAt", strings.TrimRight(p.ServerURLs, "/"), skip, limit)
-	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
-	if err != nil {
-		return nil, 0, err
-	}
-	p.setHeaders(req)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, 0, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, 0, fmt.Errorf("failed to fetch admin comments: %d", resp.StatusCode)
-	}
+	apiURL := fmt.Sprintf("%s/1.1/classes/Comment?skip=%d&limit=%d&order=-createdAt", strings.TrimRight(p.config.ServerURLs, "/"), skip, limit)
 
 	var result leanCloudResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	if err := p.DoJSON(ctx, "GET", apiURL, nil, &result, p.getHeaders()); err != nil {
 		return nil, 0, err
 	}
 
 	comments := make([]domain.Comment, 0, len(result.Results))
 	for _, c := range result.Results {
-		comments = append(comments, domain.Comment{
-			ID:         c.ObjectId,
-			Nickname:   c.Nick,
-			URL:        c.Link,
-			Content:    c.Comment,
-			CreatedAt:  parseValineTime(c.CreatedAt),
-			ArticleID:  c.Url,
-			ParentID:   c.Pid,
-			ParentNick: c.Pnick,
-			Email:      c.Mail,
-			Avatar:     p.getGravatar(c.Mail),
-		})
+		comments = append(comments, p.convertComment(c))
 	}
 
 	// 2. Get Count
-	countURL := fmt.Sprintf("%s/1.1/classes/Comment?count=1&limit=0", strings.TrimRight(p.ServerURLs, "/"))
-	reqCount, err := http.NewRequestWithContext(ctx, "GET", countURL, nil)
-	if err != nil {
-		return comments, 0, nil // Return comments even if count fails
-	}
-	p.setHeaders(reqCount)
-	respCount, err := client.Do(reqCount)
-	if err == nil {
-		defer respCount.Body.Close()
-		if respCount.StatusCode == http.StatusOK {
-			var countResult struct {
-				Count int64 `json:"count"`
-			}
-			if err := json.NewDecoder(respCount.Body).Decode(&countResult); err == nil {
-				return comments, countResult.Count, nil
-			}
-		}
+	countURL := fmt.Sprintf("%s/1.1/classes/Comment?count=1&limit=0", strings.TrimRight(p.config.ServerURLs, "/"))
+	var countResult struct {
+		Count int64 `json:"count"`
 	}
 
-	return comments, int64(len(comments)), nil // Fallback count
+	// Try to get count, but don't fail hard
+	if err := p.DoJSON(ctx, "GET", countURL, nil, &countResult, p.getHeaders()); err != nil {
+		p.logger.WarnContext(ctx, "Failed to fetch comment count", "err", err)
+		return comments, int64(len(comments)), nil // Fallback count
+	}
+
+	return comments, countResult.Count, nil
 }
 
 func (p *ValineProvider) PostComment(ctx context.Context, comment *domain.Comment) error {
 	// Valine Create Comment
 	// POST /1.1/classes/Comment
-	apiURL := fmt.Sprintf("%s/1.1/classes/Comment", strings.TrimRight(p.ServerURLs, "/"))
+	apiURL := fmt.Sprintf("%s/1.1/classes/Comment", strings.TrimRight(p.config.ServerURLs, "/"))
 
 	lcComment := map[string]interface{}{
-		"nick":      comment.Nickname,
-		"comment":   comment.Content,
-		"mail":      comment.Email,
-		"link":      comment.URL,
-		"url":       comment.ArticleID,
-		"createdAt": time.Now().UTC().Format(time.RFC3339),
-		"updatedAt": time.Now().UTC().Format(time.RFC3339),
+		"nick":    comment.Nickname,
+		"comment": comment.Content,
+		"mail":    comment.Email,
+		"link":    comment.URL,
+		"url":     comment.ArticleID,
 	}
 
 	if comment.ParentID != "" {
@@ -295,58 +174,54 @@ func (p *ValineProvider) PostComment(ctx context.Context, comment *domain.Commen
 
 	lcComment["ua"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.2 Safari/605.1.15"
 
-	jsonData, err := json.Marshal(lcComment)
-	if err != nil {
+	// Valine API returns 201 Created on success
+	var result map[string]interface{} // Response usually contains objectId and createdAt
+	if err := p.DoJSON(ctx, "POST", apiURL, lcComment, &result, p.getHeaders()); err != nil {
 		return err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewBuffer(jsonData))
-	if err != nil {
-		return err
+	return nil
+}
+
+func (p *ValineProvider) DeleteComment(ctx context.Context, commentID string) error {
+	if p.config.MasterKey == "" {
+		return fmt.Errorf("%w: master key is required to delete comments", ErrAuthFailed)
 	}
 
-	p.setHeaders(req)
-	req.Header.Set("Content-Type", "application/json")
+	// LeanCloud DELETE /1.1/classes/Comment/:objectId
+	apiURL := fmt.Sprintf("%s/1.1/classes/Comment/%s", strings.TrimRight(p.config.ServerURLs, "/"), commentID)
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
+	// DoJSON also supports DELETE and checks for >= 400 errors
+	if err := p.DoJSON(ctx, "DELETE", apiURL, nil, nil, p.getHeaders()); err != nil {
 		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("LeanCloud API error: %d %s", resp.StatusCode, string(body))
 	}
 
 	return nil
 }
 
 func (p *ValineProvider) getCommentByID(ctx context.Context, id string) (*leanCloudComment, error) {
-	apiURL := fmt.Sprintf("%s/1.1/classes/Comment/%s", strings.TrimRight(p.ServerURLs, "/"), id)
-	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
-	if err != nil {
-		return nil, err
-	}
-	p.setHeaders(req)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("API error: %d", resp.StatusCode)
-	}
+	apiURL := fmt.Sprintf("%s/1.1/classes/Comment/%s", strings.TrimRight(p.config.ServerURLs, "/"), id)
 
 	var comment leanCloudComment
-	if err := json.NewDecoder(resp.Body).Decode(&comment); err != nil {
+	if err := p.DoJSON(ctx, "GET", apiURL, nil, &comment, p.getHeaders()); err != nil {
 		return nil, err
 	}
 	return &comment, nil
+}
+
+func (p *ValineProvider) convertComment(c leanCloudComment) domain.Comment {
+	return domain.Comment{
+		ID:         c.ObjectId,
+		Nickname:   c.Nick,
+		URL:        c.Link,
+		Content:    c.Comment,
+		CreatedAt:  parseValineTime(c.CreatedAt),
+		ArticleID:  c.Url,
+		ParentID:   c.Pid,
+		ParentNick: c.Pnick,
+		Email:      c.Mail,
+		Avatar:     p.getGravatar(c.Mail),
+	}
 }
 
 func parseValineTime(t string) time.Time {
@@ -357,15 +232,6 @@ func parseValineTime(t string) time.Time {
 	}
 	// Try other formats if needed, or return current time/zero time
 	return time.Now()
-}
-
-func (p *ValineProvider) setHeaders(req *http.Request) {
-	req.Header.Set("X-LC-Id", p.AppID)
-	if p.MasterKey != "" {
-		req.Header.Set("X-LC-Key", fmt.Sprintf("%s,master", p.MasterKey))
-	} else {
-		req.Header.Set("X-LC-Key", p.AppKey)
-	}
 }
 
 func (p *ValineProvider) getGravatar(email string) string {

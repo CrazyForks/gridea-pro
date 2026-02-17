@@ -41,13 +41,24 @@ func (s *LinkService) CreateLink(ctx context.Context, link domain.Link) error {
 
 	links, err := s.repo.List(ctx)
 	if err != nil {
+		fmt.Printf("LinkService: Failed to list links: %v\n", err)
 		return err
 	}
 
-	link.ID = gonanoid.Must(nanoIDLength) // Use nanoIDLength constant
+	// Use explicit alphabet for consistency and error handling
+	id, err := gonanoid.Generate(nanoIDAlphabet, nanoIDLength)
+	if err != nil {
+		fmt.Printf("LinkService: Failed to generate ID: %v\n", err)
+		return err
+	}
+	link.ID = id
 	links = append(links, link)
 
-	return s.repo.SaveAll(ctx, links)
+	if err := s.repo.SaveAll(ctx, links); err != nil {
+		fmt.Printf("LinkService: Failed to save links: %v\n", err)
+		return err
+	}
+	return nil
 }
 
 func (s *LinkService) UpdateLink(ctx context.Context, link domain.Link) error {

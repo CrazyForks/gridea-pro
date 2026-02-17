@@ -2,28 +2,22 @@ package comment
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"gridea-pro/backend/internal/domain"
-	"net/http"
+	"log/slog"
 	"time"
 )
 
 // GitHubProvider 处理 Gitalk 和 Giscus (REST API fallback)
 type GitHubProvider struct {
-	Owner        string
-	Repo         string
-	ClientID     string
-	ClientSecret string
-	AccessToken  string // 可选，如果有 Personal Access Token 更好
+	*BaseProvider
+	config *GitHubConfig
 }
 
-func NewGitHubProvider(owner, repo, clientID, clientSecret string) *GitHubProvider {
+func NewGitHubProvider(config *GitHubConfig, logger *slog.Logger) *GitHubProvider {
 	return &GitHubProvider{
-		Owner:        owner,
-		Repo:         repo,
-		ClientID:     clientID,
-		ClientSecret: clientSecret,
+		BaseProvider: NewBaseProvider(15*time.Second, logger),
+		config:       config,
 	}
 }
 
@@ -45,39 +39,26 @@ type githubUser struct {
 
 func (p *GitHubProvider) GetComments(ctx context.Context, articleID string) ([]domain.Comment, error) {
 	// 获取指定文章的评论需要先找到对应的 Issue，逻辑较复杂，暂时只实现 GetRecentComments
-	return nil, fmt.Errorf("GitHubProvider GetComments not implemented yet (requires Issue lookup strategy)")
+	return nil, fmt.Errorf("%w: GitHubProvider GetComments not implemented yet (requires Issue lookup logic)", ErrNotImplemented)
 }
 
 func (p *GitHubProvider) GetRecentComments(ctx context.Context, limit int) ([]domain.Comment, error) {
 	// https://docs.github.com/en/rest/issues/comments?apiVersion=2022-11-28#list-issue-comments-for-a-repository
 	// GET /repos/{owner}/{repo}/issues/comments
 
-	apiURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/issues/comments?sort=created&direction=desc&per_page=%d", p.Owner, p.Repo, limit)
+	apiURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/issues/comments?sort=created&direction=desc&per_page=%d", p.config.Owner, p.config.Repo, limit)
 
-	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, nil)
-	if err != nil {
-		return nil, err
+	headers := map[string]string{
+		"Accept":               "application/vnd.github+json",
+		"X-GitHub-Api-Version": "2022-11-28",
 	}
 
-	req.Header.Set("Accept", "application/vnd.github+json")
-	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
-	// 如果配置了 ClientID/Secret，目前 GitHub API 主要通过 Token 鉴权。
-	// 对于公开仓库的公开评论，可以直接访问，但有速率限制。
-	// Gitalk 配置中有 ClientID/Secret，主要用于前端 OAuth 换取 Token。
-	// 后端如果没有 Token，只能匿名访问（60次/小时限制）。
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("GitHub API error: %d", resp.StatusCode)
-	}
+	// 如果配置了 AccessToken (目前 Config 暂未包含，但 Gitalk 主要靠前端，后端作为辅助)
+	// 如果 future 需要后端 Token，可以在 GitHubConfig 中添加并在这里使用
 
 	var ghComments []githubComment
-	if err := json.NewDecoder(resp.Body).Decode(&ghComments); err != nil {
+	// DoJSON handle status code check and decoding
+	if err := p.DoJSON(ctx, "GET", apiURL, nil, &ghComments, headers); err != nil {
 		return nil, err
 	}
 
@@ -111,9 +92,9 @@ func (p *GitHubProvider) GetAdminComments(ctx context.Context, page, pageSize in
 
 func (p *GitHubProvider) PostComment(ctx context.Context, comment *domain.Comment) error {
 	// 需要 Token 才能发送
-	return fmt.Errorf("PostComment requires authentication token")
+	return fmt.Errorf("%w: PostComment requires authentication token", ErrAuthFailed)
 }
 
 func (p *GitHubProvider) DeleteComment(ctx context.Context, commentID string) error {
-	return fmt.Errorf("DeleteComment requires authentication token")
+	return fmt.Errorf("%w: DeleteComment requires authentication token", ErrAuthFailed)
 }

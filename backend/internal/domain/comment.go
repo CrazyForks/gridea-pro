@@ -36,7 +36,7 @@ type Comment struct {
 	Email        string    `json:"email"`
 	URL          string    `json:"url"`
 	Content      string    `json:"content"`
-	CreatedAt    time.Time `json:"createdAt"` // 使用 standard time.Time
+	CreatedAt    time.Time `json:"createdAt" ts_type:"string"` // 使用 standard time.Time
 	ArticleID    string    `json:"articleId"`
 	ArticleTitle string    `json:"articleTitle"`
 	ArticleURL   string    `json:"articleUrl"`

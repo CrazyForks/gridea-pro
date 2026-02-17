@@ -140,7 +140,12 @@ func (a *App) handleSourceFolderChange(newPath string) {
 	}
 
 	// 保存配置
-	cm := config.NewConfigManager()
+	cm, err := config.NewConfigManager()
+	if err != nil {
+		a.ShowToast("初始化配置管理器失败: "+err.Error(), "error")
+		runtime.EventsEmit(a.ctx, EventAppSourceFolderSet, false)
+		return
+	}
 	if err := cm.UpdateSourceFolder(newPath); err != nil {
 		a.ShowToast("保存配置失败: "+err.Error(), "error")
 		runtime.EventsEmit(a.ctx, EventAppSourceFolderSet, false)
@@ -182,7 +187,6 @@ func (a *App) handleSourceFolderChange(newPath string) {
 	if a.resourceWatcher != nil {
 		a.resourceWatcher.Close()
 	}
-	var err error
 	a.resourceWatcher, err = service.NewResourceWatcher(newPath)
 	if err != nil {
 		runtime.LogError(a.ctx, "Failed to create resource watcher for new path: "+err.Error())
