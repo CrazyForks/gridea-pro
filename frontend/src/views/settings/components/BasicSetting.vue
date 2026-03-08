@@ -88,6 +88,13 @@ href="https://gridea.dev/netlify" target="_blank"
             <div class="text-xs text-muted-foreground mt-1.5">从 Account Settings -> Tokens 生成</div>
           </div>
         </div>
+        <div class="grid grid-cols-[180px_1fr] items-center gap-4">
+          <label class="text-sm font-medium text-right text-muted-foreground">{{ t('settings.network.customDomain') }}</label>
+          <div class="max-w-sm">
+            <Input v-model="form.cname" placeholder="mydomain.com" class="" />
+            <div class="text-xs text-muted-foreground mt-1.5">{{ t('settings.network.vercelDomainTip') }}</div>
+          </div>
+        </div>
       </template>
 
       <!-- Git Platforms -->
@@ -203,42 +210,6 @@ href="https://gridea.dev/netlify" target="_blank"
         </div>
       </template>
 
-      <!-- Proxy -->
-      <template v-if="form.platform !== 'sftp'">
-        <div class="grid grid-cols-[180px_1fr] items-center gap-4">
-          <label class="text-sm font-medium text-right text-muted-foreground">{{ t('settings.network.proxy') }}</label>
-          <div class="w-full max-w-sm">
-            <Select
-:model-value="String(form.enabledProxy || '')"
-              @update:model-value="(v) => form.enabledProxy = v as any">
-              <SelectTrigger>
-                <SelectValue :placeholder="t('settings.network.proxy')" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="direct">Direct</SelectItem>
-                <SelectItem value="proxy">Proxy</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <template v-if="form.enabledProxy === 'proxy'">
-          <div class="grid grid-cols-[180px_1fr] items-center gap-4">
-            <label class="text-sm font-medium text-right text-muted-foreground">{{ t('settings.network.proxyAddress')
-            }}</label>
-            <div class="max-w-sm">
-              <Input v-model="form.proxyPath" class="" />
-            </div>
-          </div>
-          <div class="grid grid-cols-[180px_1fr] items-center gap-4">
-            <label class="text-sm font-medium text-right text-muted-foreground">{{ t('settings.network.proxyPort')
-            }}</label>
-            <div class="max-w-sm">
-              <Input v-model="form.proxyPort" class="" />
-            </div>
-          </div>
-        </template>
-      </template>
-
     </div>
 
     <footer-box>
@@ -249,8 +220,7 @@ href="https://gridea.dev/netlify" target="_blank"
 variant="secondary" :disabled="detectLoading || !canSubmit"
             class="w-auto h-8 text-xs justify-center rounded-full border-primary/20 hover:bg-primary/5 cursor-pointer"
             @click="remoteDetect">
-            <span v-if="detectLoading" class="mr-2">Checking...</span>
-            {{ t('settings.network.testConnection') }}
+            {{ detectLoading ? t('settings.network.checking') : t('settings.network.testConnection') }}
           </Button>
           <Button
 variant="default" :disabled="!canSubmit"
@@ -288,6 +258,19 @@ const detectLoading = ref(false)
 const remoteType = ref('password')
 const protocol = ref('https://')
 
+// 每个平台的专属字段（切换时独立保存/恢复）
+const platformFields: Record<string, string[]> = {
+  github: ['domain', 'repository', 'branch', 'username', 'email', 'tokenUsername', 'token', 'cname'],
+  gitee: ['domain', 'repository', 'branch', 'username', 'email', 'tokenUsername', 'token', 'cname'],
+  coding: ['domain', 'repository', 'branch', 'username', 'email', 'tokenUsername', 'token', 'cname'],
+  netlify: ['domain', 'netlifySiteId', 'netlifyAccessToken'],
+  vercel: ['domain', 'repository', 'token', 'cname'],
+  sftp: ['domain', 'port', 'server', 'username', 'password', 'privateKey', 'remotePath'],
+}
+
+// 平台配置缓存
+const platformConfigs = ref<Record<string, Record<string, any>>>({})
+
 const form = reactive<ISetting>({
   platform: 'github',
   domain: '',
@@ -303,11 +286,74 @@ const form = reactive<ISetting>({
   password: '',
   privateKey: '',
   remotePath: '',
-  proxyPath: '',
-  proxyPort: '',
-  enabledProxy: 'direct',
   netlifyAccessToken: '',
   netlifySiteId: '',
+})
+
+// 将当前表单的平台专属字段保存到 platformConfigs
+const savePlatformConfig = (platform: string) => {
+  const fields = platformFields[platform] || []
+  const config: Record<string, any> = {}
+  for (const field of fields) {
+    if (field === 'domain') {
+      // domain 保存时带上协议前缀
+      config[field] = `${protocol.value}${form.domain}`
+    } else {
+      config[field] = form[field] || ''
+    }
+  }
+  platformConfigs.value[platform] = config
+}
+
+// 从 platformConfigs 恢复平台专属字段到表单
+const restorePlatformConfig = (platform: string) => {
+  // 先清空所有平台专属字段
+  const allPlatformFields = new Set<string>()
+  for (const fields of Object.values(platformFields)) {
+    for (const f of fields) allPlatformFields.add(f)
+  }
+  for (const field of allPlatformFields) {
+    ;(form as any)[field] = ''
+  }
+  // 恢复 SFTP 默认端口
+  if (platform === 'sftp') {
+    form.port = '22'
+  }
+
+  // 恢复目标平台保存的配置
+  const config = platformConfigs.value[platform]
+  if (config) {
+    for (const [key, val] of Object.entries(config)) {
+      if (key === 'domain') {
+        // domain 拆分协议
+        const domainVal = val || ''
+        const idx = domainVal.indexOf('://')
+        if (idx !== -1) {
+          form.domain = domainVal.substring(idx + 3)
+          protocol.value = domainVal.substring(0, idx + 3)
+        } else {
+          form.domain = domainVal
+        }
+      } else {
+        ;(form as any)[key] = val || ''
+      }
+    }
+  }
+}
+
+// 监听平台切换
+let skipWatch = false
+watch(() => form.platform, (newPlatform, oldPlatform) => {
+  if (skipWatch || !oldPlatform || newPlatform === oldPlatform) return
+  savePlatformConfig(oldPlatform)
+  restorePlatformConfig(newPlatform)
+
+  // 重置密码可见性和认证类型
+  passVisible.value = false
+  if (newPlatform === 'sftp') {
+    const config = platformConfigs.value[newPlatform]
+    remoteType.value = config?.privateKey ? 'key' : 'password'
+  }
 })
 
 const getPlatformLabel = (p: string) => {
@@ -350,39 +396,68 @@ const canSubmit = computed(() => {
 
 onMounted(() => {
   const setting = siteStore.site.setting
-  console.log('setting', setting)
-  Object.keys(form).forEach((key: string) => {
-    const k = key as keyof ISetting
-    if (key === 'domain') {
-      const protocolEndIndex = setting[k].indexOf('://')
-      if (protocolEndIndex !== -1) {
-        form[k] = setting[k].substring(protocolEndIndex + 3)
-        protocol.value = setting[k].substring(0, protocolEndIndex + 3)
-      }
-    } else {
-      // @ts-ignore
-      form[k] = setting[k]
+  skipWatch = true
+
+  // 1. 恢复平台选择
+  form.platform = setting.platform || 'github'
+
+  // 2. 恢复 platformConfigs
+  if (setting.platformConfigs) {
+    platformConfigs.value = JSON.parse(JSON.stringify(setting.platformConfigs))
+  }
+
+  // 3. 兼容旧数据迁移：如果 platformConfigs 中没有当前平台的配置，
+  //    从扁平字段提取当前平台的专属字段存入 platformConfigs
+  if (!platformConfigs.value[form.platform]) {
+    const fields = platformFields[form.platform] || []
+    const config: Record<string, any> = {}
+    for (const field of fields) {
+      config[field] = setting[field] || ''
     }
-  })
+    platformConfigs.value[form.platform] = config
+  }
+
+  // 4. 从 platformConfigs 恢复当前平台的专属字段到表单（包括 domain）
+  restorePlatformConfig(form.platform)
+
+  // 5. 处理 domain 协议分离（restorePlatformConfig 恢复的是含协议的完整 domain）
+  const domainVal = form.domain || ''
+  const protocolEndIndex = domainVal.indexOf('://')
+  if (protocolEndIndex !== -1) {
+    form.domain = domainVal.substring(protocolEndIndex + 3)
+    protocol.value = domainVal.substring(0, protocolEndIndex + 3)
+  }
 
   if (form.privateKey) {
     remoteType.value = 'key'
   }
+
+  skipWatch = false
 })
 
+const buildFormData = () => {
+  // 保存当前平台配置到 platformConfigs
+  savePlatformConfig(form.platform)
+
+  // SFTP 认证类型处理：清除未使用的凭据
+  const configs = JSON.parse(JSON.stringify(platformConfigs.value))
+  if (form.platform === 'sftp' && configs['sftp']) {
+    if (remoteType.value === 'password') {
+      configs['sftp'].privateKey = ''
+    } else {
+      configs['sftp'].password = ''
+    }
+  }
+
+  return {
+    platform: form.platform,
+    platformConfigs: configs,
+  }
+}
+
 const submit = async () => {
-  const formData = {
-    ...form,
-    domain: `${protocol.value}${form.domain}`,
-  }
-
-  if (remoteType.value === 'password') {
-    formData.privateKey = ''
-  } else {
-    formData.password = ''
-  }
-
   try {
+    const formData = buildFormData()
     const settingDomain = new domain.Setting(formData)
     await SaveSettingFromFrontend(settingDomain)
     EventsEmit('app-site-reload')
@@ -396,18 +471,11 @@ const submit = async () => {
 }
 
 const remoteDetect = async () => {
-  const formData = {
-    ...form,
-    domain: `${protocol.value}${form.domain}`,
-  }
-
-  // 先保存
   try {
+    const formData = buildFormData()
     const settingDomain = new domain.Setting(formData)
     await SaveSettingFromFrontend(settingDomain)
-    EventsEmit('app-site-reload')
 
-    // Wait for reload or rely on backend processing
     detectLoading.value = true
     ga('Setting', 'Setting - detect', form.platform)
 

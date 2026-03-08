@@ -203,6 +203,7 @@
             "privateKeyTip": "Ruta absoluta, ej: /home/usuario/.ssh/id_rsa",
             "remotePathTip": "Ruta absoluta, ej: /home/usuario/www/",
             "testConnection": "Probar conexión",
+            "checking": "Verificando...",
             "connectSuccess": "Conexión exitosa",
             "connectFailed": "Fallo de conexión, revisa la configuración"
         },

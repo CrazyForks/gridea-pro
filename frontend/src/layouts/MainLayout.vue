@@ -63,7 +63,7 @@ variant="default"
           :disabled="publishLoading" @click="publish">
           <template v-if="publishLoading">
             <svg
-class="animate-spin -ml-1 mr-2 h-4 w-4 justify-center text-primary-foreground"
+class="animate-spin h-4 w-4 text-primary-foreground"
               xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path
@@ -106,7 +106,7 @@ fill-rule="evenodd" clip-rule="evenodd"
     <!-- Main Content -->
     <main class="flex-1 flex flex-col min-h-0 overflow-hidden bg-background">
       <!-- Draggable Area -->
-      <div class="flex-1 h-8 w-full flex-shrink-0 overflow-y-auto p-0">
+      <div class="flex-1 w-full overflow-y-auto overflow-x-hidden p-0">
         <router-view v-slot="{ Component }">
           <keep-alive exclude="Loading,Theme">
             <component :is="Component" />
@@ -116,25 +116,6 @@ fill-rule="evenodd" clip-rule="evenodd"
     </main>
 
     <!-- Dialogs -->
-    <Dialog v-model:open="syncErrorModalVisible">
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{{ t('dashboard.syncError1') }}</DialogTitle>
-        </DialogHeader>
-        <div class="text-sm text-muted-foreground">
-          <a href="#" class="text-primary hover:underline" @click.prevent="openInBrowser('https://gridea.dev/')">FAQ</a>
-          {{
-            t('common.or') }} <a
-href="#" class="text-primary hover:underline"
-            @click.prevent="openInBrowser('https://github.com/getgridea/gridea/issues')">Issues</a> {{
-              t('dashboard.syncError2') }}
-        </div>
-        <DialogFooter>
-          <Button @click="syncErrorModalVisible = false">Close</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-
     <Dialog v-model:open="updateModalVisible">
       <DialogContent>
         <DialogHeader>
@@ -219,7 +200,6 @@ const version = pkg.version
 const publishLoading = ref(false)
 const hasUpdate = ref(false)
 const newVersion = ref('')
-const syncErrorModalVisible = ref(false)
 const updateModalVisible = ref(false)
 const systemModalVisible = ref(false)
 const updateContent = ref('')
@@ -308,9 +288,8 @@ const publish = async () => {
     })
   } catch (error: any) {
     console.error('Deploy error:', error)
-    syncErrorModalVisible.value = true
     log.value = {
-      type: 'Deploy Error',
+      type: t('dashboard.syncError1'),
       message: error.message || String(error)
     }
     logModalVisible.value = true

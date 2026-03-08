@@ -1,40 +1,14 @@
 {% extends "base.html" %}
-{% block title %}关于 | {{ config.siteName }}{% endblock %}
+{% block title %}{{ post.title }} | {{ config.siteName }}{% endblock %}
 {% block content %}
 <div class="container">
   <div class="page-header">
-    <h1 class="page-title">关于</h1>
+    <h1 class="page-title">{{ post.title }}</h1>
+    <p class="page-subtitle meta-text">{{ config.siteDescription }}</p>
   </div>
 
-  <div class="about-page">
-    <div class="about-profile">
-      {% if config.avatar %}
-      <img class="about-profile__avatar" src="{{ config.avatar }}" alt="{{ config.siteName }}" />
-      {% endif %}
-      <h2 class="about-profile__name">{{ config.siteName }}</h2>
-      {% if config.siteDescription %}
-      <p class="about-profile__desc">{{ config.siteDescription }}</p>
-      {% endif %}
-    </div>
-
-    <div class="about-content article-content">
-      {% if theme_config.aboutContent %}
-      {{ theme_config.aboutContent|safe }}
-      {% else %}
-      <p>欢迎来到 {{ config.siteName }}。这里是关于页面，你可以在主题设置中自定义此处的内容。</p>
-      {% endif %}
-    </div>
-
-    {% if tags|length > 0 %}
-    <div class="about-topics">
-      <h3 class="about-topics__title meta-text">涉猎话题</h3>
-      <div class="about-topics__list">
-        {% for tag in tags %}
-        <a href="{{ tag.link }}" class="tag-pill">{{ tag.name }}</a>
-        {% endfor %}
-      </div>
-    </div>
-    {% endif %}
+  <div class="article-content">
+    {{ post.content|safe }}
   </div>
 </div>
 {% endblock %}

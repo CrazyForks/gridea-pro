@@ -208,6 +208,7 @@ onUnmounted(() => {
     background: var(--background);
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 
     .page-content {
         background: var(--background);

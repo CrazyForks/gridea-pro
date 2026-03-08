@@ -2,20 +2,20 @@ package facade
 
 import (
 	"context"
-	"fmt"
 	"gridea-pro/backend/internal/domain"
 	"gridea-pro/backend/internal/service"
-	"os"
+	"log/slog"
 )
 
 // ThemeFacade wraps ThemeService
 type ThemeFacade struct {
 	internal *service.ThemeService
 	renderer *RendererFacade
+	logger   *slog.Logger
 }
 
 func NewThemeFacade(s *service.ThemeService) *ThemeFacade {
-	return &ThemeFacade{internal: s}
+	return &ThemeFacade{internal: s, logger: slog.Default()}
 }
 
 func (f *ThemeFacade) SetRenderer(renderer *RendererFacade) {
@@ -68,7 +68,7 @@ func (f *ThemeFacade) SaveThemeConfigFromFrontend(config domain.ThemeConfig) err
 	if f.renderer != nil {
 		go func() {
 			if err := f.renderer.RenderAll(); err != nil {
-				fmt.Fprintf(os.Stderr, "Error rendering after theme save: %v\n", err)
+				f.logger.Error("Error rendering after theme save", "error", err)
 			}
 		}()
 	}
@@ -100,7 +100,7 @@ func (f *ThemeFacade) SaveThemeCustomConfigFromFrontend(customConfig map[string]
 	if f.renderer != nil {
 		go func() {
 			if err := f.renderer.RenderAll(); err != nil {
-				fmt.Fprintf(os.Stderr, "Error rendering after theme custom config save: %v\n", err)
+				f.logger.Error("Error rendering after theme custom config save", "error", err)
 			}
 		}()
 	}

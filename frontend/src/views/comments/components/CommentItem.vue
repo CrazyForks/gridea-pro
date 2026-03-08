@@ -184,7 +184,7 @@ const openLink = (e: Event, url?: string) => {
             targetUrl = `${baseUrl.replace(/\/$/, '')}${targetUrl}`
         } else {
             // Use fallback port passed from parent or default
-            const port = props.previewPort || 6060
+            const port = props.previewPort || 6606
             targetUrl = `http://localhost:${port}${targetUrl}`
         }
     }

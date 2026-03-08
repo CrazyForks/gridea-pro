@@ -4,8 +4,9 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
-	"os"
+	"log/slog"
 	"path/filepath"
+	"os"
 	"sync"
 
 	"gridea-pro/backend/internal/template"
@@ -34,7 +35,8 @@ type EjsRenderer struct {
 
 	// VM Pool (Bounded)
 	// pool 存储可用的 VM。如果不为空，直接取用。如果不为空但 pool 空，则阻塞等待。
-	pool chan *goja.Runtime
+	pool   chan *goja.Runtime
+	logger *slog.Logger
 }
 
 // NewEjsRenderer 创建 EJS 渲染器
@@ -43,6 +45,7 @@ func NewEjsRenderer(config RenderConfig) *EjsRenderer {
 		config: config,
 		cache:  make(map[string]string),
 		pool:   make(chan *goja.Runtime, MaxPoolSize),
+		logger: slog.Default(),
 	}
 
 	// 预热 VM 池 (Pre-fill)
@@ -53,7 +56,7 @@ func NewEjsRenderer(config RenderConfig) *EjsRenderer {
 		if err != nil {
 			// 如果初始化失败，记录错误但继续（容错）
 			// 实际运行时可能会因为 pool 不满而导致吞吐量略低，但不会崩溃
-			fmt.Fprintf(os.Stderr, "Warn: Failed to initialize VM %d: %v\n", i, err)
+			r.logger.Warn("Failed to initialize VM", "index", i, "error", err)
 			continue
 		}
 		r.pool <- vm

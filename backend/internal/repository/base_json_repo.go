@@ -225,6 +225,13 @@ func (r *BaseJSONRepository[T]) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
+// Invalidate 清除缓存标志，下次访问时将从磁盘重新加载
+func (r *BaseJSONRepository[T]) Invalidate() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.loaded = false
+}
+
 // SaveAll 批量保存 (全量覆盖)
 func (r *BaseJSONRepository[T]) SaveAll(ctx context.Context, items []T) error {
 	r.mu.Lock()

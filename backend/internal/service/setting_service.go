@@ -96,7 +96,7 @@ func (s *SettingService) RemoteDetect(ctx context.Context, setting domain.Settin
 	switch setting.Platform {
 	case "github", "gitee", "coding":
 		// 使用 go-git ls-remote 验证认证
-		repoUrl := strings.TrimSpace(setting.Repository)
+		repoUrl := strings.TrimSpace(setting.Repository())
 		repoUrl = strings.TrimPrefix(repoUrl, "https://")
 		repoUrl = strings.TrimPrefix(repoUrl, "http://")
 		repoUrl = strings.TrimPrefix(repoUrl, "git@github.com:")
@@ -111,7 +111,7 @@ func (s *SettingService) RemoteDetect(ctx context.Context, setting domain.Settin
 		}
 
 		if !strings.Contains(repoUrl, "/") {
-			repoUrl = fmt.Sprintf("%s/%s/%s", hostname, setting.Username, repoUrl)
+			repoUrl = fmt.Sprintf("%s/%s/%s", hostname, setting.Username(), repoUrl)
 		} else if !strings.Contains(repoUrl, hostname) {
 			repoUrl = fmt.Sprintf("%s/%s", hostname, repoUrl)
 		}
@@ -121,9 +121,9 @@ func (s *SettingService) RemoteDetect(ctx context.Context, setting domain.Settin
 		}
 		safeUrl := "https://" + repoUrl
 
-		tokenUser := setting.TokenUsername
+		tokenUser := setting.TokenUsername()
 		if tokenUser == "" {
-			tokenUser = setting.Username
+			tokenUser = setting.Username()
 		}
 
 		_, err := gogit.NewRemote(nil, &gitconfig.RemoteConfig{
@@ -132,7 +132,7 @@ func (s *SettingService) RemoteDetect(ctx context.Context, setting domain.Settin
 		}).ListContext(ctx, &gogit.ListOptions{
 			Auth: &githttp.BasicAuth{
 				Username: tokenUser,
-				Password: setting.Token,
+				Password: setting.Token(),
 			},
 		})
 
@@ -150,7 +150,7 @@ func (s *SettingService) RemoteDetect(ctx context.Context, setting domain.Settin
 			message = fmt.Sprintf("无法创建请求: %v", err)
 			break
 		}
-		req.Header.Set("Authorization", "Bearer "+setting.Token)
+		req.Header.Set("Authorization", "Bearer "+setting.Token())
 
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
@@ -168,7 +168,7 @@ func (s *SettingService) RemoteDetect(ctx context.Context, setting domain.Settin
 
 	default:
 		// 对于其他平台（Netlify/SFTP），简单验证配置非空
-		if setting.Token != "" || setting.Password != "" || setting.PrivateKey != "" {
+		if setting.Token() != "" || setting.Password() != "" || setting.PrivateKey() != "" {
 			success = true
 			message = "配置已保存，凭据不为空"
 		} else {

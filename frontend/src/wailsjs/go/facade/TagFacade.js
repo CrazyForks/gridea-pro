@@ -29,3 +29,7 @@ export function SaveTag(arg1, arg2) {
 export function SaveTagFromFrontend(arg1) {
   return window['go']['facade']['TagFacade']['SaveTagFromFrontend'](arg1);
 }
+
+export function SaveTags(arg1) {
+  return window['go']['facade']['TagFacade']['SaveTags'](arg1);
+}

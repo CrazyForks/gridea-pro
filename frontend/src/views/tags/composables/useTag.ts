@@ -4,9 +4,8 @@ import { useSiteStore, type ITag } from '@/stores/site'
 import { generateId } from '@/utils/id'
 import slugFn from '@/helpers/slug'
 import { toast } from '@/helpers/toast'
-import { GetTagColors, SaveTagFromFrontend, DeleteTagFromFrontend } from '@/wailsjs/go/facade/TagFacade'
+import { GetTagColors, SaveTagFromFrontend, DeleteTagFromFrontend, SaveTags } from '@/wailsjs/go/facade/TagFacade'
 import { domain, facade } from '@/wailsjs/go/models'
-import { EventsEmit } from '@/wailsjs/runtime'
 
 interface IForm {
     name: string
@@ -169,9 +168,13 @@ export function useTag() {
         tagToDelete.value = null
     }
 
-    const handleTagSort = () => {
-        const tags = tagList.value.map(t => new domain.Tag(t))
-        EventsEmit('tag-sort', tags)
+    const handleTagSort = async () => {
+        try {
+            const tags = tagList.value.map(t => new domain.Tag(t))
+            await SaveTags(tags)
+        } catch (e: any) {
+            toast.error(e.message || 'Error sorting tags')
+        }
     }
 
     return {

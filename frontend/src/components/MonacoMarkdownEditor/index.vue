@@ -21,13 +21,11 @@ import * as monaco from 'monaco-editor'
 import * as MonacoMarkdown from 'monaco-markdown'
 import { useThemeStore } from '@/stores/theme'
 
-import editorWorkerUrl from 'monaco-editor/esm/vs/editor/editor.worker?url'
+import EditorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
 
 self.MonacoEnvironment = {
   getWorker(_, label) {
-    return new Worker(editorWorkerUrl, {
-      type: 'module'
-    })
+    return new EditorWorker()
   },
 }
 
@@ -137,8 +135,7 @@ const initEditor = () => {
     theme: themeStore.isDark ? 'vs-dark' : 'GrideaLight',
     lineNumbers: 'off',
     minimap: { enabled: false },
-    wordWrap: 'bounded',
-    wordWrapColumn: 80,
+    wordWrap: 'on',
     cursorWidth: 2,
     cursorStyle: 'line',
     smoothScrolling: true,
@@ -154,10 +151,16 @@ const initEditor = () => {
       vertical: 'hidden',
       horizontal: 'hidden',
       verticalScrollbarSize: 0,
+      horizontalScrollbarSize: 0,
+      useShadows: false,
+      handleMouseWheel: true,
     },
+    overviewRulerBorder: false,
+    overviewRulerLanes: 0,
     lineHeight: 28,
     letterSpacing: 0.2,
     scrollBeyondLastLine: !isEmpty.value,
+    scrollBeyondLastColumn: 0,
     wordBasedSuggestions: 'off',
     snippetSuggestions: 'none',
     lineDecorationsWidth: 0,
@@ -196,9 +199,13 @@ const initEditor = () => {
     }
   })
 
-  // 监听滚动事件，同步给 Placeholder
+  // 监听滚动事件，同步给 Placeholder + 锁死水平滚动
   editorInstance.onDidScrollChange((e) => {
     editorScrollTop.value = e.scrollTop
+    // 如果产生了任何水平偏移，立即重置为 0
+    if (e.scrollLeft > 0) {
+      editorInstance.setScrollLeft(0)
+    }
   })
 
   editorInstance.onKeyDown((e: monaco.IKeyboardEvent) => {

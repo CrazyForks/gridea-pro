@@ -135,6 +135,13 @@ func ensureMemoID(memo *domain.Memo) {
 	}
 }
 
+// Invalidate 清除缓存标志，下次访问时将从磁盘重新加载
+func (r *memoRepository) Invalidate() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.loaded = false
+}
+
 func (r *memoRepository) SaveAll(ctx context.Context, memos []domain.Memo) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()

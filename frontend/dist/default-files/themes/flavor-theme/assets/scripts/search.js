@@ -16,6 +16,7 @@
   var EXCERPT_RADIUS = 40;   // chars each side of match (~80 total)
   var ACTIVE_CLASS = 'is-active';
   var WEIGHT_TITLE = 10;
+  var WEIGHT_TAG = 5;
   var WEIGHT_CONTENT = 1;
 
   // -- State ------------------------------------------------------------------
@@ -68,21 +69,29 @@
     requestAnimationFrame(function () { input.focus(); });
   }
 
-  /** Show latest posts as recommendations when search opens (no query). */
+  /** Show random posts as recommendations when search opens (no query). */
   function showRecommendations() {
     if (!results || !posts || !posts.length) {
       if (results) results.innerHTML = '';
       return;
     }
-    var recent = posts.slice(0, 8);
+    var recent = randomPick(posts, 8);
     var html = '';
     for (var i = 0; i < recent.length; i++) {
       var p = recent[i];
+      var tagsHTML = '';
+      if (p.tags && p.tags.length) {
+        tagsHTML = '<div class="search-result-item__tags">';
+        for (var t = 0; t < p.tags.length; t++) {
+          tagsHTML += '<span class="search-result-item__tag">' + esc(p.tags[t]) + '</span>';
+        }
+        tagsHTML += '</div>';
+      }
       html += '<a class="search-result-item" href="' + esc(p.link) + '"'
         + ' role="option" aria-selected="false">'
         + '<div class="search-result-item__title">' + esc(p.title) + ' <span class="search-arrow">→</span></div>'
         + '<div class="search-result-item__excerpt">' + esc((p.content || '').substring(0, 50) + ((p.content || '').length > 50 ? '...' : '')) + '</div>'
-        + '<div class="search-result-item__date">' + esc(p.date) + '</div>'
+        + '<div class="search-result-item__meta">' + tagsHTML + '<span class="search-result-item__date">' + esc(p.date) + '</span></div>'
         + '</a>';
     }
     results.innerHTML = html;
@@ -106,14 +115,22 @@
     var lq = query.toLowerCase();
     var lt = (post.title || '').toLowerCase();
     var lc = (post.content || '').toLowerCase();
+    var tags = post.tags || [];
     var ti = lt.indexOf(lq);
     var ci = lc.indexOf(lq);
 
-    if (ti === -1 && ci === -1) return null;
+    // Check tag match
+    var tagHit = false;
+    for (var k = 0; k < tags.length; k++) {
+      if (tags[k].toLowerCase().indexOf(lq) !== -1) { tagHit = true; break; }
+    }
+
+    if (ti === -1 && ci === -1 && !tagHit) return null;
 
     // Relevance: weight + positional bonus (earlier = better)
     var score = 0;
     if (ti !== -1) score += WEIGHT_TITLE * (1 + 1 / (1 + ti));
+    if (tagHit) score += WEIGHT_TAG;
     if (ci !== -1) score += WEIGHT_CONTENT * (1 + 1 / (1 + ci));
 
     // Highlighted title
@@ -145,6 +162,7 @@
       if (hit) {
         matched.push({
           link: posts[i].link, date: posts[i].date || '',
+          tags: posts[i].tags || [],
           titleHL: hit.titleHL, excerptHL: hit.excerptHL, score: hit.score
         });
       }
@@ -157,11 +175,21 @@
     var html = '';
     for (var j = 0; j < matched.length; j++) {
       var m = matched[j];
+      var tagsHTML = '';
+      if (m.tags && m.tags.length) {
+        var lq = q.toLowerCase();
+        tagsHTML = '<div class="search-result-item__tags">';
+        for (var t = 0; t < m.tags.length; t++) {
+          var isHit = m.tags[t].toLowerCase() === lq;
+          tagsHTML += '<span class="search-result-item__tag' + (isHit ? ' search-result-item__tag--hit' : '') + '">' + esc(m.tags[t]) + '</span>';
+        }
+        tagsHTML += '</div>';
+      }
       html += '<a class="search-result-item" href="' + esc(m.link) + '"'
         + ' role="option" aria-selected="false">'
         + '<div class="search-result-item__title">' + m.titleHL + ' <span class="search-arrow">→</span></div>'
         + '<div class="search-result-item__excerpt">' + m.excerptHL + '</div>'
-        + '<div class="search-result-item__date">' + esc(m.date) + '</div>'
+        + '<div class="search-result-item__meta">' + tagsHTML + '<span class="search-result-item__date">' + esc(m.date) + '</span></div>'
         + '</a>';
     }
     results.innerHTML = html;
@@ -241,6 +269,17 @@
     if (!s) return '';
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;')
       .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  /** Pick n random items from arr (Fisher-Yates on a shallow copy). */
+  function randomPick(arr, n) {
+    var pool = arr.slice();
+    var count = Math.min(n, pool.length);
+    for (var i = pool.length - 1; i > 0 && pool.length - i <= count; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
+    }
+    return pool.slice(pool.length - count);
   }
 
   function debounce(fn, ms) {

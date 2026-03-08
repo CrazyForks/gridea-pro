@@ -1,6 +1,6 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useSiteStore, type ICategory } from '@/stores/site'
+import { useSiteStore, type ICategory, normalizeId } from '@/stores/site'
 import { generateId } from '@/utils/id'
 import slug from '@/helpers/slug'
 import { toast } from '@/helpers/toast'
@@ -121,8 +121,9 @@ export function useCategory() {
             })
 
             if (categories) {
-                siteStore.categories = categories
-                categoryList.value = [...categories]
+                const normalized = normalizeId(categories as any[]) as ICategory[]
+                siteStore.categories = normalized
+                categoryList.value = [...normalized]
                 toast.success(t('category.saved'))
                 visible.value = false
             }
@@ -141,8 +142,9 @@ export function useCategory() {
             try {
                 const categories = await DeleteCategoryFromFrontend(categoryToDelete.value)
                 if (categories) {
-                    siteStore.categories = categories
-                    categoryList.value = [...categories]
+                    const normalized = normalizeId(categories as any[]) as ICategory[]
+                    siteStore.categories = normalized
+                    categoryList.value = [...normalized]
                     toast.success(t('category.deleted'))
                 }
             } catch (e: any) {

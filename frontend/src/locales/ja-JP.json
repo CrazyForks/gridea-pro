@@ -203,6 +203,7 @@
             "privateKeyTip": "絶対パスを入力してください（例：/home/username/.ssh/id_rsa）",
             "remotePathTip": "絶対パスを入力してください（例：/home/username/www/）",
             "testConnection": "接続テスト",
+            "checking": "確認中...",
             "connectSuccess": "接続に成功しました",
             "connectFailed": "接続に失敗しました。リポジトリ名、ユーザー名、トークンを確認してください"
         },

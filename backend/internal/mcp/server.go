@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"gridea-pro/backend/internal/engine"
 	"gridea-pro/backend/internal/repository"
 	"gridea-pro/backend/internal/service"
 	"os"
@@ -23,7 +24,7 @@ type Services struct {
 	Menu     *service.MenuService
 	Theme    *service.ThemeService
 	Setting  *service.SettingService
-	Renderer *service.RendererService
+	Renderer *engine.Engine
 	Comment  *service.CommentService
 }
 
@@ -89,7 +90,7 @@ func initServices(appDir string) *Services {
 	memoService := service.NewMemoService(memoRepo)
 
 	// Renderer (Complex dependencies)
-	rendererService := service.NewRendererService(appDir, postRepo, themeRepo, settingRepo)
+	rendererService := engine.New(appDir, postRepo, themeRepo, settingRepo)
 	rendererService.SetMenuRepo(menuRepo)
 	rendererService.SetLinkRepo(linkRepo)
 	rendererService.SetTagRepo(tagRepo)

@@ -104,7 +104,7 @@ const loading = ref(false)
 const deleteModalVisible = ref(false)
 const commentToDelete = ref<Comment | null>(null)
 const previewImage = ref<string | null>(null)
-const previewPort = ref(6060)
+const previewPort = ref(6606)
 
 // Helper to unescape HTML entities
 const decodeHTML = (html: string) => {
@@ -226,12 +226,12 @@ onMounted(async () => {
     if (env.buildType !== 'production') {
       previewPort.value = 3367
     } else {
-      previewPort.value = 6060
+      previewPort.value = 6606
     }
     console.log('[Comment] Detected environment:', env.buildType, 'Using port:', previewPort.value)
   } catch (e) {
-    console.warn('[Comment] Failed to get environment info, using default port 6060', e)
-    previewPort.value = 6060
+    console.warn('[Comment] Failed to get environment info, using default port 6606', e)
+    previewPort.value = 6606
   }
 
   loading.value = true

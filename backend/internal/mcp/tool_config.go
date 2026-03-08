@@ -131,11 +131,23 @@ func getSettingsHandler(s *service.SettingService) server.ToolHandlerFunc {
 		if err != nil {
 			return mcp.NewToolResultError(fmt.Sprintf("Failed: %v", err)), nil
 		}
-		// Mask sensitive data?
-		setting.Token = "***"
-		setting.Password = "***"
-		setting.PrivateKey = "***"
-		setting.NetlifyAccessToken = "***"
+		// Mask sensitive data in platformConfigs
+		if setting.PlatformConfigs != nil {
+			sensitiveKeys := []string{"token", "password", "privateKey", "netlifyAccessToken"}
+			for platform, raw := range setting.PlatformConfigs {
+				var m map[string]any
+				if json.Unmarshal(raw, &m) != nil {
+					continue
+				}
+				for _, key := range sensitiveKeys {
+					if _, ok := m[key]; ok {
+						m[key] = "***"
+					}
+				}
+				data, _ := json.Marshal(m)
+				setting.PlatformConfigs[platform] = data
+			}
+		}
 
 		return mcp.NewToolResultText(jsonify(setting)), nil
 	}
@@ -163,19 +175,19 @@ func updateSettingsHandler(s *service.SettingService) server.ToolHandlerFunc {
 		}
 
 		if v := request.GetString("domain", ""); v != "" {
-			current.Domain = v
+			current.SetPlatformConfig(current.Platform, "domain", v)
 		}
 		if v := request.GetString("repository", ""); v != "" {
-			current.Repository = v
+			current.SetPlatformConfig(current.Platform, "repository", v)
 		}
 		if v := request.GetString("branch", ""); v != "" {
-			current.Branch = v
+			current.SetPlatformConfig(current.Platform, "branch", v)
 		}
 		if v := request.GetString("username", ""); v != "" {
-			current.Username = v
+			current.SetPlatformConfig(current.Platform, "username", v)
 		}
 		if v := request.GetString("email", ""); v != "" {
-			current.Email = v
+			current.SetPlatformConfig(current.Platform, "email", v)
 		}
 
 		if jsonStr := request.GetString("configJson", ""); jsonStr != "" {

@@ -203,6 +203,7 @@
             "privateKeyTip": "Caminho absoluto, ex: /home/usuario/.ssh/id_rsa",
             "remotePathTip": "Caminho absoluto, ex: /home/usuario/www/",
             "testConnection": "Testar Conexão",
+            "checking": "Verificando...",
             "connectSuccess": "Conexão bem sucedida",
             "connectFailed": "Falha na conexão, verifique as configurações"
         },

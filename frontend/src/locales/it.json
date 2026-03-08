@@ -204,6 +204,7 @@
             "privateKeyTip": "Compila il percorso assoluto, es: /home/username/.ssh/id_rsa",
             "remotePathTip": "Compila il percorso assoluto, es: /home/username/www/",
             "testConnection": "Test Connessione",
+            "checking": "Verifica...",
             "connectSuccess": "Connessione remota riuscita",
             "connectFailed": "Connessione remota fallita, controlla impostazioni repository, nome utente e token"
         },

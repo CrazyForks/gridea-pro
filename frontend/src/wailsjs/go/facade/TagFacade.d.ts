@@ -17,3 +17,5 @@ export function RegisterEvents(arg1:context.Context):Promise<void>;
 export function SaveTag(arg1:domain.Tag,arg2:string):Promise<void>;
 
 export function SaveTagFromFrontend(arg1:facade.TagForm):Promise<Array<domain.Tag>>;
+
+export function SaveTags(arg1:Array<domain.Tag>):Promise<void>;

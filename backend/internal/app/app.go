@@ -332,6 +332,8 @@ func (a *App) ShowToast(message string, toastType string) {
 }
 
 func (a *App) handleSiteReload(_ ...interface{}) {
+	// 清除所有仓库缓存，确保从磁盘加载最新数据
+	a.services.InvalidateAllCaches()
 	// 重新加载站点数据
 	data := a.LoadSite()
 	// 发送给前端更新 Store

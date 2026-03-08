@@ -81,20 +81,13 @@ body {
 
 html,
 body {
-  /* 1. 锁死整个窗口的滚动 */
   overflow: hidden;
-  /* 2. 禁止 macOS 的橡皮筋回弹效果 */
   overscroll-behavior: none;
-  /* 3. 确保占满屏幕 */
   height: 100vh;
   width: 100vw;
   margin: 0;
   padding: 0;
-  /* 4. 设置背景色，防止加载时闪白 */
   background-color: var(--bg-body);
-  /* 5. 禁用文字选中 */
-  /* -webkit-user-select: none;
-  user-select: none; */
 }
 
 #app {

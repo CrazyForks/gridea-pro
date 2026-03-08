@@ -2,18 +2,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="X-UA-Compatible" content="ie=edge">
 
-{# Google Fonts: Spectral serif family #}
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+{# Main stylesheet — split into modules for maintainability #}
+<link rel="stylesheet" href="/styles/base.css">
+<link rel="stylesheet" href="/styles/layout.css">
+<link rel="stylesheet" href="/styles/components.css">
+<link rel="stylesheet" href="/styles/article.css">
+<link rel="stylesheet" href="/styles/pages.css">
+<link rel="stylesheet" href="/styles/comments.css">
+<link rel="stylesheet" href="/styles/utilities.css">
+<link rel="stylesheet" href="/styles/responsive.css">
 
-{# Main stylesheet — assets/ prefix stripped in output #}
-<link rel="stylesheet" href="/styles/main.css">
-
-{# Favicon from site avatar #}
-{% if config.avatar %}
-<link rel="icon" href="{{ config.avatar }}" type="image/png">
-{% endif %}
+{# Favicon #}
+<link rel="icon" href="/favicon.ico" type="image/x-icon">
 
 {# SEO meta tags #}
 <meta name="description" content="{{ config.siteDescription|default:"" }}">

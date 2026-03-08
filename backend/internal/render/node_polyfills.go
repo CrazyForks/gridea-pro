@@ -2,6 +2,7 @@ package render
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -60,8 +61,7 @@ func SetupNodePolyfills(vm *goja.Runtime, baseDir string) {
 		for i, arg := range call.Arguments {
 			args[i] = arg.Export()
 		}
-		// 使用 Fprintln 输出到标准错误，避免污染标准输出（MCP 协议依赖 stdout）
-		fmt.Fprintln(os.Stderr, args...)
+		slog.Info(fmt.Sprint(args...), "source", "js")
 		return goja.Undefined()
 	})
 	consoleObj.Set("error", func(call goja.FunctionCall) goja.Value {
@@ -69,7 +69,7 @@ func SetupNodePolyfills(vm *goja.Runtime, baseDir string) {
 		for i, arg := range call.Arguments {
 			args[i] = arg.Export()
 		}
-		fmt.Fprintf(os.Stderr, "JS Error: %v\n", args...)
+		slog.Error(fmt.Sprint(args...), "source", "js")
 		return goja.Undefined()
 	})
 	consoleObj.Set("warn", func(call goja.FunctionCall) goja.Value {
@@ -77,7 +77,7 @@ func SetupNodePolyfills(vm *goja.Runtime, baseDir string) {
 		for i, arg := range call.Arguments {
 			args[i] = arg.Export()
 		}
-		fmt.Fprintf(os.Stderr, "JS Warn: %v\n", args...)
+		slog.Warn(fmt.Sprint(args...), "source", "js")
 		return goja.Undefined()
 	})
 	vm.Set("console", consoleObj)

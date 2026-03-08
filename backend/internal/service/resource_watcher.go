@@ -82,9 +82,14 @@ func (w *ResourceWatcher) watchLoop() {
 				return
 			}
 
-			// Ignore temporary files and generated cache files
+			// Ignore temporary files, generated cache files, and setting files.
+			// Setting files are saved by the app itself (via write-to-tmp + rename),
+			// the frontend sends app-site-reload explicitly when a re-render is needed.
 			baseName := filepath.Base(event.Name)
-			if baseName == ".DS_Store" || baseName == "posts.json" || baseName == "tags.json" {
+			if baseName == ".DS_Store" || baseName == "posts.json" ||
+				strings.HasPrefix(baseName, "setting.json") ||
+				strings.HasPrefix(baseName, "seo_setting.json") ||
+				strings.HasPrefix(baseName, "cdn_setting.json") {
 				continue
 			}
 

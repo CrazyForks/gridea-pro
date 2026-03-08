@@ -2,20 +2,20 @@ package facade
 
 import (
 	"context"
-	"fmt"
-	"gridea-pro/backend/internal/service"
-	"os"
+	"gridea-pro/backend/internal/engine"
+	"log/slog"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // RendererFacade wraps RendererService
 type RendererFacade struct {
-	internal *service.RendererService
+	internal *engine.Engine
+	logger   *slog.Logger
 }
 
-func NewRendererFacade(s *service.RendererService) *RendererFacade {
-	return &RendererFacade{internal: s}
+func NewRendererFacade(s *engine.Engine) *RendererFacade {
+	return &RendererFacade{internal: s, logger: slog.Default()}
 }
 
 func (f *RendererFacade) RenderAll() error {
@@ -37,9 +37,9 @@ func registerSiteReloadEvent(ctx context.Context, rendererFacade *RendererFacade
 		// 触发重新渲染
 		go func() {
 			if err := rendererFacade.RenderAll(); err != nil {
-				fmt.Fprintf(os.Stderr, "站点重新加载失败: %v\n", err)
+				rendererFacade.logger.Error("站点重新加载失败", "error", err)
 			} else {
-				fmt.Fprintln(os.Stderr, "站点重新加载成功")
+				rendererFacade.logger.Info("站点重新加载成功")
 			}
 		}()
 	})

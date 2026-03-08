@@ -4,6 +4,7 @@ import (
 	"context"
 	"embed"
 	"gridea-pro/backend/internal/domain"
+	"gridea-pro/backend/internal/engine"
 	"gridea-pro/backend/internal/repository"
 	"gridea-pro/backend/internal/service"
 	"path/filepath"
@@ -24,9 +25,11 @@ type AppServices struct {
 	Renderer *RendererFacade
 	Theme    *ThemeFacade
 	Setting  *SettingFacade
-	Comment  *CommentFacade
-	Memo     *MemoFacade
-	Preview  *PreviewFacade
+	Comment    *CommentFacade
+	Memo       *MemoFacade
+	Preview    *PreviewFacade
+	SeoSetting *SeoSettingFacade
+	CdnSetting *CdnSettingFacade
 	// Internal services for event/update handling
 	Services struct {
 		Category *service.CategoryService
@@ -35,7 +38,7 @@ type AppServices struct {
 		Link     *service.LinkService
 		Tag      *service.TagService
 		Deploy   *service.DeployService
-		Renderer *service.RendererService
+		Renderer *engine.Engine
 		Theme    *service.ThemeService
 		Setting  *service.SettingService
 		Scaffold *service.ScaffoldService
@@ -72,6 +75,8 @@ func NewAppServices(appDir string, assets embed.FS) *AppServices {
 	settingRepo := repository.NewSettingRepository(appDir)
 	mediaRepo := repository.NewMediaRepository(appDir)
 	memoRepo := repository.NewMemoRepository(appDir)
+	seoSettingRepo := repository.NewSeoSettingRepository(appDir)
+	cdnSettingRepo := repository.NewCdnSettingRepository(appDir)
 
 	// 2. Init Services
 	tagService := service.NewTagService(tagRepo)
@@ -82,7 +87,7 @@ func NewAppServices(appDir string, assets embed.FS) *AppServices {
 	themeService := service.NewThemeService(themeRepo, appDir)
 	deployService := service.NewDeployService(settingRepo, appDir)
 	// RendererService
-	rendererService := service.NewRendererService(appDir, postRepo, themeRepo, settingRepo)
+	rendererService := engine.New(appDir, postRepo, themeRepo, settingRepo)
 	rendererService.SetMenuRepo(menuRepo)
 	rendererService.SetLinkRepo(linkRepo)
 	rendererService.SetTagRepo(tagRepo)
@@ -97,6 +102,8 @@ func NewAppServices(appDir string, assets embed.FS) *AppServices {
 	previewService := service.NewPreviewService(filepath.Join(appDir, "output"))
 	// Set CommentRepo on RendererService for template injection
 	rendererService.SetCommentRepo(commentRepo)
+	rendererService.SetSeoSettingRepo(seoSettingRepo)
+	rendererService.SetCdnSettingRepo(cdnSettingRepo)
 
 	// 3. Wrap with Facades
 	return &AppServices{
@@ -109,9 +116,11 @@ func NewAppServices(appDir string, assets embed.FS) *AppServices {
 		Renderer: NewRendererFacade(rendererService),
 		Theme:    NewThemeFacade(themeService),
 		Setting:  NewSettingFacade(settingService),
-		Comment:  NewCommentFacade(commentService),
-		Memo:     NewMemoFacade(memoService),
-		Preview:  NewPreviewFacade(previewService),
+		Comment:    NewCommentFacade(commentService),
+		Memo:       NewMemoFacade(memoService),
+		Preview:    NewPreviewFacade(previewService),
+		SeoSetting: NewSeoSettingFacade(seoSettingRepo),
+		CdnSetting: NewCdnSettingFacade(cdnSettingRepo),
 		Services: struct {
 			Category *service.CategoryService
 			Post     *service.PostService
@@ -119,7 +128,7 @@ func NewAppServices(appDir string, assets embed.FS) *AppServices {
 			Link     *service.LinkService
 			Tag      *service.TagService
 			Deploy   *service.DeployService
-			Renderer *service.RendererService
+			Renderer *engine.Engine
 			Theme    *service.ThemeService
 			Setting  *service.SettingService
 			Scaffold *service.ScaffoldService
@@ -160,6 +169,26 @@ func NewAppServices(appDir string, assets embed.FS) *AppServices {
 	}
 }
 
+// InvalidateAllCaches 清除所有仓库的内存缓存，使下次访问时从磁盘重新加载
+func (s *AppServices) InvalidateAllCaches() {
+	type invalidatable interface{ Invalidate() }
+	repos := []interface{}{
+		s.Repositories.Category,
+		s.Repositories.Tag,
+		s.Repositories.Menu,
+		s.Repositories.Link,
+		s.Repositories.Memo,
+	}
+	for _, r := range repos {
+		if inv, ok := r.(invalidatable); ok {
+			inv.Invalidate()
+		}
+	}
+	if s.Repositories.Post != nil {
+		s.Repositories.Post.Reload(context.Background())
+	}
+}
+
 func (s *AppServices) UpdateAppDir(appDir string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -178,6 +207,8 @@ func (s *AppServices) UpdateAppDir(appDir string) {
 	s.Comment.internal = newServices.Services.Comment
 	s.Memo.internal = newServices.Services.Memo
 	s.Preview.internal = newServices.Services.Preview
+	s.SeoSetting.repo = newServices.SeoSetting.repo
+	s.CdnSetting.repo = newServices.CdnSetting.repo
 	// Scaffold service doesn't need update generally, but good to keep in sync
 	s.Services.Scaffold = newServices.Services.Scaffold
 	s.Services.Comment = newServices.Services.Comment

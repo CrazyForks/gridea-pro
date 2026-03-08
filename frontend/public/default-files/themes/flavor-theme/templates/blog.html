@@ -22,13 +22,14 @@
   {% endif %}
 
   {# Pagination #}
-  {% if pagination %}
+  {% if pagination.hasPrev or pagination.hasNext %}
   <nav class="pagination">
-    {% if pagination.prev %}
-    <a href="{{ pagination.prev }}" class="btn btn--secondary">&larr; 上一页</a>
+    {% if pagination.hasPrev %}
+    <a href="{{ pagination.prevURL }}" class="btn btn--secondary">&larr; 上一页</a>
     {% endif %}
-    {% if pagination.next %}
-    <a href="{{ pagination.next }}" class="btn btn--secondary">下一页 &rarr;</a>
+    <span class="pagination__info">{{ pagination.currentPage }} / {{ pagination.totalPages }}</span>
+    {% if pagination.hasNext %}
+    <a href="{{ pagination.nextURL }}" class="btn btn--secondary">下一页 &rarr;</a>
     {% endif %}
   </nav>
   {% endif %}

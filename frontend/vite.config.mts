@@ -55,8 +55,5 @@ export default defineConfig({
       'monaco-editor',
       'monaco-markdown'
     ],
-  },
-  worker: {
-    format: 'es'
   }
 })

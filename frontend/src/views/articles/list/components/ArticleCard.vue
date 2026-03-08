@@ -24,7 +24,7 @@ class="w-1.5 h-1.5 rounded-full mr-1.5"
                         <div class="w-px h-3 bg-primary/30"></div>
                         <div class="flex items-center text-[10px]">
                             <CalendarIcon class="size-3 mr-1 text-muted-foreground/70 translate-y-[-0.5px]" />
-                            {{ dayjs(post.date).format('YYYY-MM-DD') }}
+                            {{ dayjs(post.createdAt).format('YYYY-MM-DD') }}
                         </div>
                         <template v-if="(post.categories || []).length > 0">
                             <div class="w-px h-3 bg-primary/30"></div>

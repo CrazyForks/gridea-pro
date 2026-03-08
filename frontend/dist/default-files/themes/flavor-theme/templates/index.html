@@ -30,7 +30,7 @@
   <section class="section-popular">
     <div class="section-header">
       <h2 class="section-title">热门文章</h2>
-      <a href="/blog" class="section-more meta-text">查看全部 &rarr;</a>
+      <a href="/post" class="section-more meta-text">查看全部 &rarr;</a>
     </div>
     <div class="compact-grid">
       {% for post in posts %}
@@ -55,16 +55,11 @@
       </section>
       {% endif %}
 
-      {# Pagination #}
-      {% if pagination %}
-      <nav class="pagination">
-        {% if pagination.prev %}
-        <a href="{{ pagination.prev }}" class="btn btn--secondary">&larr; 上一页</a>
-        {% endif %}
-        {% if pagination.next %}
-        <a href="{{ pagination.next }}" class="btn btn--secondary">下一页 &rarr;</a>
-        {% endif %}
-      </nav>
+      {# View more button #}
+      {% if pagination.hasNext %}
+      <div class="view-more">
+        <a href="{{ pagination.nextURL }}" class="btn btn--secondary">查看更多文章 &rarr;</a>
+      </div>
       {% endif %}
     </div>
 

@@ -39,6 +39,14 @@ func (f *TagFacade) DeleteTag(name string) error {
 	return f.internal.DeleteTag(ctx, name)
 }
 
+func (f *TagFacade) SaveTags(tags []domain.Tag) error {
+	ctx := WailsContext
+	if ctx == nil {
+		ctx = context.TODO()
+	}
+	return f.internal.SaveTags(ctx, tags)
+}
+
 func (f *TagFacade) GetTagColors() []string {
 	return service.TagColors
 }

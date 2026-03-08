@@ -28,6 +28,8 @@ pnpm-debug.log*
 .idea
 .vscode/*
 .agent/*
+.agents/*
+.claude/*
 .github/*
 .trae/*
 !.vscode/settings.json

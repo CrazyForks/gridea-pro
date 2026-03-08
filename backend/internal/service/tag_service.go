@@ -94,6 +94,12 @@ func (s *TagService) DeleteTag(ctx context.Context, name string) error {
 	return nil
 }
 
+func (s *TagService) SaveTags(ctx context.Context, tags []domain.Tag) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.repo.SaveAll(ctx, tags)
+}
+
 // GetOrCreateTag gets an existing tag by name or creates a new one with standardized slug and ID
 func (s *TagService) GetOrCreateTag(ctx context.Context, name string) (domain.Tag, error) {
 	// Critical Section: Ensure check and create are atomic

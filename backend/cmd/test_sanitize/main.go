@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -63,7 +64,7 @@ func main() {
 
 	loader, err := NewSanitizingLoader(templatesDir)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "FATAL: %v\n", err)
+		slog.Error("FATAL", "error", err)
 		os.Exit(1)
 	}
 

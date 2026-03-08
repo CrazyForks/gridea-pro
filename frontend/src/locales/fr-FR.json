@@ -203,6 +203,7 @@
             "privateKeyTip": "Chemin absolu requis, ex: /home/user/.ssh/id_rsa",
             "remotePathTip": "Chemin absolu requis, ex: /home/user/www/",
             "testConnection": "Tester la connexion",
+            "checking": "Vérification...",
             "connectSuccess": "Connexion réussie",
             "connectFailed": "Échec de la connexion. Vérifiez le dépôt, l'utilisateur et le jeton."
         },

@@ -3,6 +3,7 @@ package render
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"math"
 	"os"
 	"path/filepath"
@@ -48,6 +49,7 @@ type Jinja2Renderer struct {
 	// 模板缓存
 	cache     map[string]*pongo2.Template
 	cacheLock sync.RWMutex
+	logger    *slog.Logger
 }
 
 // NewJinja2Renderer 创建 Jinja2 渲染器
@@ -58,13 +60,15 @@ func NewJinja2Renderer(config RenderConfig) *Jinja2Renderer {
 	themePath := filepath.Join(config.AppDir, "themes", config.ThemeName)
 	templatesDir := filepath.Join(themePath, "templates")
 
+	logger := slog.Default()
+
 	// 确保模板目录存在
 	if _, err := os.Stat(templatesDir); os.IsNotExist(err) {
-		fmt.Fprintf(os.Stderr, "WARN: templatesDir does not exist! %s\n", templatesDir)
+		logger.Warn("templatesDir does not exist", "path", templatesDir)
 		_ = os.MkdirAll(templatesDir, 0755)
 	}
 
-	fmt.Fprintf(os.Stderr, "INFO: Using Jinja2 templatesDir: %s\n", templatesDir)
+	logger.Info("Using Jinja2 templatesDir", "path", templatesDir)
 
 	// 创建自定义清理加载器
 	// SanitizingLoader 在读取模板文件后自动清理 {{ }}/{% %}/{# #} 标签内的换行符
@@ -72,7 +76,7 @@ func NewJinja2Renderer(config RenderConfig) *Jinja2Renderer {
 	var loader pongo2.TemplateLoader
 	if sanitizingLoader, err := NewSanitizingLoader(templatesDir); err != nil {
 		// Fallback：如果路径不存在，用标准加载器（后续 Render 时会报错）
-		fmt.Fprintf(os.Stderr, "Warn: 创建模板加载器失败: %v\n", err)
+		logger.Warn("创建模板加载器失败", "error", err)
 		loader = pongo2.MustNewLocalFileSystemLoader(".")
 	} else {
 		loader = sanitizingLoader
@@ -86,6 +90,7 @@ func NewJinja2Renderer(config RenderConfig) *Jinja2Renderer {
 		config:      config,
 		templateSet: set,
 		cache:       make(map[string]*pongo2.Template),
+		logger:      logger,
 	}
 }
 
@@ -168,7 +173,7 @@ func (r *Jinja2Renderer) getTemplate(name string) (*pongo2.Template, error) {
 		}
 
 		// 打印实际的详细解析错误！这能帮助我们发现具体是哪里语法错了
-		fmt.Fprintf(os.Stderr, "INFO: 尝试加载 %s 时发生错误: %v\n", filename, lastErr)
+		r.logger.Info("尝试加载模板时发生错误", "filename", filename, "error", lastErr)
 	}
 
 	if tmpl == nil {
@@ -261,6 +266,7 @@ func (r *Jinja2Renderer) buildContext(data *template.TemplateData) pongo2.Contex
 		"current_tag": toContextValue(data.Tag),
 		"tag":         toContextValue(data.Tag), // alias
 		"currentTag":  toContextValue(data.Tag), // alias 兼容性
+		"category":    toContextValue(data.Category),
 
 		// 实用工具
 		"now": time.Now(),

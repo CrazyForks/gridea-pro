@@ -34,6 +34,9 @@ type TemplateData struct {
 	// 当前标签（标签页使用）
 	Tag TagView `json:"tag"`
 
+	// 当前分类（分类页使用）
+	Category CategoryView `json:"category"`
+
 	// 所有标签
 	Tags []TagView `json:"tags"`
 
@@ -83,6 +86,7 @@ type SimplePostView struct {
 	Title    string `json:"title"`
 	Link     string `json:"link"`
 	FileName string `json:"fileName"`
+	Feature  string `json:"feature"`
 }
 
 // PostView 文章视图
@@ -139,9 +143,10 @@ type MemoView struct {
 
 // CategoryView 分类视图
 type CategoryView struct {
-	Name string `json:"name"`
-	Slug string `json:"slug"`
-	Link string `json:"link"`
+	Name  string `json:"name"`
+	Slug  string `json:"slug"`
+	Link  string `json:"link"`
+	Count int    `json:"count"`
 }
 
 // MenuView 菜单视图

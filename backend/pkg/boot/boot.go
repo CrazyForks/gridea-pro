@@ -235,6 +235,8 @@ func Run(assets embed.FS) {
 			services.Memo,
 			services.Comment,
 			services.Preview,
+			services.SeoSetting,
+			services.CdnSetting,
 		},
 		Mac: &mac.Options{
 			TitleBar:             mac.TitleBarHiddenInset(),
@@ -344,11 +346,10 @@ func buildMenu(
 	// 3. 编辑 (Edit)
 	// ─────────────────────────────────────────────
 	if runtime.GOOS == "darwin" {
-		// macOS: Append the native Edit menu so Cut/Copy/Paste work natively in WKWebView without execCommand prompts.
+		// macOS: 必须使用原生 Edit 菜单，否则 WKWebView 的 Cut/Copy/Paste 无法工作
 		appMenu.Append(menu.EditMenu())
 	} else {
-		// Windows/Linux: WebView2/WebKit2GTK natively handles Ctrl+C/V.
-		// We only define custom editor actions here to avoid swallowing native shortcuts.
+		// Windows/Linux: WebView2/WebKit2GTK 原生处理 Ctrl+C/V
 		editMenu := appMenu.AddSubmenu(T("edit"))
 		editMenu.AddText(T("edit.find"), keys.CmdOrCtrl("f"), func(_ *menu.CallbackData) {
 			emitEvent("menu:find")
@@ -368,7 +369,7 @@ func buildMenu(
 	viewMenu := appMenu.AddSubmenu(T("view"))
 
 	if runtime.GOOS == "darwin" {
-		// macOS:由于无法安全追加到原生 Edit 菜单中，将搜索等功能放入视图菜单顶部
+		// macOS: Find/Replace/CopyHTML 放入 View 菜单（原生 Edit 菜单无法自定义）
 		viewMenu.AddText(T("edit.find"), keys.CmdOrCtrl("f"), func(_ *menu.CallbackData) {
 			emitEvent("menu:find")
 		})

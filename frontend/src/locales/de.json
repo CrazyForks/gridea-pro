@@ -203,6 +203,7 @@
             "privateKeyTip": "Absoluter Pfad, z.B.: /home/username/.ssh/id_rsa",
             "remotePathTip": "Absoluter Pfad, z.B.: /home/username/www/",
             "testConnection": "Verbindung testen",
+            "checking": "Prüfung...",
             "connectSuccess": "Verbindung erfolgreich",
             "connectFailed": "Verbindung fehlgeschlagen"
         },

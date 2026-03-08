@@ -1,0 +1,322 @@
+package engine
+
+import (
+	"encoding/json"
+	"fmt"
+	"gridea-pro/backend/internal/domain"
+	"gridea-pro/backend/internal/template"
+	"strings"
+)
+
+// HtmlPostProcessor 在模板渲染完成后对 HTML 进行后处理，注入 SEO 标签和 CDN URL 重写
+type HtmlPostProcessor struct {
+	seoSetting *domain.SeoSetting
+	cdnSetting *domain.CdnSetting
+	domain     string
+	siteName   string
+	siteDesc   string
+	language   string
+}
+
+// NewHtmlPostProcessor 创建后处理器
+func NewHtmlPostProcessor(seo *domain.SeoSetting, cdn *domain.CdnSetting, domain, siteName, siteDesc, language string) *HtmlPostProcessor {
+	return &HtmlPostProcessor{
+		seoSetting: seo,
+		cdnSetting: cdn,
+		domain:     domain,
+		siteName:   siteName,
+		siteDesc:   siteDesc,
+		language:   language,
+	}
+}
+
+// Process 对渲染后的 HTML 进行后处理
+// pageType: "index", "post", "tags", "tag", "archives", "friends", "memos", "404", "blog", "category"
+// pageURL: 当前页面的相对 URL（如 "/" 、"/post/hello/"）
+// post: 文章页时传入当前文章数据，其他页传 nil
+func (p *HtmlPostProcessor) Process(html, pageType, pageURL string, post *template.PostView) string {
+	if p == nil {
+		return html
+	}
+
+	// SEO 注入
+	html = p.injectSeo(html, pageType, pageURL, post)
+
+	// CDN URL 重写
+	html = p.rewriteCdnURLs(html)
+
+	return html
+}
+
+// injectSeo 在 </head> 前插入 SEO 相关标签
+func (p *HtmlPostProcessor) injectSeo(html, pageType, pageURL string, post *template.PostView) string {
+	if p.seoSetting == nil {
+		return html
+	}
+
+	var sb strings.Builder
+
+	fullURL := strings.TrimRight(p.domain, "/") + pageURL
+
+	// Meta Description
+	description := p.siteDesc
+	if post != nil && pageType == "post" {
+		if post.Description != "" {
+			description = post.Description
+		} else {
+			// 取前 160 字符作为摘要
+			plain := stripHTML(string(post.Content))
+			if len([]rune(plain)) > 160 {
+				description = string([]rune(plain)[:160])
+			} else {
+				description = plain
+			}
+		}
+	}
+	if description != "" {
+		sb.WriteString(fmt.Sprintf(`<meta name="description" content="%s">`+"\n", escapeAttr(description)))
+	}
+
+	// Meta Keywords
+	if p.seoSetting.MetaKeywords != "" {
+		sb.WriteString(fmt.Sprintf(`<meta name="keywords" content="%s">`+"\n", escapeAttr(p.seoSetting.MetaKeywords)))
+	}
+
+	// Canonical URL
+	if p.seoSetting.EnableCanonicalURL && fullURL != "" {
+		sb.WriteString(fmt.Sprintf(`<link rel="canonical" href="%s">`+"\n", escapeAttr(fullURL)))
+	}
+
+	// JSON-LD
+	if p.seoSetting.EnableJsonLD {
+		sb.WriteString(p.buildJsonLD(pageType, fullURL, post, description))
+	}
+
+	// Open Graph + Twitter Card
+	if p.seoSetting.EnableOpenGraph {
+		sb.WriteString(p.buildOpenGraph(pageType, fullURL, post, description))
+	}
+
+	// Google Analytics
+	if p.seoSetting.GoogleAnalyticsID != "" {
+		gaID := escapeAttr(p.seoSetting.GoogleAnalyticsID)
+		sb.WriteString(fmt.Sprintf(`<script async src="https://www.googletagmanager.com/gtag/js?id=%s"></script>`+"\n", gaID))
+		sb.WriteString(fmt.Sprintf(`<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','%s');</script>`+"\n", gaID))
+	}
+
+	// Google Search Console
+	if p.seoSetting.GoogleSearchConsoleCode != "" {
+		sb.WriteString(fmt.Sprintf(`<meta name="google-site-verification" content="%s">`+"\n", escapeAttr(p.seoSetting.GoogleSearchConsoleCode)))
+	}
+
+	// 百度统计
+	if p.seoSetting.BaiduAnalyticsID != "" {
+		baiduID := escapeAttr(p.seoSetting.BaiduAnalyticsID)
+		sb.WriteString(fmt.Sprintf(`<script>var _hmt=_hmt||[];(function(){var hm=document.createElement("script");hm.src="https://hm.baidu.com/hm.js?%s";var s=document.getElementsByTagName("script")[0];s.parentNode.insertBefore(hm,s);})();</script>`+"\n", baiduID))
+	}
+
+	// 自定义代码
+	if p.seoSetting.CustomHeadCode != "" {
+		sb.WriteString(p.seoSetting.CustomHeadCode + "\n")
+	}
+
+	inject := sb.String()
+	if inject == "" {
+		return html
+	}
+
+	// 在 </head> 前插入
+	idx := strings.LastIndex(strings.ToLower(html), "</head>")
+	if idx == -1 {
+		return html
+	}
+	return html[:idx] + inject + html[idx:]
+}
+
+// orderedJSON 按给定顺序生成 JSON 字符串（保持属性语义排序，而非字母序）
+func orderedJSON(pairs ...any) string {
+	var sb strings.Builder
+	sb.WriteByte('{')
+	for i := 0; i < len(pairs)-1; i += 2 {
+		if i > 0 {
+			sb.WriteByte(',')
+		}
+		key, _ := json.Marshal(pairs[i])
+		val, _ := json.Marshal(pairs[i+1])
+		sb.Write(key)
+		sb.WriteByte(':')
+		sb.Write(val)
+	}
+	sb.WriteByte('}')
+	return sb.String()
+}
+
+// buildJsonLD 生成 JSON-LD 结构化数据
+func (p *HtmlPostProcessor) buildJsonLD(pageType, fullURL string, post *template.PostView, description string) string {
+	var sb strings.Builder
+
+	switch pageType {
+	case "post":
+		if post == nil {
+			break
+		}
+		// BlogPosting: @context → @type → headline → url → description → image → datePublished → dateModified → author → publisher
+		pairs := []any{
+			"@context", "https://schema.org",
+			"@type", "BlogPosting",
+			"headline", post.Title,
+			"url", fullURL,
+			"description", description,
+		}
+		if post.Feature != "" {
+			pairs = append(pairs, "image", post.Feature)
+		}
+		pairs = append(pairs,
+			"datePublished", post.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			"dateModified", post.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			"author", map[string]any{"@type": "Person", "name": p.siteName},
+			"publisher", map[string]any{"@type": "Organization", "name": p.siteName},
+		)
+		fmt.Fprintf(&sb, "<script type=\"application/ld+json\">%s</script>\n", orderedJSON(pairs...))
+
+		// BreadcrumbList
+		breadcrumb := orderedJSON(
+			"@context", "https://schema.org",
+			"@type", "BreadcrumbList",
+			"itemListElement", []map[string]any{
+				{"@type": "ListItem", "position": 1, "name": p.siteName, "item": p.domain},
+				{"@type": "ListItem", "position": 2, "name": post.Title, "item": fullURL},
+			},
+		)
+		fmt.Fprintf(&sb, "<script type=\"application/ld+json\">%s</script>\n", breadcrumb)
+
+	default:
+		// WebSite: @context → @type → name → url → description → potentialAction
+		website := orderedJSON(
+			"@context", "https://schema.org",
+			"@type", "WebSite",
+			"name", p.siteName,
+			"url", p.domain,
+			"description", p.siteDesc,
+			"potentialAction", map[string]any{
+				"@type":       "SearchAction",
+				"target":      strings.TrimRight(p.domain, "/") + "/search?q={search_term_string}",
+				"query-input": "required name=search_term_string",
+			},
+		)
+		fmt.Fprintf(&sb, "<script type=\"application/ld+json\">%s</script>\n", website)
+	}
+
+	return sb.String()
+}
+
+// buildOpenGraph 生成 Open Graph 和 Twitter Card 标签
+func (p *HtmlPostProcessor) buildOpenGraph(pageType, fullURL string, post *template.PostView, description string) string {
+	var sb strings.Builder
+
+	title := p.siteName
+	ogType := "website"
+	image := ""
+
+	if pageType == "post" && post != nil {
+		title = post.Title
+		ogType = "article"
+		image = post.Feature
+	}
+
+	sb.WriteString(fmt.Sprintf(`<meta property="og:title" content="%s">`+"\n", escapeAttr(title)))
+	sb.WriteString(fmt.Sprintf(`<meta property="og:description" content="%s">`+"\n", escapeAttr(description)))
+	sb.WriteString(fmt.Sprintf(`<meta property="og:url" content="%s">`+"\n", escapeAttr(fullURL)))
+	sb.WriteString(fmt.Sprintf(`<meta property="og:type" content="%s">`+"\n", ogType))
+	sb.WriteString(fmt.Sprintf(`<meta property="og:site_name" content="%s">`+"\n", escapeAttr(p.siteName)))
+	if image != "" {
+		sb.WriteString(fmt.Sprintf(`<meta property="og:image" content="%s">`+"\n", escapeAttr(image)))
+	}
+
+	// Twitter Card
+	sb.WriteString(`<meta name="twitter:card" content="summary_large_image">` + "\n")
+	sb.WriteString(fmt.Sprintf(`<meta name="twitter:title" content="%s">`+"\n", escapeAttr(title)))
+	sb.WriteString(fmt.Sprintf(`<meta name="twitter:description" content="%s">`+"\n", escapeAttr(description)))
+	if image != "" {
+		sb.WriteString(fmt.Sprintf(`<meta name="twitter:image" content="%s">`+"\n", escapeAttr(image)))
+	}
+
+	return sb.String()
+}
+
+// rewriteCdnURLs 将静态资源路径替换为 CDN 地址
+func (p *HtmlPostProcessor) rewriteCdnURLs(html string) string {
+	if p.cdnSetting == nil || !p.cdnSetting.Enabled {
+		return html
+	}
+
+	cdnBase := p.buildCdnBase()
+	if cdnBase == "" {
+		return html
+	}
+
+	// 需要替换的路径前缀
+	paths := []string{"/images/", "/post-images/", "/media/"}
+	// 需要替换的 HTML 属性上下文
+	prefixes := []string{`src="`, `src='`, `href="`, `href='`}
+
+	for _, path := range paths {
+		for _, prefix := range prefixes {
+			old := prefix + path
+			newVal := prefix + cdnBase + path
+			html = strings.ReplaceAll(html, old, newVal)
+		}
+	}
+
+	return html
+}
+
+// buildCdnBase 构建 CDN 基础 URL
+func (p *HtmlPostProcessor) buildCdnBase() string {
+	switch p.cdnSetting.Provider {
+	case "jsdelivr":
+		if p.cdnSetting.GithubUser == "" || p.cdnSetting.GithubRepo == "" {
+			return ""
+		}
+		branch := p.cdnSetting.GithubBranch
+		if branch == "" {
+			branch = "main"
+		}
+		return fmt.Sprintf("https://cdn.jsdelivr.net/gh/%s/%s@%s",
+			p.cdnSetting.GithubUser, p.cdnSetting.GithubRepo, branch)
+	case "custom":
+		return strings.TrimRight(p.cdnSetting.BaseURL, "/")
+	default:
+		return ""
+	}
+}
+
+// escapeAttr 转义 HTML 属性值中的特殊字符
+func escapeAttr(s string) string {
+	s = strings.ReplaceAll(s, `&`, `&amp;`)
+	s = strings.ReplaceAll(s, `"`, `&quot;`)
+	s = strings.ReplaceAll(s, `<`, `&lt;`)
+	s = strings.ReplaceAll(s, `>`, `&gt;`)
+	return s
+}
+
+
+// stripHTML 简单去除 HTML 标签
+func stripHTML(s string) string {
+	var sb strings.Builder
+	inTag := false
+	for _, r := range s {
+		switch {
+		case r == '<':
+			inTag = true
+		case r == '>':
+			inTag = false
+		case !inTag:
+			sb.WriteRune(r)
+		}
+	}
+	result := sb.String()
+	// 压缩连续空白
+	result = strings.Join(strings.Fields(result), " ")
+	return strings.TrimSpace(result)
+}

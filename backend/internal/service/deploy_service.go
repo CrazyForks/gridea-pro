@@ -3,8 +3,9 @@ package service
 import (
 	"context"
 	"fmt"
+	"gridea-pro/backend/internal/deploy"
 	"gridea-pro/backend/internal/domain"
-	"gridea-pro/backend/internal/service/deployer"
+	"gridea-pro/backend/internal/engine"
 	"os"
 	"path/filepath"
 	"sync"
@@ -14,7 +15,7 @@ import (
 
 type DeployService struct {
 	settingRepo domain.SettingRepository
-	renderer    *RendererService // Injected to trigger site build before deploy
+	renderer    *engine.Engine // Injected to trigger site build before deploy
 	appDir      string
 	mu          sync.Mutex
 	isDeploying bool
@@ -28,7 +29,7 @@ func NewDeployService(settingRepo domain.SettingRepository, appDir string) *Depl
 }
 
 // SetRenderer injects the RendererService into DeployService
-func (s *DeployService) SetRenderer(renderer *RendererService) {
+func (s *DeployService) SetRenderer(renderer *engine.Engine) {
 	s.renderer = renderer
 }
 
@@ -57,7 +58,7 @@ func (s *DeployService) DeployToRemote(ctx context.Context) error {
 		return err
 	}
 
-	s.log(ctx, fmt.Sprintf("Deploying to domain: %s", setting.Domain))
+	s.log(ctx, fmt.Sprintf("Deploying to domain: %s", setting.Domain()))
 
 	// 2. Render Site
 	if s.renderer != nil {
@@ -77,15 +78,15 @@ func (s *DeployService) DeployToRemote(ctx context.Context) error {
 	}
 
 	// 4. Instantiate strategy based on platform
-	var provider deployer.Provider
+	var provider deploy.Provider
 	switch setting.Platform {
 	case "github", "gitee":
-		provider = deployer.NewGitProvider()
+		provider = deploy.NewGitProvider()
 	case "vercel":
-		provider = deployer.NewVercelProvider()
+		provider = deploy.NewVercelProvider()
 	default:
 		// Fallback or handle appropriately
-		provider = deployer.NewGitProvider()
+		provider = deploy.NewGitProvider()
 	}
 
 	// 5. Wrap log function

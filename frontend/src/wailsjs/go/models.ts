@@ -18,6 +18,28 @@ export namespace domain {
 	        this.description = source["description"];
 	    }
 	}
+	export class CdnSetting {
+	    enabled: boolean;
+	    provider: string;
+	    githubUser: string;
+	    githubRepo: string;
+	    githubBranch: string;
+	    baseUrl: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new CdnSetting(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.enabled = source["enabled"];
+	        this.provider = source["provider"];
+	        this.githubUser = source["githubUser"];
+	        this.githubRepo = source["githubRepo"];
+	        this.githubBranch = source["githubBranch"];
+	        this.baseUrl = source["baseUrl"];
+	    }
+	}
 	export class Comment {
 	    id: string;
 	    avatar: string;
@@ -327,26 +349,35 @@ export namespace domain {
 		    return a;
 		}
 	}
+	export class SeoSetting {
+	    enableJsonLD: boolean;
+	    enableOpenGraph: boolean;
+	    enableCanonicalURL: boolean;
+	    metaKeywords: string;
+	    googleAnalyticsId: string;
+	    googleSearchConsoleCode: string;
+	    baiduAnalyticsId: string;
+	    customHeadCode: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new SeoSetting(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.enableJsonLD = source["enableJsonLD"];
+	        this.enableOpenGraph = source["enableOpenGraph"];
+	        this.enableCanonicalURL = source["enableCanonicalURL"];
+	        this.metaKeywords = source["metaKeywords"];
+	        this.googleAnalyticsId = source["googleAnalyticsId"];
+	        this.googleSearchConsoleCode = source["googleSearchConsoleCode"];
+	        this.baiduAnalyticsId = source["baiduAnalyticsId"];
+	        this.customHeadCode = source["customHeadCode"];
+	    }
+	}
 	export class Setting {
 	    platform: string;
-	    domain: string;
-	    repository: string;
-	    branch: string;
-	    username: string;
-	    email: string;
-	    tokenUsername: string;
-	    token: string;
-	    cname: string;
-	    port: string;
-	    server: string;
-	    password: string;
-	    privateKey: string;
-	    remotePath: string;
-	    proxyPath: string;
-	    proxyPort: string;
-	    enabledProxy: string;
-	    netlifySiteId: string;
-	    netlifyAccessToken: string;
+	    platformConfigs?: Record<string, Array<number>>;
 	
 	    static createFrom(source: any = {}) {
 	        return new Setting(source);
@@ -355,24 +386,7 @@ export namespace domain {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.platform = source["platform"];
-	        this.domain = source["domain"];
-	        this.repository = source["repository"];
-	        this.branch = source["branch"];
-	        this.username = source["username"];
-	        this.email = source["email"];
-	        this.tokenUsername = source["tokenUsername"];
-	        this.token = source["token"];
-	        this.cname = source["cname"];
-	        this.port = source["port"];
-	        this.server = source["server"];
-	        this.password = source["password"];
-	        this.privateKey = source["privateKey"];
-	        this.remotePath = source["remotePath"];
-	        this.proxyPath = source["proxyPath"];
-	        this.proxyPort = source["proxyPort"];
-	        this.enabledProxy = source["enabledProxy"];
-	        this.netlifySiteId = source["netlifySiteId"];
-	        this.netlifyAccessToken = source["netlifyAccessToken"];
+	        this.platformConfigs = source["platformConfigs"];
 	    }
 	}
 	export class Tag {

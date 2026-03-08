@@ -203,6 +203,7 @@
             "privateKeyTip": "절대 경로 입력 (예: /home/username/.ssh/id_rsa)",
             "remotePathTip": "절대 경로 입력 (예: /home/username/www/)",
             "testConnection": "연결 테스트",
+            "checking": "확인 중...",
             "connectSuccess": "연결 성공",
             "connectFailed": "연결 실패"
         },

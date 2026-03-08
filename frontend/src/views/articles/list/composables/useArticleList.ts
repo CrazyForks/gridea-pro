@@ -50,7 +50,7 @@ export function useArticleList() {
                 return bTop - aTop
             }
             // 日期降序
-            return dayjs(b.date).valueOf() - dayjs(a.date).valueOf()
+            return dayjs(b.createdAt).valueOf() - dayjs(a.createdAt).valueOf()
         })
     })
 

@@ -203,6 +203,7 @@
             "privateKeyTip": "Абсолютный путь, напр.: /home/user/.ssh/id_rsa",
             "remotePathTip": "Абсолютный путь, напр.: /home/user/www/",
             "testConnection": "Проверить",
+            "checking": "Проверка...",
             "connectSuccess": "Подключение успешно",
             "connectFailed": "Ошибка подключения. Проверьте репозиторий, пользователя и токен."
         },

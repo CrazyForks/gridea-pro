@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"os"
@@ -17,7 +18,7 @@ import (
 const DefaultDevStartPort = 3367
 
 // DefaultProdStartPort 生产模式默认起始端口
-const DefaultProdStartPort = 2077
+const DefaultProdStartPort = 6606
 
 // PreviewService 管理预览服务器的生命周期
 type PreviewService struct {
@@ -26,6 +27,7 @@ type PreviewService struct {
 	buildDir  string
 	mu        sync.RWMutex
 	isRunning bool
+	logger    *slog.Logger
 }
 
 // NewPreviewService 创建新的预览服务实例
@@ -33,6 +35,7 @@ func NewPreviewService(buildDir string) *PreviewService {
 	return &PreviewService{
 		buildDir: buildDir,
 		port:     0,
+		logger:   slog.Default(),
 	}
 }
 
@@ -85,13 +88,13 @@ func (s *PreviewService) StartPreviewServer(ctx context.Context) (string, error)
 		}
 		// Only log if it's the specific port we wanted, to avoid spamming logs if we are just scanning
 		if i == 0 {
-			fmt.Fprintf(os.Stderr, "Preview Server: Port %d is in use, attempting to find next available port...\n", port)
+			s.logger.Info("Preview Server: port is in use, attempting to find next available port", "port", port)
 		}
 	}
 
 	// If scanning fails, fallback to random port
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Preview Server: Could not find available port in range %d-%d, falling back to random port...\n", basePort, basePort+maxRetries-1)
+		s.logger.Warn("Preview Server: could not find available port in range, falling back to random port", "rangeStart", basePort, "rangeEnd", basePort+maxRetries-1)
 		listener, err = tryListen(0)
 		if err != nil {
 			s.sendToast(ctx, "预览服务启动失败："+err.Error(), "error")
@@ -151,7 +154,7 @@ func (s *PreviewService) StartPreviewServer(ctx context.Context) (string, error)
 	// 4. 在 goroutine 中启动，使用 Serve(listener) 而不是 ListenAndServe
 	go func() {
 		if err := s.server.Serve(listener); err != nil && err != http.ErrServerClosed {
-			fmt.Fprintf(os.Stderr, "预览服务器错误: %v\n", err)
+			s.logger.Error("预览服务器错误", "error", err)
 		}
 	}()
 
@@ -161,7 +164,7 @@ func (s *PreviewService) StartPreviewServer(ctx context.Context) (string, error)
 	time.Sleep(50 * time.Millisecond)
 
 	url := fmt.Sprintf("http://127.0.0.1:%d", s.port)
-	fmt.Fprintf(os.Stderr, "预览服务器已启动: %s\n", url)
+	s.logger.Info("预览服务器已启动", "url", url)
 
 	return url, nil
 }
@@ -180,9 +183,9 @@ func (s *PreviewService) StopPreviewServer() error {
 
 	if err := s.server.Shutdown(ctx); err != nil {
 		s.server.Close()
-		fmt.Fprintf(os.Stderr, "预览服务器强制关闭: %v\n", err)
+		s.logger.Warn("预览服务器强制关闭", "error", err)
 	} else {
-		fmt.Fprintln(os.Stderr, "预览服务器已平滑关闭")
+		s.logger.Info("预览服务器已平滑关闭")
 	}
 
 	s.server = nil

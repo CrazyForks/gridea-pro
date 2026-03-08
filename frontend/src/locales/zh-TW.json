@@ -203,6 +203,7 @@
             "privateKeyTip": "請填寫絕對路徑，例如：/home/username/.ssh/id_rsa",
             "remotePathTip": "請填寫絕對路徑，例如：/home/username/www/",
             "testConnection": "測試連線",
+            "checking": "檢測中...",
             "connectSuccess": "遠端連線成功",
             "connectFailed": "遠端連線失敗，請檢查儲存庫、使用者名稱和 Token 設定"
         },

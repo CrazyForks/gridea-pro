@@ -13,12 +13,10 @@ export interface ISetting {
   password: string
   privateKey: string
   remotePath: string
-  proxyPath: string
-  proxyPort: string
-  enabledProxy: 'direct' | 'proxy'
   netlifyAccessToken: string
   netlifySiteId: string
-  [index: string]: string
+  platformConfigs?: Record<string, Record<string, any>>
+  [index: string]: any
 }
 
 export interface ICommentSetting {
