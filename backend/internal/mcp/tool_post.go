@@ -77,7 +77,7 @@ func createPostTool() mcp.Tool {
 		mcp.WithString("fileName", mcp.Description("Custom filename (optional)")),
 		mcp.WithString("tags", mcp.Description("Comma separated tags or JSON array string")), // Simplification: use string or deal with array complexity
 		// Actually mcp-go supports explicit types. Let's use array if possible or just string for simplicity in handlers
-		mcp.WithString("categories", mcp.Description("Comma separated categories")),
+		mcp.WithString("category", mcp.Description("Category name (one category per post)")),
 		mcp.WithBoolean("published", mcp.Description("Whether to publish immediately")),
 	)
 }
@@ -118,11 +118,8 @@ func createPostHandler(s *service.PostService) server.ToolHandlerFunc {
 				post.Tags[i] = strings.TrimSpace(post.Tags[i])
 			}
 		}
-		if v := request.GetString("categories", ""); v != "" {
-			post.Categories = strings.Split(v, ",")
-			for i := range post.Categories {
-				post.Categories[i] = strings.TrimSpace(post.Categories[i])
-			}
+		if v := request.GetString("category", ""); v != "" {
+			post.Categories = []string{strings.TrimSpace(v)}
 		}
 
 		// 如果未提供 fileName，从标题自动生成 slug

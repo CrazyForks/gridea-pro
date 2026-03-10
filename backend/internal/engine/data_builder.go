@@ -33,6 +33,11 @@ type TemplateDataBuilder struct {
 
 	themeConfigService *ThemeConfigService
 	logger             *slog.Logger
+
+	// Build() 阶段缓存的查找映射，供 ConvertPost() 复用
+	cachedTagByName      map[string]domain.Tag
+	cachedCategoryByID   map[string]domain.Category
+	cachedCategoryByName map[string]domain.Category
 }
 
 // NewTemplateDataBuilder 创建 TemplateDataBuilder
@@ -89,6 +94,23 @@ func (b *TemplateDataBuilder) Build(ctx context.Context, posts []domain.Post, co
 		}
 	}
 
+	// 3. 预加载标签映射，供 convertPost 使用
+	tagByName := make(map[string]domain.Tag)
+	if b.tagRepo != nil {
+		if repoTags, err := b.tagRepo.List(ctx); err == nil {
+			for _, rt := range repoTags {
+				if rt.Name != "" {
+					tagByName[rt.Name] = rt
+				}
+			}
+		}
+	}
+
+	// 缓存查找映射，供 ConvertPost() 在渲染单篇文章时复用
+	b.cachedTagByName = tagByName
+	b.cachedCategoryByID = categoryByID
+	b.cachedCategoryByName = categoryByName
+
 	postViews := make([]template.PostView, len(publishedPosts))
 	var wg sync.WaitGroup
 	// Limit concurrency to number of CPUs
@@ -101,7 +123,7 @@ func (b *TemplateDataBuilder) Build(ctx context.Context, posts []domain.Post, co
 			sem <- struct{}{}        // Acquire
 			defer func() { <-sem }() // Release
 
-			postViews[idx] = b.convertPost(p, config, categoryByID, categoryByName)
+			postViews[idx] = b.convertPost(p, config, categoryByID, categoryByName, tagByName)
 		}(i, post)
 	}
 	wg.Wait()
@@ -145,7 +167,7 @@ func (b *TemplateDataBuilder) Build(ctx context.Context, posts []domain.Post, co
 					allTags = append(allTags, template.TagView{
 						Name:  rt.Name,
 						Slug:  rt.Slug,
-						Link:  "/" + tagPath + "/" + rt.Name + "/",
+						Link:  "/" + tagPath + "/" + rt.Slug + "/",
 						Count: count,
 					})
 					delete(tagCountMap, rt.Name)
@@ -352,13 +374,16 @@ func (b *TemplateDataBuilder) buildCommentSettingView(ctx context.Context) templ
 }
 
 // ConvertPost 将 domain.Post 转换为 template.PostView（公开方法，供 PageRenderer 使用）
-// categoryByID: ID(NanoID) → domain.Category
+// categoryByID: ID(NanoID) → domain.Category；若为 nil 则使用 Build() 阶段缓存的映射
 func (b *TemplateDataBuilder) ConvertPost(post domain.Post, config domain.ThemeConfig, categoryByID map[string]domain.Category) template.PostView {
-	return b.convertPost(post, config, categoryByID, nil)
+	if categoryByID == nil {
+		categoryByID = b.cachedCategoryByID
+	}
+	return b.convertPost(post, config, categoryByID, b.cachedCategoryByName, b.cachedTagByName)
 }
 
 // convertPost 将 domain.Post 转换为 template.PostView
-func (b *TemplateDataBuilder) convertPost(post domain.Post, config domain.ThemeConfig, categoryByID map[string]domain.Category, categoryByName map[string]domain.Category) template.PostView {
+func (b *TemplateDataBuilder) convertPost(post domain.Post, config domain.ThemeConfig, categoryByID map[string]domain.Category, categoryByName map[string]domain.Category, tagByName map[string]domain.Tag) template.PostView {
 	postPath := config.PostPath
 	if postPath == "" {
 		postPath = DefaultPostPath
@@ -371,10 +396,16 @@ func (b *TemplateDataBuilder) convertPost(post domain.Post, config domain.ThemeC
 	var tags []template.TagView
 	var tagNames []string
 	for _, tag := range post.Tags {
+		tagSlug := tag
+		if tagByName != nil {
+			if t, ok := tagByName[tag]; ok {
+				tagSlug = t.Slug
+			}
+		}
 		tagView := template.TagView{
 			Name: tag,
-			Slug: tag,
-			Link: "/" + config.TagPath + "/" + tag + "/",
+			Slug: tagSlug,
+			Link: "/" + config.TagPath + "/" + tagSlug + "/",
 		}
 		tags = append(tags, tagView)
 		tagNames = append(tagNames, tag)

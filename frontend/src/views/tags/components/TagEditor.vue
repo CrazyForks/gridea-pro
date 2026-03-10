@@ -14,9 +14,9 @@
                     <div>
                         <Label class="mb-1.5 block">{{ t('tag.slug') }} <span class="text-destructive">*</span></Label>
                         <div class="relative">
-                            <span class="absolute left-3 top-2.5 text-muted-foreground text-sm">/tags/</span>
+                            <span class="absolute left-3 top-2.5 text-muted-foreground text-sm">/tag/</span>
                             <Input
-:model-value="form.slug" class="pl-14"
+:model-value="form.slug" class="pl-13"
                                 @update:model-value="$emit('slug-change', $event as string)" />
                         </div>
                     </div>

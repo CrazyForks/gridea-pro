@@ -8,8 +8,8 @@ import (
 
 func main() {
 	if _, err := os.Stat(mcp.GetAppDir()); os.IsNotExist(err) {
-		slog.Error("GRIDEA_SOURCE_DIR not found", "path", mcp.GetAppDir())
-		slog.Error("Please set GRIDEA_SOURCE_DIR environment variable to your Gridea Pro data directory.")
+		slog.Error("SOURCE_DIR not found", "path", mcp.GetAppDir())
+		slog.Error("Please set SOURCE_DIR environment variable to your Gridea Pro data directory.")
 		os.Exit(1)
 	}
 

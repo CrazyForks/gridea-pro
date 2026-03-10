@@ -29,9 +29,12 @@
                     <div>
                         <Label class="mb-1 block">Link</Label>
                         <div class="space-y-2">
-                            <Input
-:model-value="form.link" placeholder="输入或从下面选择"
-                                @update:model-value="$emit('link-change', $event as string)" />
+                            <div class="relative">
+                                <span class="absolute left-3 top-2.5 text-muted-foreground text-sm">/</span>
+                                <Input
+:model-value="form.link" class="pl-7" placeholder="输入或从下面选择"
+                                    @update:model-value="$emit('link-change', $event as string)" />
+                            </div>
                             <Select
 :model-value="form.link"
                                 @update:model-value="$emit('link-change', $event as string)">

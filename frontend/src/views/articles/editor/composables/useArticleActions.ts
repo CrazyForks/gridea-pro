@@ -93,7 +93,7 @@ export function useArticleActions(options: UseArticleActionsOptions) {
             if (data && data.tags) siteStore.tags = data.tags as ITag[]
 
             updateArticleSavedStatus()
-            toast.success(`🎉  ${t('published')}`)
+            toast.success(`🎉  ${t('article.published')}`)
             articleSettingsVisible.value = false
             onClose()
         } catch (e) {

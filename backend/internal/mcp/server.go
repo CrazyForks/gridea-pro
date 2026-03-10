@@ -58,11 +58,19 @@ func (s *Server) Start() error {
 }
 
 func GetAppDir() string {
+	if envDir := os.Getenv("SOURCE_DIR"); envDir != "" {
+		return envDir
+	}
+	// 兼容旧环境变量名
 	if envDir := os.Getenv("GRIDEA_SOURCE_DIR"); envDir != "" {
 		return envDir
 	}
 	home, _ := os.UserHomeDir()
 	return filepath.Join(home, "Documents", "Gridea Pro")
+}
+
+func IsDeployEnabled() bool {
+	return os.Getenv("DEPLOY_ENABLED") == "true"
 }
 
 func initServices(appDir string) *Services {
@@ -77,6 +85,8 @@ func initServices(appDir string) *Services {
 	mediaRepo := repository.NewMediaRepository(appDir)
 	memoRepo := repository.NewMemoRepository(appDir)
 	commentRepo := repository.NewCommentRepository(appDir)
+	seoSettingRepo := repository.NewSeoSettingRepository(appDir)
+	cdnSettingRepo := repository.NewCdnSettingRepository(appDir)
 
 	// Services
 	tagService := service.NewTagService(tagRepo)
@@ -96,6 +106,9 @@ func initServices(appDir string) *Services {
 	rendererService.SetTagRepo(tagRepo)
 	rendererService.SetMemoRepo(memoRepo)
 	rendererService.SetCommentRepo(commentRepo)
+	rendererService.SetCategoryRepo(categoryRepo)
+	rendererService.SetSeoSettingRepo(seoSettingRepo)
+	rendererService.SetCdnSettingRepo(cdnSettingRepo)
 
 	return &Services{
 		Post:     postService,
@@ -128,18 +141,22 @@ func (s *Server) registerTools() {
 	// Secondary Tools
 	s.mcpServer.AddTool(listTagsTool(), listTagsHandler(s.services.Tag))
 	s.mcpServer.AddTool(createTagTool(), createTagHandler(s.services.Tag))
+	s.mcpServer.AddTool(updateTagTool(), updateTagHandler(s.services.Tag))
 	s.mcpServer.AddTool(deleteTagTool(), deleteTagHandler(s.services.Tag))
 
 	s.mcpServer.AddTool(listCategoriesTool(), listCategoriesHandler(s.services.Category))
 	s.mcpServer.AddTool(createCategoryTool(), createCategoryHandler(s.services.Category))
+	s.mcpServer.AddTool(updateCategoryTool(), updateCategoryHandler(s.services.Category))
 	s.mcpServer.AddTool(deleteCategoryTool(), deleteCategoryHandler(s.services.Category))
 
 	s.mcpServer.AddTool(listLinksTool(), listLinksHandler(s.services.Link))
 	s.mcpServer.AddTool(createLinkTool(), createLinkHandler(s.services.Link))
+	s.mcpServer.AddTool(updateLinkTool(), updateLinkHandler(s.services.Link))
 	s.mcpServer.AddTool(deleteLinkTool(), deleteLinkHandler(s.services.Link))
 
 	s.mcpServer.AddTool(listMenusTool(), listMenusHandler(s.services.Menu))
 	s.mcpServer.AddTool(createMenuTool(), createMenuHandler(s.services.Menu))
+	s.mcpServer.AddTool(updateMenuTool(), updateMenuHandler(s.services.Menu))
 	s.mcpServer.AddTool(deleteMenuTool(), deleteMenuHandler(s.services.Menu))
 
 	// Config Tools
@@ -157,4 +174,9 @@ func (s *Server) registerTools() {
 
 	// Advanced Tools
 	s.mcpServer.AddTool(renderSiteTool(), renderSiteHandler(s.services.Renderer))
+
+	// Deploy Tool (opt-in via DEPLOY_ENABLED=true)
+	if IsDeployEnabled() {
+		s.mcpServer.AddTool(deploySiteTool(), deploySiteHandler(s.services.Setting, s.services.Renderer, GetAppDir()))
+	}
 }

@@ -15,7 +15,10 @@
                     <div>
                         <Label class="mb-1 block">{{ t('category.url') }} <span
                                 class="text-destructive">*</span></Label>
-                        <Input :model-value="form.slug" @input="$emit('slug-change', $event)" />
+                        <div class="relative">
+                            <span class="absolute left-3 top-2.5 text-muted-foreground text-sm">/category/</span>
+                            <Input :model-value="form.slug" class="pl-22" @input="$emit('slug-change', $event)" />
+                        </div>
                     </div>
                     <div>
                         <Label class="mb-1 block">{{ t('category.description') }}</Label>

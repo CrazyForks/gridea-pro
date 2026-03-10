@@ -219,7 +219,7 @@ func (r *PageRenderer) RenderPost(buildDir string, post domain.Post, baseData *t
 		PostPath:   baseData.ThemeConfig.PostPath,
 		TagPath:    baseData.ThemeConfig.TagPath,
 		DateFormat: baseData.ThemeConfig.DateFormat,
-	}, nil) // 单篇渲染不需要分类映射，降级为名称兜底
+	}, nil) // categoryByID 传 nil，ConvertPost 自动使用 Build() 阶段缓存的映射
 	postData.SiteTitle = postData.Post.Title + " | " + baseData.ThemeConfig.SiteName
 
 	// 检查主题是否有与文章同名的专属模板（如 about.html、privacy.html）
@@ -415,10 +415,10 @@ func (r *PageRenderer) RenderTagPages(ctx context.Context, buildDir string, data
 			tagBaseData.Tag = tg
 			tagBaseData.SiteTitle = tg.Name + " | " + data.ThemeConfig.SiteName
 
-			tagDir := filepath.Join(buildDir, tagPath, tg.Name)
+			tagDir := filepath.Join(buildDir, tagPath, tg.Slug)
 			err := r.renderPaginated(tagCtx, paginatedRenderConfig{
 				templateName: "tag",
-				baseURL:      "/" + tagPath + "/" + tg.Name + "/",
+				baseURL:      "/" + tagPath + "/" + tg.Slug + "/",
 				firstPageDir: tagDir,
 				pageBaseDir:  tagDir,
 				pageSize:     size,

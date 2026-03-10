@@ -47,7 +47,7 @@ export interface ArticleFormState {
     fileName: string
     tags: string[]
     category: string     // 分类名称（显示用）
-    categoryId: string   // 分类 Slug（存储主键）
+    categoryId: string   // 分类 UUID（存储主键）
     categories: string[]
     createdAt: dayjs.Dayjs
     content: string
@@ -414,7 +414,7 @@ export function useArticleForm(articleFileName: () => string) {
                 rawForm.category && rawForm.category !== '_none_'
                     ? [rawForm.category]
                     : [],
-            // 将已选分类的 slug 传入后端
+            // 将已选分类的 UUID 传入后端
             categoryIds:
                 rawForm.categoryId && rawForm.categoryId !== '_none_'
                     ? [rawForm.categoryId]

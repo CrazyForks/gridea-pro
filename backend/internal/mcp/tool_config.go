@@ -46,6 +46,7 @@ func updateThemeConfigTool() mcp.Tool {
 		mcp.WithString("siteName", mcp.Description("Site Name")),
 		mcp.WithString("siteDescription", mcp.Description("Site Description")),
 		mcp.WithString("siteAuthor", mcp.Description("Site Author")),
+		mcp.WithString("siteEmail", mcp.Description("Site Email")),
 		mcp.WithString("footerInfo", mcp.Description("Footer Info")),
 		mcp.WithString("configJson", mcp.Description("Full or partial config JSON to merge (advanced)")),
 		mcp.WithBoolean("confirm", mcp.Description("Set to true to confirm the update"), mcp.Required()),
@@ -72,6 +73,9 @@ func updateThemeConfigHandler(s *service.ThemeService) server.ToolHandlerFunc {
 		if v := request.GetString("siteAuthor", ""); v != "" {
 			updated.SiteAuthor = v
 		}
+		if v := request.GetString("siteEmail", ""); v != "" {
+			updated.SiteEmail = v
+		}
 		if v := request.GetString("footerInfo", ""); v != "" {
 			updated.FooterInfo = v
 		}
@@ -94,6 +98,9 @@ func updateThemeConfigHandler(s *service.ThemeService) server.ToolHandlerFunc {
 			}
 			if updated.SiteAuthor != current.SiteAuthor {
 				changes = append(changes, fmt.Sprintf("  siteAuthor: '%s' → '%s'", current.SiteAuthor, updated.SiteAuthor))
+			}
+			if updated.SiteEmail != current.SiteEmail {
+				changes = append(changes, fmt.Sprintf("  siteEmail: '%s' → '%s'", current.SiteEmail, updated.SiteEmail))
 			}
 			if updated.FooterInfo != current.FooterInfo {
 				changes = append(changes, fmt.Sprintf("  footerInfo: '%s' → '%s'", current.FooterInfo, updated.FooterInfo))

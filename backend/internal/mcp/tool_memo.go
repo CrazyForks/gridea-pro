@@ -5,12 +5,9 @@ import (
 	"fmt"
 	"gridea-pro/backend/internal/domain"
 	"gridea-pro/backend/internal/service"
-	"strings"
-	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
-	gonanoid "github.com/matoous/go-nanoid/v2"
 )
 
 func listMemosTool() mcp.Tool {
@@ -41,33 +38,12 @@ func createMemoHandler(s *service.MemoService) server.ToolHandlerFunc {
 			return mcp.NewToolResultError("content is required"), nil
 		}
 
-		memos, _ := s.LoadMemos(ctx)
-		const alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-		id, _ := gonanoid.Generate(alphabet, 6)
-		now := time.Now()
-
-		newMemo := domain.Memo{
-			ID:        id,
-			Content:   content,
-			CreatedAt: now,
-			UpdatedAt: now,
-		}
-		// Tags are extracted in Service/Facade usually, but Service.SaveMemos just saves.
-		// We might need to handle extraction if service doesn't do it automatically on save.
-		// Gridea Pro's MemoService seems to rely on Facade to extract tags before saving?
-		// Checked: facade.extractTags calls regex. Service just saves.
-		// So we should replicate extraction logic or move it to service.
-		// For now, let's keep it simple and just save, tag extraction is a UI feature mostly,
-		// unless we want AI to auto-tag. AI can put #tags in content directly.
-
-		// Prepend
-		memos = append([]domain.Memo{newMemo}, memos...)
-
-		if err := s.SaveMemos(ctx, memos); err != nil {
-			return mcp.NewToolResultError(fmt.Sprintf("Failed to save memo: %v", err)), nil
+		memo, err := s.CreateMemo(ctx, content)
+		if err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("Failed to create memo: %v", err)), nil
 		}
 
-		return mcp.NewToolResultText(fmt.Sprintf("Memo created: %s", id)), nil
+		return mcp.NewToolResultText(fmt.Sprintf("Memo created: %s", memo.ID)), nil
 	}
 }
 
@@ -142,28 +118,13 @@ func updateMemoHandler(s *service.MemoService) server.ToolHandlerFunc {
 			return mcp.NewToolResultError("content is required"), nil
 		}
 
-		memos, err := s.LoadMemos(ctx)
-		if err != nil {
-			return mcp.NewToolResultError(fmt.Sprintf("Failed to load memos: %v", err)), nil
+		memo := domain.Memo{
+			ID:      id,
+			Content: content,
 		}
 
-		found := false
-		for i, m := range memos {
-			if m.ID == id {
-				memos[i].Content = content
-				memos[i].UpdatedAt = time.Now()
-				memos[i].Tags = extractMemoTags(content)
-				found = true
-				break
-			}
-		}
-
-		if !found {
-			return mcp.NewToolResultError("Memo not found"), nil
-		}
-
-		if err := s.SaveMemos(ctx, memos); err != nil {
-			return mcp.NewToolResultError(fmt.Sprintf("Failed to save memo: %v", err)), nil
+		if err := s.UpdateMemo(ctx, memo); err != nil {
+			return mcp.NewToolResultError(fmt.Sprintf("Failed to update memo: %v", err)), nil
 		}
 
 		return mcp.NewToolResultText(fmt.Sprintf("Memo updated: %s", id)), nil
@@ -201,19 +162,3 @@ func getMemoStatsHandler(s *service.MemoService) server.ToolHandlerFunc {
 	}
 }
 
-// extractMemoTags 从 memo content 中提取 #tag 标签
-func extractMemoTags(content string) []string {
-	var tags []string
-	seen := make(map[string]bool)
-	// 简单匹配 #tag 模式（非 # 开头的行内标签）
-	for _, word := range strings.Fields(content) {
-		if strings.HasPrefix(word, "#") && len(word) > 1 {
-			tag := strings.TrimRight(word[1:], ".,;:!?")
-			if tag != "" && !seen[tag] {
-				tags = append(tags, tag)
-				seen[tag] = true
-			}
-		}
-	}
-	return tags
-}

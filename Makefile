@@ -1,4 +1,4 @@
-.PHONY: build dev clean
+.PHONY: build build-mcp dev clean
 
 # Build the application
 build:
@@ -6,6 +6,8 @@ build:
 	cd frontend && npm install && npm run build
 	@echo "Building backend..."
 	go build -o build/bin/gridea-pro .
+	@echo "Building MCP server..."
+	go build -ldflags="-s -w" -o build/bin/gridea-pro-mcp ./backend/cmd/mcp
 
 # Clean build artifacts
 clean:

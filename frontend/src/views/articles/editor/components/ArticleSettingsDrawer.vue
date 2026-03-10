@@ -21,7 +21,7 @@
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="_none_">{{ $t('none') }}</SelectItem>
-                            <SelectItem v-for="c in availableCategories" :key="c.slug" :value="c.slug">{{ c.name }}
+                            <SelectItem v-for="c in availableCategories" :key="c.id" :value="c.id">{{ c.name }}
                             </SelectItem>
                         </SelectContent>
                     </Select>
@@ -188,15 +188,15 @@ const emit = defineEmits<{
     confirmPublish: []
 }>()
 
-// 选择分类时同步更新 category（名称）和 categoryId（slug）
-const onCategoryChange = (slug: string) => {
-    if (slug === '_none_') {
+// 选择分类时同步更新 category（名称）和 categoryId（UUID）
+const onCategoryChange = (id: string) => {
+    if (id === '_none_') {
         props.form.category = ''
         props.form.categoryId = ''
     } else {
-        const matched = props.availableCategories.find((c) => c.slug === slug)
-        props.form.category = matched ? matched.name : slug
-        props.form.categoryId = slug
+        const matched = props.availableCategories.find((c) => c.id === id)
+        props.form.category = matched ? matched.name : id
+        props.form.categoryId = id
     }
 }
 
