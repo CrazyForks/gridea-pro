@@ -150,7 +150,7 @@ jobs:
           $langDir = "C:\Program Files (x86)\Inno Setup 6\Languages"
           $langUrl = "https://raw.githubusercontent.com/jrsoftware/issrc/main/Files/Languages/Unofficial/ChineseSimplified.isl"
           Invoke-WebRequest -Uri $langUrl -OutFile "$langDir\ChineseSimplified.isl"
-          
+
       - name: Build Windows ${{ matrix.arch }}
         run: wails build -platform windows/${{ matrix.arch }} -clean -trimpath
 
@@ -208,7 +208,7 @@ jobs:
           Name: "{autodesktop}\${{ env.APP_NAME }}"; Filename: "{app}\${{ env.BIN_NAME }}.exe"; Tasks: desktopicon
 
           [Tasks]
-          Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+          Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: checked
 
           [Run]
           Filename: "{app}\${{ env.BIN_NAME }}.exe"; Description: "{cm:LaunchProgram,${{ env.APP_NAME }}}"; Flags: nowait postinstall skipifsilent
