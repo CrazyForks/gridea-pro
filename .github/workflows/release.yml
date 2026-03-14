@@ -208,7 +208,7 @@ jobs:
           Name: "{autodesktop}\${{ env.APP_NAME }}"; Filename: "{app}\${{ env.BIN_NAME }}.exe"; Tasks: desktopicon
 
           [Tasks]
-          Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: checked
+          Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
           [Run]
           Filename: "{app}\${{ env.BIN_NAME }}.exe"; Description: "{cm:LaunchProgram,${{ env.APP_NAME }}}"; Flags: nowait postinstall skipifsilent
