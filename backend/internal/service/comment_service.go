@@ -147,7 +147,7 @@ func (s *CommentService) ReplyComment(ctx context.Context, parentID string, cont
 
 	// 未启用或未完整配置时，拒绝操作
 	if !comment.IsConfigured(*settings) {
-		return fmt.Errorf("评论功能未启用或配置不完整，无法回复")
+		return fmt.Errorf(domain.ErrCommentNotEnabled)
 	}
 
 	provider, err := comment.NewProvider(*settings)
@@ -220,7 +220,7 @@ func (s *CommentService) DeleteComment(ctx context.Context, commentID string) er
 
 	// 未启用或未完整配置时，拒绝操作
 	if !comment.IsConfigured(*settings) {
-		return fmt.Errorf("评论功能未启用或配置不完整，无法删除")
+		return fmt.Errorf(domain.ErrCommentNotEnabled)
 	}
 
 	provider, err := comment.NewProvider(*settings)

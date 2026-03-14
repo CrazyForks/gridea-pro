@@ -66,7 +66,7 @@
         }}</label>
         <div class="max-w-sm">
           <Textarea v-model="form.footerInfo" rows="3" placeholder="Powered by Gridea Pro" />
-          <div class="text-xs text-muted-foreground mt-1">{{ $t('htmlSupport') }}</div>
+          <div class="text-xs text-muted-foreground mt-1">{{ $t('article.htmlSupport') }}</div>
         </div>
       </div>
 
@@ -159,7 +159,7 @@ const pickFavicon = async () => {
     toast.success(t('settings.basic.faviconSaved'))
   } catch (e) {
     console.error(e)
-    toast.error(t('uploadFailed'))
+    toast.error(t('settings.theme.uploadFailed'))
   }
 }
 
@@ -173,7 +173,7 @@ const pickAvatar = async () => {
     toast.success(t('settings.basic.avatarSaved'))
   } catch (e) {
     console.error(e)
-    toast.error(t('uploadFailed'))
+    toast.error(t('settings.theme.uploadFailed'))
   }
 }
 
@@ -208,7 +208,7 @@ const saveTheme = async () => {
     EventsEmit('app-site-reload')
   } catch (e) {
     console.error(e)
-    toast.error('主题保存失败')
+    toast.error(t('settings.theme.saveFailed'))
   }
 }
 

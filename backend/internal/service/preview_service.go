@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"gridea-pro/backend/internal/domain"
 )
 
 // DefaultDevStartPort 开发模式默认起始端口
@@ -97,8 +98,8 @@ func (s *PreviewService) StartPreviewServer(ctx context.Context) (string, error)
 		s.logger.Warn("Preview Server: could not find available port in range, falling back to random port", "rangeStart", basePort, "rangeEnd", basePort+maxRetries-1)
 		listener, err = tryListen(0)
 		if err != nil {
-			s.sendToast(ctx, "预览服务启动失败："+err.Error(), "error")
-			return "", fmt.Errorf("无法获取可用端口: %w", err)
+			s.sendToast(ctx, domain.ErrPreviewStartFailed+": "+err.Error(), "error")
+			return "", fmt.Errorf(domain.ErrPreviewStartFailed+": %w", err)
 		}
 	}
 

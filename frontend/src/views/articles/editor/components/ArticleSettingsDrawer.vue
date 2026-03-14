@@ -17,10 +17,10 @@
                     <Label>{{ $t('nav.category') }}</Label>
                     <Select v-model="form.categoryId" @update:model-value="onCategoryChange">
                         <SelectTrigger class="w-full">
-                            <SelectValue :placeholder="$t('selectCategory')" />
+                            <SelectValue :placeholder="$t('memo.selectCategory')" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="_none_">{{ $t('none') }}</SelectItem>
+                            <SelectItem value="_none_">-</SelectItem>
                             <SelectItem v-for="c in availableCategories" :key="c.id" :value="c.id">{{ c.name }}
                             </SelectItem>
                         </SelectContent>
@@ -66,7 +66,7 @@
                                 !dateValue && 'text-muted-foreground',
                             )">
                                 <CalendarIcon class="mr-2 h-4 w-4" />
-                                {{ (form.createdAt && form.createdAt.isValid()) ? form.createdAt.format('YYYY-MM-DD HH:mm:ss') : $t('pickDate') }}
+                                {{ (form.createdAt && form.createdAt.isValid()) ? form.createdAt.format('YYYY-MM-DD HH:mm:ss') : $t('article.createAt') }}
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent class="w-auto p-0" align="start">
@@ -103,7 +103,7 @@
                             <div v-else>
                                 <img src="@/assets/images/image_upload.svg" class="upload-img mx-auto w-20">
                                 <i class="ri-upload-2-line upload-icon text-lg mt-2 block text-muted-foreground"></i>
-                                <div class="text-xs text-muted-foreground mt-2">点击选择本地图片</div>
+                                <div class="text-xs text-muted-foreground mt-2">{{ $t('article.selectLocalImage') }}</div>
                             </div>
                         </div>
 

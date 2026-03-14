@@ -14,11 +14,12 @@ import (
 )
 
 type DeployService struct {
-	settingRepo domain.SettingRepository
-	renderer    *engine.Engine // Injected to trigger site build before deploy
-	appDir      string
-	mu          sync.Mutex
-	isDeploying bool
+	settingRepo      domain.SettingRepository
+	renderer         *engine.Engine // Injected to trigger site build before deploy
+	cdnUploadService *CdnUploadService
+	appDir           string
+	mu               sync.Mutex
+	isDeploying      bool
 }
 
 func NewDeployService(settingRepo domain.SettingRepository, appDir string) *DeployService {
@@ -33,11 +34,16 @@ func (s *DeployService) SetRenderer(renderer *engine.Engine) {
 	s.renderer = renderer
 }
 
+// SetCdnUploadService injects the CdnUploadService into DeployService
+func (s *DeployService) SetCdnUploadService(cdnUpload *CdnUploadService) {
+	s.cdnUploadService = cdnUpload
+}
+
 func (s *DeployService) DeployToRemote(ctx context.Context) error {
 	s.mu.Lock()
 	if s.isDeploying {
 		s.mu.Unlock()
-		return fmt.Errorf("deployment is already in progress")
+		return fmt.Errorf(domain.ErrDeployInProgress)
 	}
 	s.isDeploying = true
 	s.mu.Unlock()
@@ -69,6 +75,16 @@ func (s *DeployService) DeployToRemote(ctx context.Context) error {
 		}
 	} else {
 		s.log(ctx, "Warning: Renderer service not attached, skipping build.")
+	}
+
+	// 2.5 CDN 上传媒体文件
+	if s.cdnUploadService != nil {
+		s.log(ctx, "Uploading media files to CDN...")
+		if err := s.cdnUploadService.UploadMediaForDeploy(ctx, s.appDir, func(msg string) {
+			s.log(ctx, msg)
+		}); err != nil {
+			s.log(ctx, fmt.Sprintf("CDN upload warning: %v", err))
+		}
 	}
 
 	// 3. Prepare Git Repository Path

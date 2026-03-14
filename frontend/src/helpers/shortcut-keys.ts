@@ -1,73 +1,75 @@
-export default [
-  {
-    name: '编辑',
-    list: [
-      {
-        title: '保存文章',
-        keyboard: ['⌘', 'S'],
-      },
-      {
-        title: '剪切',
-        keyboard: ['⌘', 'X'],
-      },
-      {
-        title: '复制',
-        keyboard: ['⌘', 'C'],
-      },
-      {
-        title: '粘贴',
-        keyboard: ['⌘', 'V'],
-      },
-    ],
-  },
-  {
-    name: 'Markdown',
-    list: [
-      {
-        title: '标题降级 (# -)',
-        keyboard: ['⌃', '⇧', '['],
-      },
-      {
-        title: '标题升级 (# +)',
-        keyboard: ['⌃', '⇧', ']'],
-      },
-      {
-        title: '加粗 (**)',
-        keyboard: ['⌘', 'B'],
-      },
-      {
-        title: '行内 Code(`)',
-        keyboard: ['⌘', '`'],
-      },
-      {
-        title: '斜体 (*)',
-        keyboard: ['⌘', 'I'],
-      },
-      {
-        title: '列表 (-)',
-        keyboard: ['⌘', 'L'],
-      },
-      {
-        title: 'LaTeX ($)',
-        keyboard: ['⌘', 'M'],
-      },
-      {
-        title: 'LaTeX ($$)',
-        keyboard: ['⇧', '⌘', 'M'],
-      },
-      {
-        title: '删除线 (~~)',
-        keyboard: ['⌥', 'S'],
-      },
-    ],
-  },
-  {
-    name: '其他',
-    list: [
-      {
-        title: '格式化文档',
-        keyboard: ['⇧', '⌥', 'F'],
-      },
-    ],
-  },
-]
+export function getShortcutKeys(t: (key: string) => string) {
+  return [
+    {
+      name: t('shortcutKeys.editing'),
+      list: [
+        {
+          title: t('shortcutKeys.saveArticle'),
+          keyboard: ['⌘', 'S'],
+        },
+        {
+          title: t('shortcutKeys.cut'),
+          keyboard: ['⌘', 'X'],
+        },
+        {
+          title: t('shortcutKeys.copy'),
+          keyboard: ['⌘', 'C'],
+        },
+        {
+          title: t('shortcutKeys.paste'),
+          keyboard: ['⌘', 'V'],
+        },
+      ],
+    },
+    {
+      name: 'Markdown',
+      list: [
+        {
+          title: t('shortcutKeys.headingDown'),
+          keyboard: ['⌃', '⇧', '['],
+        },
+        {
+          title: t('shortcutKeys.headingUp'),
+          keyboard: ['⌃', '⇧', ']'],
+        },
+        {
+          title: t('shortcutKeys.bold'),
+          keyboard: ['⌘', 'B'],
+        },
+        {
+          title: t('shortcutKeys.inlineCode'),
+          keyboard: ['⌘', '`'],
+        },
+        {
+          title: t('shortcutKeys.italic'),
+          keyboard: ['⌘', 'I'],
+        },
+        {
+          title: t('shortcutKeys.list'),
+          keyboard: ['⌘', 'L'],
+        },
+        {
+          title: t('shortcutKeys.latex'),
+          keyboard: ['⌘', 'M'],
+        },
+        {
+          title: t('shortcutKeys.latexBlock'),
+          keyboard: ['⇧', '⌘', 'M'],
+        },
+        {
+          title: t('shortcutKeys.strikethrough'),
+          keyboard: ['⌥', 'S'],
+        },
+      ],
+    },
+    {
+      name: t('shortcutKeys.other'),
+      list: [
+        {
+          title: t('shortcutKeys.formatDocument'),
+          keyboard: ['⇧', '⌥', 'F'],
+        },
+      ],
+    },
+  ]
+}

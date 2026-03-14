@@ -43,13 +43,13 @@ v-for="p in ['github', 'netlify', 'vercel', 'coding', 'gitee', 'sftp']" :key="St
       <!-- Netlify -->
       <template v-if="form.platform === 'netlify'">
         <div class="grid grid-cols-[180px_1fr] items-center gap-4">
-          <label class="text-sm font-medium text-right text-muted-foreground">Site ID</label>
+          <label class="text-sm font-medium text-right text-muted-foreground">{{ t('settings.network.siteId') }}</label>
           <div class="max-w-sm">
             <Input v-model="form.netlifySiteId" class="" />
           </div>
         </div>
         <div v-if="remoteType === 'password'" class="grid grid-cols-[180px_1fr] items-center gap-4">
-          <label class="text-sm font-medium text-right text-muted-foreground">Access Token</label>
+          <label class="text-sm font-medium text-right text-muted-foreground">{{ t('settings.network.accessToken') }}</label>
           <div class="relative max-w-sm">
             <Input v-model="form.netlifyAccessToken" :type="passVisible ? 'text' : 'password'" class="pr-8" />
             <component
@@ -63,7 +63,7 @@ v-for="p in ['github', 'netlify', 'vercel', 'coding', 'gitee', 'sftp']" :key="St
           <div>
             <a
 href="https://gridea.dev/netlify" target="_blank"
-              class="text-primary hover:underline text-sm opacity-80 decoration-primary/50 underline-offset-4">如何配置？</a>
+              class="text-primary hover:underline text-sm opacity-80 decoration-primary/50 underline-offset-4">{{ t('settings.network.howToConfigure') }}</a>
           </div>
         </div>
       </template>
@@ -71,21 +71,21 @@ href="https://gridea.dev/netlify" target="_blank"
       <!-- Vercel -->
       <template v-if="form.platform === 'vercel'">
         <div class="grid grid-cols-[180px_1fr] items-center gap-4">
-          <label class="text-sm font-medium text-right text-muted-foreground">Project Name</label>
+          <label class="text-sm font-medium text-right text-muted-foreground">{{ t('settings.network.projectName') }}</label>
           <div class="max-w-sm">
             <Input v-model="form.repository" placeholder="my-vercel-project" class="" />
-            <div class="text-xs text-muted-foreground mt-1.5">Vercel 上的项目名称</div>
+            <div class="text-xs text-muted-foreground mt-1.5">{{ t('settings.network.vercelProjectDesc') }}</div>
           </div>
         </div>
         <div class="grid grid-cols-[180px_1fr] items-center gap-4">
-          <label class="text-sm font-medium text-right text-muted-foreground">Access Token</label>
+          <label class="text-sm font-medium text-right text-muted-foreground">{{ t('settings.network.accessToken') }}</label>
           <div class="relative max-w-sm">
             <Input v-model="form.token" :type="passVisible ? 'text' : 'password'" class="pr-8" />
             <component
 :is="passVisible ? EyeIcon : EyeSlashIcon"
               class="absolute right-2.5 top-3 w-4 h-4 cursor-pointer text-muted-foreground/70 hover:text-foreground transition-colors"
               @click="passVisible = !passVisible" />
-            <div class="text-xs text-muted-foreground mt-1.5">从 Account Settings -> Tokens 生成</div>
+            <div class="text-xs text-muted-foreground mt-1.5">{{ t('settings.network.vercelTokenDesc') }}</div>
           </div>
         </div>
         <div class="grid grid-cols-[180px_1fr] items-center gap-4">
@@ -153,29 +153,29 @@ href="https://gridea.dev/netlify" target="_blank"
       <!-- SFTP -->
       <template v-if="form.platform === 'sftp'">
         <div class="grid grid-cols-[180px_1fr] items-center gap-4">
-          <label class="text-sm font-medium text-right text-muted-foreground">Port</label>
+          <label class="text-sm font-medium text-right text-muted-foreground">{{ t('settings.network.port') }}</label>
           <div class="max-w-sm">
             <Input v-model="form.port" type="number" class="" />
           </div>
         </div>
         <div class="grid grid-cols-[180px_1fr] items-center gap-4">
-          <label class="text-sm font-medium text-right text-muted-foreground">Server</label>
+          <label class="text-sm font-medium text-right text-muted-foreground">{{ t('settings.network.server') }}</label>
           <div class="max-w-sm">
             <Input v-model="form.server" class="" />
           </div>
         </div>
         <div class="grid grid-cols-[180px_1fr] items-center gap-4">
-          <label class="text-sm font-medium text-right text-muted-foreground">Username</label>
+          <label class="text-sm font-medium text-right text-muted-foreground">{{ t('settings.network.username') }}</label>
           <div class="max-w-sm">
             <Input v-model="form.username" class="" />
           </div>
         </div>
         <div class="grid grid-cols-[180px_1fr] items-center gap-4">
-          <label class="text-sm font-medium text-right text-muted-foreground">Connect Type</label>
+          <label class="text-sm font-medium text-right text-muted-foreground">{{ t('settings.network.connectType') }}</label>
           <div class="w-full max-w-sm">
             <Select :model-value="String(remoteType || '')" @update:model-value="(v) => remoteType = v">
               <SelectTrigger>
-                <SelectValue placeholder="Select Connect Type" />
+                <SelectValue :placeholder="t('settings.network.connectType')" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="password">Password</SelectItem>
@@ -185,7 +185,7 @@ href="https://gridea.dev/netlify" target="_blank"
           </div>
         </div>
         <div v-if="remoteType === 'password'" class="grid grid-cols-[180px_1fr] items-center gap-4">
-          <label class="text-sm font-medium text-right text-muted-foreground">Password</label>
+          <label class="text-sm font-medium text-right text-muted-foreground">{{ t('settings.network.password') }}</label>
           <div class="relative max-w-sm">
             <Input v-model="form.password" :type="passVisible ? 'text' : 'password'" class="pr-8" />
             <component
@@ -195,14 +195,14 @@ href="https://gridea.dev/netlify" target="_blank"
           </div>
         </div>
         <div v-else class="grid grid-cols-[180px_1fr] items-center gap-4">
-          <label class="text-sm font-medium text-right text-muted-foreground">Private Key Path</label>
+          <label class="text-sm font-medium text-right text-muted-foreground">{{ t('settings.network.privateKeyPath') }}</label>
           <div class="max-w-sm">
             <Input v-model="form.privateKey" class="" />
             <div class="text-xs text-muted-foreground mt-1.5">{{ t('settings.network.privateKeyTip') }}</div>
           </div>
         </div>
         <div class="grid grid-cols-[180px_1fr] items-center gap-4">
-          <label class="text-sm font-medium text-right text-muted-foreground">Remote Path</label>
+          <label class="text-sm font-medium text-right text-muted-foreground">{{ t('settings.network.remotePath') }}</label>
           <div class="max-w-sm">
             <Input v-model="form.remotePath" class="" />
             <div class="text-xs text-muted-foreground mt-1.5">{{ t('settings.network.remotePathTip') }}</div>
@@ -217,8 +217,8 @@ href="https://gridea.dev/netlify" target="_blank"
         <div><!-- Optional left content --></div>
         <div class="flex gap-4">
           <Button
-variant="secondary" :disabled="detectLoading || !canSubmit"
-            class="w-auto h-8 text-xs justify-center rounded-full border-primary/20 hover:bg-primary/5 cursor-pointer"
+variant="outline" :disabled="detectLoading || !canSubmit"
+            class="w-auto h-8 text-xs justify-center rounded-full border border-primary/20 text-primary/80 hover:bg-primary/5 hover:text-primary cursor-pointer"
             @click="remoteDetect">
             {{ detectLoading ? t('settings.network.checking') : t('settings.network.testConnection') }}
           </Button>
@@ -455,7 +455,7 @@ const submit = async () => {
     ga('Setting', 'Setting - save', form.platform)
   } catch (e) {
     console.error(e)
-    toast.error('保存失败')
+    toast.error(t('settings.network.saveFailed'))
   }
 }
 
@@ -483,7 +483,7 @@ const remoteDetect = async () => {
   } catch (e) {
     console.error(e)
     detectLoading.value = false
-    toast.error('检测失败')
+    toast.error(t('settings.network.detectFailed'))
     ga('Setting', 'Setting - detect-failed', form.platform)
   }
 }

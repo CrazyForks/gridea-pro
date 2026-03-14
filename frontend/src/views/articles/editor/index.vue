@@ -15,6 +15,7 @@
                     @keydown="(e: KeyboardEvent) => handleInputKeydown(e, form.content)" />
 
                 <monaco-markdown-editor ref="monacoMarkdownEditor" v-model:value="form.content" :is-post-page="true"
+                    :placeholder="$t('article.editorPlaceholder')"
                     class="post-editor" @focus="handleEditorFocus"
                     @keydown="(e: KeyboardEvent) => handleInputKeydown(e, form.content)"></monaco-markdown-editor>
             </div>

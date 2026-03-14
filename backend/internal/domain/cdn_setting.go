@@ -9,6 +9,8 @@ type CdnSetting struct {
 	GithubRepo   string `json:"githubRepo"`
 	GithubBranch string `json:"githubBranch"`
 	BaseURL      string `json:"baseUrl"`
+	GithubToken  string `json:"githubToken"`
+	SavePath     string `json:"savePath"`
 }
 
 type CdnSettingRepository interface {

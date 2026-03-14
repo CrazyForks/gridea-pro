@@ -90,7 +90,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   isPostPage: false,
-  placeholder: '随便写点什么...'
+  placeholder: ''
 })
 
 // 恢复为 explicit 'value' 名称以确保最大兼容性，解决父组件类型报错

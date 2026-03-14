@@ -14,7 +14,7 @@
         <!-- 提示信息 -->
         <div class="grid grid-cols-[180px_1fr] items-start gap-4">
           <div></div>
-          <div class="rounded-md border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30 p-3 text-xs text-amber-700 dark:text-amber-400 max-w-sm">
+          <div class="rounded-md border border-primary/20 bg-primary/5 p-3 text-xs text-primary/80 max-w-sm">
             {{ t('settings.cdn.notice') }}
           </div>
         </div>
@@ -55,6 +55,30 @@
               <Input v-model="form.githubBranch" placeholder="main" />
             </div>
           </div>
+
+          <!-- GitHub Token -->
+          <div class="grid grid-cols-[180px_1fr] items-center gap-4">
+            <label class="text-sm font-medium text-right text-muted-foreground">{{ t('settings.cdn.githubToken') }}</label>
+            <div class="max-w-sm">
+              <div class="relative">
+                <Input
+                  v-model="form.githubToken"
+                  :type="showToken ? 'text' : 'password'"
+                  placeholder="ghp_xxxxxxxxxxxx"
+                />
+                <button
+                  type="button"
+                  class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                  @click="showToken = !showToken"
+                >
+                  <svg v-if="showToken" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
+                </button>
+              </div>
+              <div class="text-xs text-muted-foreground mt-1.5">{{ t('settings.cdn.githubTokenDesc') }}</div>
+            </div>
+          </div>
+
           <div class="grid grid-cols-[180px_1fr] items-center gap-4">
             <div></div>
             <div class="text-xs text-muted-foreground">
@@ -74,11 +98,64 @@
             </div>
           </div>
         </template>
+
+        <!-- 保存路径 -->
+        <div class="grid grid-cols-[180px_1fr] items-start gap-4">
+          <label class="text-sm font-medium text-right text-muted-foreground pt-2">{{ t('settings.cdn.savePath') }}</label>
+          <div class="max-w-sm space-y-2">
+            <Select :model-value="savePathOption" @update:model-value="onSavePathOptionChange">
+              <SelectTrigger>
+                <SelectValue :placeholder="t('settings.cdn.savePath')" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="{year}/{month}/{filename}{.suffix}">{year}/{month}/{filename}{.suffix}</SelectItem>
+                <SelectItem value="{year}/{month}/{random}{.suffix}">{year}/{month}/{random}{.suffix}</SelectItem>
+                <SelectItem value="{year}/{month}/{day}/{filename}{.suffix}">{year}/{month}/{day}/{filename}{.suffix}</SelectItem>
+                <SelectItem value="{year}/{month}/{day}/{random}{.suffix}">{year}/{month}/{day}/{random}{.suffix}</SelectItem>
+                <SelectItem value="{year}/{month}/{filename}-{random}{.suffix}">{year}/{month}/{filename}-{random}{.suffix}</SelectItem>
+                <SelectItem value="custom">{{ t('settings.cdn.savePathCustom') }}</SelectItem>
+              </SelectContent>
+            </Select>
+            <template v-if="savePathOption === 'custom'">
+              <Input
+                v-model="form.savePath"
+                placeholder="{year}/{month}/{filename}{.suffix}"
+              />
+              <button
+                type="button"
+                class="text-xs text-primary/70 hover:text-primary cursor-pointer"
+                @click="showVarsHelp = !showVarsHelp"
+              >
+                {{ t('settings.cdn.configHelp') }}
+              </button>
+              <div v-if="showVarsHelp" class="text-xs text-muted-foreground">
+                <p class="mb-1.5">{{ t('settings.cdn.savePathVars') }}</p>
+              </div>
+              <ul v-if="showVarsHelp" class="text-xs text-muted-foreground space-y-1 pl-4 list-disc">
+                <li><code>{year}</code> — {{ t('settings.cdn.varYear') }}</li>
+                <li><code>{month}</code> — {{ t('settings.cdn.varMonth') }}</li>
+                <li><code>{day}</code> — {{ t('settings.cdn.varDay') }}</li>
+                <li><code>{filename}</code> — {{ t('settings.cdn.varFilename') }}</li>
+                <li><code>{random}</code> — {{ t('settings.cdn.varRandom') }}</li>
+                <li><code>{.suffix}</code> — {{ t('settings.cdn.varDotSuffix') }}</li>
+                <li><code>{suffix}</code> — {{ t('settings.cdn.varSuffix') }}</li>
+              </ul>
+            </template>
+          </div>
+        </div>
       </template>
     </div>
 
     <footer-box>
-      <div class="flex justify-end items-center w-full">
+      <div class="flex justify-end items-center gap-3 w-full">
+        <Button
+          v-if="form.enabled && form.provider === 'jsdelivr' && form.githubToken"
+          variant="outline"
+          class="h-8 text-xs justify-center rounded-full border border-primary/20 text-primary/80 hover:bg-primary/5 hover:text-primary cursor-pointer"
+          :disabled="testLoading"
+          @click="testUpload">
+          {{ testLoading ? t('settings.cdn.testing') : t('settings.cdn.testUpload') }}
+        </Button>
         <Button
           variant="default"
           class="w-18 h-8 text-xs justify-center rounded-full bg-primary text-background hover:bg-primary/90 cursor-pointer"
@@ -91,7 +168,7 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, onMounted } from 'vue'
+import { reactive, ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from '@/helpers/toast'
 import FooterBox from '@/components/FooterBox/index.vue'
@@ -100,9 +177,22 @@ import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { GetCdnSetting, SaveCdnSettingFromFrontend } from '@/wailsjs/go/facade/CdnSettingFacade'
+import { TestCdnUpload } from '@/wailsjs/go/facade/CdnUploadFacade'
 import { domain } from '@/wailsjs/go/models'
 
 const { t } = useI18n()
+
+const showToken = ref(false)
+const testLoading = ref(false)
+const showVarsHelp = ref(false)
+
+const presetPaths = [
+  '{year}/{month}/{filename}{.suffix}',
+  '{year}/{month}/{day}/{filename}{.suffix}',
+  '{year}/{month}/{filename}-{random}{.suffix}',
+  '{year}/{month}/{random}{.suffix}',
+  '{year}/{month}/{day}/{random}{.suffix}',
+]
 
 const form = reactive({
   enabled: false,
@@ -111,7 +201,27 @@ const form = reactive({
   githubRepo: '',
   githubBranch: 'main',
   baseUrl: '',
+  githubToken: '',
+  savePath: '{year}/{month}/{filename}{.suffix}',
 })
+
+const savePathOption = computed(() => {
+  if (presetPaths.includes(form.savePath)) {
+    return form.savePath
+  }
+  return 'custom'
+})
+
+const onSavePathOptionChange = (v: string) => {
+  if (v === 'custom') {
+    // Keep current value for editing
+    if (presetPaths.includes(form.savePath)) {
+      form.savePath = ''
+    }
+  } else {
+    form.savePath = v
+  }
+}
 
 onMounted(async () => {
   try {
@@ -123,6 +233,8 @@ onMounted(async () => {
       form.githubRepo = setting.githubRepo || ''
       form.githubBranch = setting.githubBranch || 'main'
       form.baseUrl = setting.baseUrl || ''
+      form.githubToken = setting.githubToken || ''
+      form.savePath = setting.savePath || '{year}/{month}/{filename}{.suffix}'
     }
   } catch (e) {
     console.error('Failed to load CDN settings', e)
@@ -137,6 +249,23 @@ const submit = async () => {
   } catch (e) {
     console.error(e)
     toast.error(t('settings.cdn.saveFailed'))
+  }
+}
+
+const testUpload = async () => {
+  testLoading.value = true
+  try {
+    // Save settings first
+    const settingDomain = new domain.CdnSetting(form)
+    await SaveCdnSettingFromFrontend(settingDomain)
+
+    const cdnUrl = await TestCdnUpload()
+    toast.success(t('settings.cdn.testUploadSuccess'))
+  } catch (e: any) {
+    console.error(e)
+    toast.error(e.message || e)
+  } finally {
+    testLoading.value = false
   }
 }
 </script>

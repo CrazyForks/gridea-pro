@@ -25,6 +25,8 @@ export namespace domain {
 	    githubRepo: string;
 	    githubBranch: string;
 	    baseUrl: string;
+	    githubToken: string;
+	    savePath: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new CdnSetting(source);
@@ -38,6 +40,8 @@ export namespace domain {
 	        this.githubRepo = source["githubRepo"];
 	        this.githubBranch = source["githubBranch"];
 	        this.baseUrl = source["baseUrl"];
+	        this.githubToken = source["githubToken"];
+	        this.savePath = source["savePath"];
 	    }
 	}
 	export class Comment {

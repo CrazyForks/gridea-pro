@@ -119,7 +119,7 @@ export function useTag() {
 
         const valid = checkTagValid()
         if (!valid) {
-            toast.error(t('tagUrlRepeat'))
+            toast.error(t('tag.urlRepeat'))
             return
         }
 
@@ -135,7 +135,7 @@ export function useTag() {
             if (newTags) {
                 siteStore.tags = newTags
                 tagList.value = [...newTags]
-                toast.success(t('tagSaved'))
+                toast.success(t('tag.saved'))
                 visible.value = false
             }
         } catch (e: any) {
@@ -157,7 +157,7 @@ export function useTag() {
                     if (newTags) {
                         siteStore.tags = newTags
                         tagList.value = [...newTags]
-                        toast.success(t('tagDeleted'))
+                        toast.success(t('tag.deleted'))
                     }
                 } catch (e: any) {
                     toast.error(e.message || 'Error deleting tag')

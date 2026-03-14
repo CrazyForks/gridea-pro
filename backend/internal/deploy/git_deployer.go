@@ -46,13 +46,13 @@ func (p *GitProvider) Deploy(ctx context.Context, outputDir string, setting *dom
 	}
 
 	if tokenUser == "" || token == "" {
-		return fmt.Errorf("Token or Username is missing. Please configure them in Settings.")
+		return fmt.Errorf(domain.ErrGitTokenMissing)
 	}
 
 	// Prepare remote url
 	repoUrl := setting.Repository()
 	if repoUrl == "" {
-		return fmt.Errorf("repository URL is not configured")
+		return fmt.Errorf(domain.ErrRepoNotConfigured)
 	}
 
 	repoUrl = strings.TrimPrefix(repoUrl, "https://")

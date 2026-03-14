@@ -64,11 +64,11 @@ export function useArticleActions(options: UseArticleActionsOptions) {
             if (data && data.tags) siteStore.tags = data.tags as ITag[]
 
             updateArticleSavedStatus()
-            toast.success(`🎉  ${t('draftSuccess')}`)
+            toast.success(t('article.draftSuccess'))
             onClose()
         } catch (e) {
             console.error(e)
-            toast.error('保存失败')
+            toast.error(t('settings.basic.saveError'))
         }
 
         ga('Post', 'Post - click-save-draft', '')
@@ -98,7 +98,7 @@ export function useArticleActions(options: UseArticleActionsOptions) {
             onClose()
         } catch (e) {
             console.error(e)
-            toast.error('发布失败')
+            toast.error(t('settings.basic.saveError'))
         }
     }
 

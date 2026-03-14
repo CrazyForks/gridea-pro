@@ -44,7 +44,7 @@
                         class="flex items-center w-full px-3 py-2 border border-input rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring text-left">
                         <div v-if="form[item.name]" class="w-4 h-4 rounded-full mr-2 border border-border"
                           :style="{ backgroundColor: form[item.name] }"></div>
-                        <span v-else class="text-muted-foreground">Select color</span>
+                        <span v-else class="text-muted-foreground">{{ t('settings.theme.selectColor') }}</span>
                         <span class="flex-1">{{ form[item.name] }}</span>
                       </button>
                     </PopoverTrigger>
@@ -60,7 +60,7 @@
                     <PopoverTrigger as-child>
                       <button
                         class="w-full text-left px-3 py-2 border border-input rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring">
-                        {{ form[item.name] || 'Select Post' }}
+                        {{ form[item.name] || t('settings.theme.selectPost') }}
                       </button>
                     </PopoverTrigger>
                     <PopoverContent class="w-80 p-0">
@@ -114,7 +114,7 @@
 
                 <!-- Picture Upload -->
                 <div v-if="['picture-upload', 'picture', 'image'].includes(item.type)" class="space-y-3">
-                  <Input v-model="form[item.name]" placeholder="输入在线图片链接或点击下方虚线框上传" class="max-w-sm" />
+                  <Input v-model="form[item.name]" :placeholder="t('settings.theme.imageUrlPlaceholder')" class="max-w-sm" />
                   <div class="flex items-start gap-4">
                     <div
                       class="w-24 h-24 border border-dashed border-input rounded-lg flex items-center justify-center cursor-pointer hover:border-primary transition-colors relative overflow-hidden bg-background shrink-0"
@@ -129,7 +129,7 @@
                       <!-- 悬浮删除/重置按钮 -->
                       <div v-if="form[item.name]"
                         class="delete-btn hidden absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center z-10 shadow-sm border border-white transition-colors cursor-pointer"
-                        title="移除图片" @click.stop="resetFormItem(item.name)">
+                        :title="t('settings.theme.removeImage')" @click.stop="resetFormItem(item.name)">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
                           class="w-3.5 h-3.5">
                           <path
@@ -197,7 +197,7 @@
 
                       <!-- Array Item Picture -->
                       <div v-if="['picture-upload', 'picture', 'image'].includes(field.type)" class="space-y-3">
-                        <Input v-model="configItem[field.name]" placeholder="输入在线图片链接或点击下方虚线框上传" class="max-w-sm" />
+                        <Input v-model="configItem[field.name]" :placeholder="t('settings.theme.imageUrlPlaceholder')" class="max-w-sm" />
                         <div class="flex items-center gap-2">
                           <div
                             class="relative w-full h-32 border-2 border-dashed border-gray-300 dark:border-zinc-700 rounded-lg overflow-hidden flex items-center justify-center cursor-pointer hover:border-gray-400 dark:hover:border-zinc-500 transition-colors"
@@ -211,7 +211,7 @@
                             <!-- 悬浮删除/重置按钮 -->
                             <div v-if="configItem[field.name]"
                               class="delete-btn hidden absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center z-10 shadow-sm border border-white transition-colors cursor-pointer"
-                              title="移除图片" @click.stop="resetFormItem(item.name, field.name, Number(configItemIndex))">
+                              :title="t('settings.theme.removeImage')" @click.stop="resetFormItem(item.name, field.name, Number(configItemIndex))">
                               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
                                 class="w-3.5 h-3.5">
                                 <path
@@ -226,7 +226,7 @@
                   </div>
                   <Button v-if="!form[item.name] || form[item.name].length === 0" variant="outline"
                     class="w-full border-dashed" @click="addConfigItem(item.name, -1, item.arrayItems)">
-                    <i class="ri-add-line mr-2"></i> Add Item
+                    <i class="ri-add-line mr-2"></i> {{ t('settings.theme.addItem') }}
                   </Button>
                 </div>
 
@@ -238,7 +238,7 @@
 
       <footer-box>
         <div class="flex justify-between w-full">
-          <Button variant="ghost" size="icon" title="Reset to defaults" @click="resetThemeCustomConfig">
+          <Button variant="ghost" size="icon" class="h-8 w-8" :title="t('settings.theme.resetToDefaults')" @click="resetThemeCustomConfig">
             <i class="ri-arrow-go-back-line text-lg"></i>
           </Button>
           <Button variant="default"
@@ -252,7 +252,7 @@
 
     <div v-else class="flex flex-col items-center justify-center py-20 text-muted-foreground">
       <img class="w-32 h-32 mb-4 opacity-50" src="@/assets/images/graphic-empty-box.svg" alt="">
-      <div class="text-lg">{{ t('settings.theme.noCustomConfigTip') }}</div>
+      <div class="text-lg">{{ t('settings.theme.noCustomConfig') }}</div>
     </div>
   </div>
 </template>
@@ -279,7 +279,7 @@ import { SaveThemeCustomConfigFromFrontend, UploadThemeCustomConfigImage } from 
 
 // Modal logic replacement
 const confirmReset = (callback: () => void) => {
-  if (confirm('此操作将会使该主题配置恢复到初始状态，确认重置吗？')) {
+  if (confirm(t('settings.theme.resetConfirm'))) {
     callback()
   }
 }
@@ -421,7 +421,7 @@ const handleImageUpload = async (formItemName: string, arrayFieldItemName?: stri
     }
   } catch (error) {
     console.error('UploadThemeCustomConfigImage error', error)
-    toast.error(`Upload failed: ${error}`)
+    toast.error(`${t('settings.theme.uploadFailed')}: ${error}`)
   }
 }
 

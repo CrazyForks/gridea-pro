@@ -41,12 +41,12 @@ func (p *VercelProvider) Deploy(ctx context.Context, outputDir string, setting *
 		projectName = setting.Username()
 	}
 	if projectName == "" {
-		return fmt.Errorf("未设置项目名称，请在设置中配置 Project Name")
+		return fmt.Errorf(domain.ErrVercelProjectMissing)
 	}
 
 	token := setting.Token()
 	if token == "" {
-		return fmt.Errorf("未设置 Vercel Token")
+		return fmt.Errorf(domain.ErrVercelTokenMissing)
 	}
 
 	logger(fmt.Sprintf("Vercel 项目名称: %s", projectName))

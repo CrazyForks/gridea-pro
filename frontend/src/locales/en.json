@@ -1,42 +1,18 @@
 {
     "common": {
         "edit": "Edit",
-        "help": "Help",
         "save": "Save",
-        "undo": "Undo",
-        "redo": "Redo",
-        "cut": "Cut",
         "copy": "Copy",
-        "paste": "Paste",
+        "copied": "Copied",
+        "copyFailed": "Copy failed",
         "delete": "Delete",
-        "select": "Select",
-        "selectAll": "Select All",
+        "deleteWarning": "Are you sure you want to delete?",
         "cancel": "Cancel",
-        "confirm": "Confirm",
         "back": "Back",
-        "actions": "Actions",
         "warning": "Warning",
         "language": "Language",
-        "reset": "Reset",
-        "change": "Change",
-        "or": "or",
-        "close": "Close",
-        "saved": "Saved"
-    },
-    "nativeMenu": {
-        "edit": "Edit",
-        "help": "Help",
-        "save": "Save",
-        "undo": "Undo",
-        "redo": "Redo",
-        "cut": "Cut",
-        "copy": "Copy",
-        "paste": "Paste",
-        "delete": "Delete",
-        "selectall": "Select All",
-        "toggledevtools": "Toggle Developer Tools",
-        "close": "Close Window",
-        "quit": "Quit"
+        "saved": "Saved",
+        "search": "Search"
     },
     "nav": {
         "preview": "Preview",
@@ -49,21 +25,12 @@
         "memo": "Memos",
         "theme": "Theme",
         "server": "Server",
-        "system": "System",
         "about": "About",
         "link": "Links"
     },
     "dashboard": {
-        "newVersion": "New version",
-        "newVersionTips": "There is a new version released, go and download the new version!",
-        "renderSuccess": "Congratulations, the rendering is complete, go ahead and preview.",
-        "renderError": "Rendering failed, please check whether 127.0.0.1 in the hosts file points to localhost. After confirming that the configuration is correct, try to restart the application.",
-        "syncWarning": "You must complete the configuration to synchronize!",
         "syncSuccess": "Synchronization succeeded!",
-        "syncError1": "Sorry, synchronization encountered an error, please refer to",
-        "syncError2": "to find a solution",
-        "syncing": "Synchronizing, please wait...",
-        "starSupport": "Give us a star!"
+        "syncError1": "Sorry, synchronization encountered an error, please refer to"
     },
     "article": {
         "new": "New",
@@ -99,8 +66,15 @@
         "noSaveAndBack": "Continue",
         "settings": "Post Settings",
         "search": "Articles search",
+        "feedFormat": "RSS/Feed Format",
         "showFullText": "Show full text",
-        "showAbstract": "Show abstract only"
+        "showAbstract": "Show abstract only",
+        "pinned": "Pinned",
+        "hidden": "Hidden",
+        "previewServiceFailed": "Failed to get preview service",
+        "selectLocalImage": "Click to select a local image",
+        "contextMenuTip": "Right-click in the editor to open the context menu",
+        "editorPlaceholder": "Write something..."
     },
     "tag": {
         "new": "New",
@@ -108,7 +82,10 @@
         "slug": "Tag URL",
         "color": "Tag Color",
         "defaultUrl": "Tag URL Default",
-        "urlPath": "Tag URL path"
+        "urlPath": "Tag URL path",
+        "urlRepeat": "Tag URL duplicated",
+        "saved": "Tag saved",
+        "deleted": "Tag deleted"
     },
     "category": {
         "new": "New Category",
@@ -134,7 +111,9 @@
         "openType": "Open Type",
         "link": "Link",
         "saved": "Menu saved",
-        "deleted": "Menu deleted"
+        "deleted": "Menu deleted",
+        "inputOrSelect": "Type or select below",
+        "selectInternalLink": "Select internal link..."
     },
     "settings": {
         "basic": {
@@ -157,7 +136,11 @@
             "dateFormat": "Date format",
             "saveSuccess": "The basic setting saved",
             "faviconSaved": "The favicon setting saved",
-            "avatarSaved": "The avatar setting saved"
+            "avatarSaved": "The avatar setting saved",
+            "archivesPathPrefix": "Archives Path Prefix",
+            "archivesPathPrefixDesc": "Set the URL prefix for archive pages",
+            "archivesPathPrefixDefault": "archive",
+            "saveError": "Save failed"
         },
         "comment": {
             "title": "Comment settings",
@@ -187,7 +170,20 @@
             "modeDesc": "Choose the appearance mode of the app",
             "light": "Light",
             "dark": "Dark",
-            "personalization": "Personalization"
+            "personalization": "Personalization",
+            "appearance": "Appearance",
+            "default": "Default",
+            "imageUrlPlaceholder": "Enter image URL or click below to upload",
+            "removeImage": "Remove image",
+            "resetConfirm": "Reset theme config to defaults?",
+            "addItem": "Add Item",
+            "selectColor": "Select color",
+            "selectPost": "Select Post",
+            "resetToDefaults": "Reset to defaults",
+            "uploadFailed": "Upload failed",
+            "saveFailed": "Failed to save theme config",
+            "resetSuccess": "Theme config has been reset",
+            "resetFailed": "Failed to reset theme config"
         },
         "seo": {
             "title": "SEO",
@@ -215,7 +211,7 @@
             "title": "CDN",
             "enable": "Enable CDN",
             "enableDesc": "Accelerate static resources (images, media) via CDN",
-            "notice": "Once enabled, image and media URLs will be replaced with CDN addresses. Make sure you have uploaded the images, post-images, and media directories to the CDN source. ",
+            "notice": "Once enabled, media files will be automatically uploaded to the CDN repository during deployment, and image/media URLs will be replaced with CDN addresses.",
             "provider": "CDN Provider",
             "custom": "Custom",
             "githubUser": "GitHub Username",
@@ -224,6 +220,24 @@
             "jsdelivrTip": "Static resources will be served from:",
             "baseUrl": "CDN Base URL",
             "baseUrlDesc": "Base URL for CDN resources, without trailing slash",
+            "githubToken": "GitHub Token",
+            "githubTokenDesc": "Personal Access Token with repo scope",
+            "savePath": "Save Path",
+            "savePathDesc": "Path template for files in the CDN repository",
+            "savePathCustom": "Custom Path",
+            "savePathVars": "Supported variables: {year} {month} {day} {filename} {random} {.suffix} {suffix}",
+            "configHelp": "Configuration help",
+            "varYear": "Year, e.g. 2026",
+            "varMonth": "Month, e.g. 03",
+            "varDay": "Day, e.g. 14",
+            "varFilename": "Filename without extension",
+            "varDotSuffix": "Extension with dot, e.g. .png",
+            "varSuffix": "Extension, e.g. png",
+            "varRandom": "12-char random string",
+            "testUpload": "Test Upload",
+            "testing": "Testing...",
+            "testUploadSuccess": "Upload successful",
+            "testUploadFailed": "Test upload failed",
             "saveSuccess": "CDN settings saved",
             "saveFailed": "Failed to save CDN settings"
         },
@@ -248,7 +262,21 @@
             "testConnection": "Test Connection",
             "checking": "Checking...",
             "connectSuccess": "Remote connection succeeded",
-            "connectFailed": "Remote connection failed, please check repository, username and token settings"
+            "connectFailed": "Remote connection failed, please check repository, username and token settings",
+            "howToConfigure": "How to configure?",
+            "projectName": "Project Name",
+            "vercelProjectDesc": "Project name on Vercel",
+            "vercelTokenDesc": "Generate from Account Settings -> Tokens",
+            "saveFailed": "Save failed",
+            "detectFailed": "Detection failed",
+            "siteId": "Site ID",
+            "accessToken": "Access Token",
+            "port": "Port",
+            "server": "Server",
+            "connectType": "Connect Type",
+            "password": "Password",
+            "privateKeyPath": "Private Key Path",
+            "remotePath": "Remote Path"
         },
         "system": {
             "displayLanguage": "Display Language",
@@ -270,13 +298,86 @@
     "memo": {
         "inputPlaceholder": "Capture your thoughts...",
         "heatmap": "Daily Records",
+        "selectCategory": "Select category",
+        "default": "Default",
+        "justNow": "Just now",
+        "minutesAgo": "{min} minutes ago",
+        "hoursAgo": "{hour} hours ago",
+        "yesterday": "Yesterday {time}",
         "totalMemos": "Total Memos",
+        "todayMemos": "Today",
+        "monthMemos": "This Month",
         "totalTags": "Total Tags",
+        "categoryName": "Enter category name",
+        "categories": "Categories",
         "tags": "Tags",
+        "publish": "Publish",
+        "published": "Published",
         "save": "Save",
         "saved": "Saved",
         "deleted": "Memo deleted",
         "empty": "No memos yet",
-        "allTags": "All Tags"
+        "allTags": "All Tags",
+        "allMemos": "All",
+        "less": "Less",
+        "more": "More",
+        "renameFailed": "Rename failed",
+        "saveFailed": "Save failed",
+        "updateFailed": "Update failed",
+        "deleteFailed": "Delete failed"
+    },
+    "preferences": {
+        "themeMode": "Theme Mode",
+        "themeColor": "Theme Color",
+        "light": "Light",
+        "dark": "Dark",
+        "followSystem": "Follow System",
+        "colorDefault": "Pearl White",
+        "colorBlue": "Geek Blue",
+        "colorWarm": "Sunset Warm",
+        "colorSakura": "Sakura Pink",
+        "colorTwilight": "Twilight Purple",
+        "colorGlass": "Frosted Glass"
+    },
+    "shortcutKeys": {
+        "editing": "Editing",
+        "saveArticle": "Save Article",
+        "cut": "Cut",
+        "copy": "Copy",
+        "paste": "Paste",
+        "headingDown": "Heading Down (# -)",
+        "headingUp": "Heading Up (# +)",
+        "bold": "Bold (**)",
+        "inlineCode": "Inline Code (`)",
+        "italic": "Italic (*)",
+        "list": "List (-)",
+        "latex": "LaTeX ($)",
+        "latexBlock": "LaTeX ($$)",
+        "strikethrough": "Strikethrough (~~)",
+        "other": "Other",
+        "formatDocument": "Format Document"
+    },
+    "error": {
+        "comment": {
+            "notEnabled": "Comment feature is not enabled or configured"
+        },
+        "preview": {
+            "startFailed": "Preview service failed to start"
+        },
+        "cdn": {
+            "notEnabled": "CDN is not enabled",
+            "tokenMissing": "GitHub Token is not configured",
+            "uploadFailed": "Upload failed"
+        },
+        "deploy": {
+            "vercelProjectMissing": "Project name not set. Please configure Project Name in settings",
+            "vercelTokenMissing": "Vercel Token not set",
+            "gitTokenMissing": "Token or username is missing. Please configure them in Settings",
+            "inProgress": "Deployment is already in progress",
+            "repoNotConfigured": "Repository URL is not configured"
+        },
+        "render": {
+            "failed": "Render failed"
+        }
     }
 }

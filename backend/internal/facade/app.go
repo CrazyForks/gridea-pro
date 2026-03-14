@@ -30,6 +30,7 @@ type AppServices struct {
 	Preview    *PreviewFacade
 	SeoSetting *SeoSettingFacade
 	CdnSetting *CdnSettingFacade
+	CdnUpload  *CdnUploadFacade
 	// Internal services for event/update handling
 	Services struct {
 		Category *service.CategoryService
@@ -43,8 +44,9 @@ type AppServices struct {
 		Setting  *service.SettingService
 		Scaffold *service.ScaffoldService
 		Comment  *service.CommentService
-		Memo     *service.MemoService
-		Preview  *service.PreviewService
+		Memo      *service.MemoService
+		Preview   *service.PreviewService
+		CdnUpload *service.CdnUploadService
 	}
 	Repositories struct {
 		Category domain.CategoryRepository
@@ -105,6 +107,9 @@ func NewAppServices(appDir string, assets embed.FS) *AppServices {
 	rendererService.SetCommentRepo(commentRepo)
 	rendererService.SetSeoSettingRepo(seoSettingRepo)
 	rendererService.SetCdnSettingRepo(cdnSettingRepo)
+	cdnUploadService := service.NewCdnUploadService(cdnSettingRepo, appDir)
+	deployService.SetCdnUploadService(cdnUploadService)
+	deployService.SetRenderer(rendererService)
 
 	// 3. Wrap with Facades
 	return &AppServices{
@@ -122,20 +127,22 @@ func NewAppServices(appDir string, assets embed.FS) *AppServices {
 		Preview:    NewPreviewFacade(previewService),
 		SeoSetting: NewSeoSettingFacade(seoSettingRepo),
 		CdnSetting: NewCdnSettingFacade(cdnSettingRepo),
+		CdnUpload:  NewCdnUploadFacade(cdnUploadService),
 		Services: struct {
-			Category *service.CategoryService
-			Post     *service.PostService
-			Menu     *service.MenuService
-			Link     *service.LinkService
-			Tag      *service.TagService
-			Deploy   *service.DeployService
-			Renderer *engine.Engine
-			Theme    *service.ThemeService
-			Setting  *service.SettingService
-			Scaffold *service.ScaffoldService
-			Comment  *service.CommentService
-			Memo     *service.MemoService
-			Preview  *service.PreviewService
+			Category  *service.CategoryService
+			Post      *service.PostService
+			Menu      *service.MenuService
+			Link      *service.LinkService
+			Tag       *service.TagService
+			Deploy    *service.DeployService
+			Renderer  *engine.Engine
+			Theme     *service.ThemeService
+			Setting   *service.SettingService
+			Scaffold  *service.ScaffoldService
+			Comment   *service.CommentService
+			Memo      *service.MemoService
+			Preview   *service.PreviewService
+			CdnUpload *service.CdnUploadService
 		}{
 			Category: categoryService,
 			Post:     postService,
@@ -148,8 +155,9 @@ func NewAppServices(appDir string, assets embed.FS) *AppServices {
 			Setting:  settingService,
 			Scaffold: scaffoldService,
 			Comment:  commentService,
-			Memo:     memoService,
-			Preview:  previewService,
+			Memo:      memoService,
+			Preview:   previewService,
+			CdnUpload: cdnUploadService,
 		},
 		Repositories: struct {
 			Category domain.CategoryRepository
@@ -213,11 +221,13 @@ func (s *AppServices) UpdateAppDir(appDir string) {
 	s.Preview.internal = newServices.Services.Preview
 	s.SeoSetting.repo = newServices.SeoSetting.repo
 	s.CdnSetting.repo = newServices.CdnSetting.repo
+	s.CdnUpload.internal = newServices.Services.CdnUpload
 	// Scaffold service doesn't need update generally, but good to keep in sync
 	s.Services.Scaffold = newServices.Services.Scaffold
 	s.Services.Comment = newServices.Services.Comment
 	s.Services.Memo = newServices.Services.Memo
 	s.Services.Preview = newServices.Services.Preview
+	s.Services.CdnUpload = newServices.Services.CdnUpload
 }
 
 func (s *AppServices) RegisterEvents(ctx context.Context) {

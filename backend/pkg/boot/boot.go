@@ -250,6 +250,7 @@ func Run(assets embed.FS) {
 			services.Preview,
 			services.SeoSetting,
 			services.CdnSetting,
+			services.CdnUpload,
 		},
 		Mac: &mac.Options{
 			TitleBar:             mac.TitleBarHiddenInset(),

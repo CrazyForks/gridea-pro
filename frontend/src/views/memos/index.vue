@@ -119,7 +119,7 @@ v-if="memoStore.selectedDate"
                                     }}</span>
                             </div>
                             <div class="text-xs text-muted-foreground">
-                                {{ memoStore.filteredMemos.length }} Memos
+                                {{ memoStore.filteredMemos.length }} {{ t('nav.memo') }}
                             </div>
                         </div>
 
@@ -143,7 +143,7 @@ ref="tagInputRef"
                                     <div class="hidden group-hover:flex items-center gap-1 ml-2">
                                         <button
                                             class="p-1 hover:bg-primary/10 rounded-md text-muted-foreground hover:text-primary transition-colors cursor-pointer"
-                                            :title="t('nativeMenu.edit')" @click="handleEditTag">
+                                            :title="t('common.edit')" @click="handleEditTag">
                                             <PencilIcon class="size-3" />
                                         </button>
                                         <button
@@ -155,7 +155,7 @@ ref="tagInputRef"
                                 </template>
                             </div>
                             <div class="text-xs text-muted-foreground">
-                                {{ memoStore.filteredMemos.length }} Memos
+                                {{ memoStore.filteredMemos.length }} {{ t('nav.memo') }}
                             </div>
                         </div>
 
@@ -221,7 +221,7 @@ const handleRenameTag = async () => {
         toast.success(t('memo.saved'))
         memoStore.setSelectedTag(editingTagName.value)
     } catch {
-        toast.error('重命名失败')
+        toast.error(t('memo.renameFailed'))
     } finally {
         tagInputVisible.value = false
     }
@@ -244,7 +244,7 @@ async function handleSaveMemo(content: string) {
         await memoStore.saveMemo(content)
         toast.success(t('memo.published'))
     } catch {
-        toast.error('保存失败')
+        toast.error(t('memo.saveFailed'))
     }
 }
 
@@ -253,7 +253,7 @@ async function handleUpdateMemo(memo: IMemo) {
         await memoStore.updateMemo(memo)
         toast.success(t('memo.saved'))
     } catch {
-        toast.error('更新失败')
+        toast.error(t('memo.updateFailed'))
     }
 }
 
@@ -268,7 +268,7 @@ async function confirmDelete() {
             await memoStore.deleteMemo(memoToDelete.value)
             toast.success(t('memo.deleted'))
         } catch {
-            toast.error('删除失败')
+            toast.error(t('memo.deleteFailed'))
         } finally {
             deleteDialogVisible.value = false
             memoToDelete.value = null
@@ -279,7 +279,7 @@ async function confirmDelete() {
             toast.success(t('memo.deleted'))
             memoStore.setSelectedTag(null)
         } catch {
-            toast.error('删除失败')
+            toast.error(t('memo.deleteFailed'))
         } finally {
             deleteDialogVisible.value = false
             tagToDelete.value = null

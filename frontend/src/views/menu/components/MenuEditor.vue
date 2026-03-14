@@ -12,7 +12,7 @@
                         <Input :model-value="form.name" @update:model-value="$emit('name-change', $event as string)" />
                     </div>
                     <div>
-                        <Label class="mb-1 block">Open Type</Label>
+                        <Label class="mb-1 block">{{ t('siteMenu.openType') }}</Label>
                         <Select
 :model-value="form.openType"
                             @update:model-value="$emit('open-type-change', $event as string)">
@@ -27,19 +27,19 @@
                         </Select>
                     </div>
                     <div>
-                        <Label class="mb-1 block">Link</Label>
+                        <Label class="mb-1 block">{{ t('siteMenu.link') }}</Label>
                         <div class="space-y-2">
                             <div class="relative">
                                 <span class="absolute left-3 top-2.5 text-muted-foreground text-sm">/</span>
                                 <Input
-:model-value="form.link" class="pl-7" placeholder="输入或从下面选择"
+:model-value="form.link" class="pl-7" :placeholder="t('siteMenu.inputOrSelect')"
                                     @update:model-value="$emit('link-change', $event as string)" />
                             </div>
                             <Select
 :model-value="form.link"
                                 @update:model-value="$emit('link-change', $event as string)">
                                 <SelectTrigger>
-                                    <SelectValue placeholder="选择内部链接..." />
+                                    <SelectValue :placeholder="t('siteMenu.selectInternalLink')" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem v-for="item in menuLinks" :key="item.value" :value="item.value">

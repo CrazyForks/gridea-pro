@@ -242,7 +242,7 @@ export function useArticleForm(articleFileName: () => string) {
             ga('Post', 'Post - set-local-feature-image', '')
         } catch (error) {
             console.error('selectFeatureImage: error', error)
-            toast.error('选择图片失败')
+            toast.error(t('settings.theme.uploadFailed'))
         }
     }
 
@@ -389,12 +389,12 @@ export function useArticleForm(articleFileName: () => string) {
 
         const valid = checkArticleUrlValid()
         if (!valid) {
-            toast.error(t('postUrlRepeatTip'))
+            toast.error(t('article.urlRepeatTip'))
             return
         }
 
         if (form.fileName.includes('/')) {
-            toast.error(t('postUrlIncludeTip'))
+            toast.error(t('article.includeSlashTip'))
             return
         }
 
@@ -446,7 +446,7 @@ export function useArticleForm(articleFileName: () => string) {
     // ── 保存状态更新 ──────────────────────────────────────
 
     const updateArticleSavedStatus = () => {
-        articleStatusTip.value = `${t('savedIn')} ${dayjs().format('HH:mm:ss')}`
+        articleStatusTip.value = `${t('common.saved')} ${dayjs().format('HH:mm:ss')}`
         changedAfterLastSave.value = false
     }
 

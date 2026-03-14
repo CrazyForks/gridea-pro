@@ -51,6 +51,7 @@ v-else :value="page" :is-active="currentPage === page"
 </template>
 
 <script lang="ts" setup>
+import { useI18n } from 'vue-i18n'
 import { useSiteStore } from '@/stores/site'
 import { BrowserOpenURL } from '@/wailsjs/runtime'
 import { GetPreviewURL } from '@/wailsjs/go/facade/PreviewFacade'
@@ -80,6 +81,7 @@ defineEmits<{
     editPost: [post: IPost]
 }>()
 
+const { t } = useI18n()
 const siteStore = useSiteStore()
 
 // ── Composables ─────────────────────────────────────────
@@ -111,7 +113,7 @@ const previewPost = async (post: IPost) => {
         BrowserOpenURL(url)
     } catch (e) {
         console.error(e)
-        toast.error('预览服务获取失败')
+        toast.error(t('article.previewServiceFailed'))
     }
 }
 </script>

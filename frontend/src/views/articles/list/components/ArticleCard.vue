@@ -1,6 +1,6 @@
 <template>
     <div
-class="group relative flex rounded-xl relative cursor-pointer transition-all duration-200 bg-primary/2 border border-primary/10 hover:bg-primary/10 hover:shadow-xs hover:-translate-y-0.5"
+class="group relative flex rounded-xl overflow-hidden cursor-pointer transition-all duration-200 bg-primary/2 border border-primary/10 hover:bg-primary/10 hover:shadow-xs hover:-translate-y-0.5"
         @click="$emit('edit', post)">
         <div class="p-3 flex-1 flex flex-col sm:flex-row">
             <!-- Checkbox & Info -->
@@ -51,17 +51,17 @@ v-for="(tag, index) in (post.tags || []).slice(0, 3)" :key="index"
             <div class="absolute right-4 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-2 p-1 z-20">
                 <div
 class="p-1.5 hover:bg-primary/10 rounded-md cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
-                    title="预览" @click.stop="$emit('preview', post)">
+                    :title="t('nav.preview')" @click.stop="$emit('preview', post)">
                     <EyeIcon class="size-3" />
                 </div>
                 <div
 class="p-1.5 hover:bg-primary/10 rounded-md cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
-                    title="编辑" @click.stop="$emit('edit', post)">
+                    :title="t('common.edit')" @click.stop="$emit('edit', post)">
                     <PencilIcon class="size-3" />
                 </div>
                 <div
 class="p-1.5 hover:bg-destructive/10 hover:text-destructive rounded-md cursor-pointer text-muted-foreground transition-colors"
-                    title="删除" @click.stop="$emit('delete', post)">
+                    :title="t('common.delete')" @click.stop="$emit('delete', post)">
                     <TrashIcon class="size-3" />
                 </div>
             </div>
@@ -74,17 +74,15 @@ v-if="post.feature"
             <img :src="featureUrl" class="absolute inset-0 w-full h-full object-cover" />
         </div>
 
-        <!-- Status Badges -->
-        <div class="absolute top-0 right-0 flex pointer-events-none">
-            <div
-v-if="post.hideInList"
-                class="px-2 py-0.5 text-[10px] font-bold bg-foreground text-background rounded-bl-lg z-10 shadow-sm">
-                HIDE
+        <!-- Ribbon Badges -->
+        <div v-if="post.isTop" class="absolute top-0 left-0 size-16 pointer-events-none z-10">
+            <div class="absolute top-[10px] left-[-22px] w-[90px] rotate-[-45deg] bg-primary/85 text-center text-[9px] font-semibold leading-[18px] text-primary-foreground shadow-sm">
+                {{ t('article.pinned') }}
             </div>
-            <div
-v-if="post.isTop"
-                class="px-2 py-0.5 text-[10px] font-bold bg-yellow-400 text-yellow-900 rounded-bl-lg ml-[-4px] z-10 shadow-sm">
-                TOP
+        </div>
+        <div v-if="post.hideInList && !post.isTop" class="absolute top-0 left-0 size-16 pointer-events-none z-10">
+            <div class="absolute top-[10px] left-[-22px] w-[90px] rotate-[-45deg] bg-muted-foreground/50 text-center text-[9px] font-semibold leading-[18px] text-primary-foreground shadow-sm">
+                {{ t('article.hidden') }}
             </div>
         </div>
     </div>

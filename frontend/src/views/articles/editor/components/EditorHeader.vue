@@ -105,7 +105,7 @@ variant="ghost" size="sm"
             </PopoverTrigger>
             <PopoverContent side="left" align="end" class="w-64 p-4 max-h-[400px] overflow-y-auto">
                 <div class="keyboard-tip mb-2">
-                    💁‍♂️ 编辑区域右键能弹出快捷菜单哦
+                    {{ $t('article.contextMenuTip') }}
                 </div>
                 <div class="keyboard-container w-full">
                     <div v-for="(item, index) in shortcutKeys" :key="index" class="item">
@@ -130,10 +130,12 @@ variant="ghost" size="sm"
 </template>
 
 <script lang="ts" setup>
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import EmojiCard from '@/components/EmojiCard/index.vue'
-import shortcutKeys from '@/helpers/shortcut-keys'
+import { getShortcutKeys } from '@/helpers/shortcut-keys'
 import {
     ArrowLeftIcon,
     CheckIcon,
@@ -161,6 +163,9 @@ defineEmits<{
     openSettings: []
     preview: []
 }>()
+
+const { t } = useI18n()
+const shortcutKeys = computed(() => getShortcutKeys(t))
 </script>
 
 <style lang="less" scoped>

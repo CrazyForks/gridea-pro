@@ -16,6 +16,7 @@ node_modules
 .env
 .env.local
 .env.*.local
+.mcp.json
 
 # Log files
 npm-debug.log*
@@ -23,6 +24,7 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 *.log
+
 
 # Editor directories and files
 .idea
@@ -32,6 +34,7 @@ pnpm-debug.log*
 .claude/*
 .github/*
 .trae/*
+.vite/*
 !.vscode/settings.json
 *.suo
 *.ntvs*
@@ -62,6 +65,7 @@ coverage
 .temp
 tmp
 temp
+Gridea Pro-repomix-output.xml
 
 # OS generated files
 Thumbs.db

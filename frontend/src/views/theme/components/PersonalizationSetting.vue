@@ -260,7 +260,7 @@ const saveTheme = async () => {
     EventsEmit('app-site-reload')
   } catch (e) {
     console.error('保存主题失败:', e)
-    toast.error('主题保存失败')
+    toast.error(t('settings.theme.saveFailed'))
   }
 }
 
