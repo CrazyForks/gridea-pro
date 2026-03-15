@@ -108,8 +108,6 @@ fill-rule="evenodd" clip-rule="evenodd"
 
     <!-- Main Content -->
     <main class="flex-1 flex flex-col min-h-0 overflow-hidden bg-background">
-      <!-- Windows/Linux: 顶部拖拽区域，为窗口控制按钮留出空间 -->
-      <div v-if="isFrameless" class="h-10 w-full flex-shrink-0 header-spacer"></div>
       <div class="flex-1 w-full overflow-y-auto overflow-x-hidden p-0">
         <router-view v-slot="{ Component }">
           <keep-alive exclude="Loading,Theme">
@@ -171,7 +169,7 @@ import { useMemoStore } from '@/stores/memo'
 import { useSiteStore } from '@/stores/site'
 import AppSystem from '@/views/preferences/index.vue'
 import { Button } from '@/components/ui/button'
-import { EventsEmit, EventsOn, BrowserOpenURL, Environment } from '@/wailsjs/runtime'
+import { EventsEmit, EventsOn, BrowserOpenURL } from '@/wailsjs/runtime'
 import { DeployToGit } from '@/wailsjs/go/facade/DeployFacade'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import WindowControls from '@/components/WindowControls/index.vue'
@@ -211,7 +209,6 @@ const updateContent = ref('')
 const logModalVisible = ref(false)
 const sidebarVisible = ref(true)
 const log = ref<any>({})
-const isFrameless = ref(false)
 
 const currentRouter = computed(() => route.path)
 
@@ -332,13 +329,7 @@ const openPreferences = () => {
   EventsEmit('show-preferences')
 }
 
-onMounted(async () => {
-  // 检测平台，Windows/Linux 为 frameless 模式
-  try {
-    const env = await Environment()
-    isFrameless.value = env.platform !== 'darwin'
-  } catch { /* ignore */ }
-
+onMounted(() => {
   // 启动时同步当前语言到后端，以便原生菜单使用正确的语言
   EventsEmit('app:change-locale', locale.value)
 
@@ -459,5 +450,31 @@ onMounted(async () => {
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+</style>
+
+<!-- Windows/Linux Frameless: 为窗口控制按钮留出右侧空间 -->
+<style>
+.platform-frameless {
+  /* 所有页面 header（inline draggable） */
+  [style*="--wails-draggable: drag"] {
+    padding-right: 140px;
+  }
+
+  /* 编辑器 header（CSS draggable） */
+  .page-title {
+    padding-right: 140px;
+  }
+
+  /* 编辑器右侧固定工具栏 */
+  .right-tool-container,
+  .right-bottom-tool-container {
+    right: 140px;
+  }
+
+  /* Sheet/Drawer 关闭按钮避让 */
+  [data-radix-dialog-content] [data-radix-dialog-close] {
+    right: 140px;
+  }
 }
 </style>

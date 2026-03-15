@@ -44,13 +44,14 @@ const isMaximized = ref(false)
 onMounted(async () => {
   try {
     const env = await Environment()
-    // 仅 Windows 和 Linux 显示自定义窗口控制按钮
     showControls.value = env.platform !== 'darwin'
+    if (showControls.value) {
+      document.documentElement.classList.add('platform-frameless')
+    }
   } catch {
     showControls.value = false
   }
 
-  // 监听窗口最大化/还原事件
   EventsOn('wails:window-maximised', () => {
     isMaximized.value = true
   })
@@ -71,7 +72,7 @@ const close = () => Quit()
   right: 0;
   z-index: 9999;
   display: flex;
-  height: 40px;
+  height: 48px;
   -webkit-app-region: no-drag;
 }
 
@@ -80,7 +81,7 @@ const close = () => Quit()
   align-items: center;
   justify-content: center;
   width: 46px;
-  height: 40px;
+  height: 48px;
   border: none;
   background: transparent;
   color: var(--foreground, #333);
