@@ -30,16 +30,23 @@ type App struct {
 	mu              sync.RWMutex
 	appDir          string
 	buildDir        string
+	version         string
 	previewService  *facade.PreviewFacade
 	services        *facade.AppServices
 	resourceWatcher *service.ResourceWatcher
 }
 
-func NewApp(appDir string, services *facade.AppServices) *App {
+func NewApp(appDir string, services *facade.AppServices, version string) *App {
 	return &App{
 		appDir:   appDir,
 		services: services,
+		version:  version,
 	}
+}
+
+// GetVersion 返回应用版本号，供前端调用
+func (a *App) GetVersion() string {
+	return a.version
 }
 
 func (a *App) Startup(ctx context.Context) {

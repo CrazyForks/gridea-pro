@@ -139,7 +139,7 @@ func openInTerminal(path string) {
 	}
 }
 
-func Run(assets embed.FS) {
+func Run(assets embed.FS, version string) {
 	// 初始化 ConfigManager
 	configManager, err := config.NewConfigManager()
 	if err != nil {
@@ -174,7 +174,7 @@ func Run(assets embed.FS) {
 	// 初始化 Services (Facade)
 	services := facade.NewAppServices(appDir, assets)
 
-	application := app.NewApp(appDir, services)
+	application := app.NewApp(appDir, services, version)
 
 	// Capture context for safe shutdown
 	quitHandler := func(_ *menu.CallbackData) {
@@ -191,7 +191,7 @@ func Run(assets embed.FS) {
 			_, _ = wailsRuntime.MessageDialog(appCtx, wailsRuntime.MessageDialogOptions{
 				Type:    wailsRuntime.InfoDialog,
 				Title:   T("app.about"),
-				Message: "Gridea Pro\nVersion 1.0.0\nCopyright © 2026 Gridea Pro",
+				Message: "Gridea Pro\nVersion " + version + "\nCopyright © 2026 Gridea Pro",
 			})
 		}
 	}
