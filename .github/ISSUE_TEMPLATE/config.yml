@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "\U0001F4AC Discussions — Q&A"
+    url: https://github.com/Gridea-Pro/gridea-pro/discussions/categories/q-a
+    about: Ask questions and get help from the community. Please don't open an issue for support requests.
+  - name: "\U0001F4AC Discussions — Feature Ideas"
+    url: https://github.com/Gridea-Pro/gridea-pro/discussions/categories/feature-requests
+    about: Browse and vote on feature ideas, or start a discussion before opening a formal request.
+  - name: "\U0001F4D6 Documentation"
+    url: https://gridea.pro/docs
+    about: Check the documentation — your question might already be answered there.
