@@ -353,6 +353,32 @@ export namespace domain {
 		    return a;
 		}
 	}
+	export class PwaSetting {
+	    enabled: boolean;
+	    appName: string;
+	    shortName: string;
+	    description: string;
+	    themeColor: string;
+	    backgroundColor: string;
+	    orientation: string;
+	    customIcon: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new PwaSetting(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.enabled = source["enabled"];
+	        this.appName = source["appName"];
+	        this.shortName = source["shortName"];
+	        this.description = source["description"];
+	        this.themeColor = source["themeColor"];
+	        this.backgroundColor = source["backgroundColor"];
+	        this.orientation = source["orientation"];
+	        this.customIcon = source["customIcon"];
+	    }
+	}
 	export class SeoSetting {
 	    enableJsonLD: boolean;
 	    enableOpenGraph: boolean;

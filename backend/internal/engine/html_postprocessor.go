@@ -8,10 +8,11 @@ import (
 	"strings"
 )
 
-// HtmlPostProcessor 在模板渲染完成后对 HTML 进行后处理，注入 SEO 标签和 CDN URL 重写
+// HtmlPostProcessor 在模板渲染完成后对 HTML 进行后处理，注入 SEO 标签、PWA 标签和 CDN URL 重写
 type HtmlPostProcessor struct {
 	seoSetting *domain.SeoSetting
 	cdnSetting *domain.CdnSetting
+	pwaSetting *domain.PwaSetting
 	domain     string
 	siteName   string
 	siteDesc   string
@@ -19,10 +20,11 @@ type HtmlPostProcessor struct {
 }
 
 // NewHtmlPostProcessor 创建后处理器
-func NewHtmlPostProcessor(seo *domain.SeoSetting, cdn *domain.CdnSetting, domain, siteName, siteDesc, language string) *HtmlPostProcessor {
+func NewHtmlPostProcessor(seo *domain.SeoSetting, cdn *domain.CdnSetting, pwa *domain.PwaSetting, domain, siteName, siteDesc, language string) *HtmlPostProcessor {
 	return &HtmlPostProcessor{
 		seoSetting: seo,
 		cdnSetting: cdn,
+		pwaSetting: pwa,
 		domain:     domain,
 		siteName:   siteName,
 		siteDesc:   siteDesc,
@@ -41,6 +43,9 @@ func (p *HtmlPostProcessor) Process(html, pageType, pageURL string, post *templa
 
 	// SEO 注入
 	html = p.injectSeo(html, pageType, pageURL, post)
+
+	// PWA meta 标签注入
+	html = p.injectPwa(html)
 
 	// CDN URL 重写
 	html = p.rewriteCdnURLs(html)
@@ -300,6 +305,53 @@ func escapeAttr(s string) string {
 	return s
 }
 
+// injectPwa 在 </head> 前插入 PWA 相关标签
+func (p *HtmlPostProcessor) injectPwa(html string) string {
+	if p.pwaSetting == nil || !p.pwaSetting.Enabled {
+		return html
+	}
+
+	var sb strings.Builder
+
+	sb.WriteString(`<link rel="manifest" href="/manifest.json">` + "\n")
+
+	if p.pwaSetting.ThemeColor != "" {
+		sb.WriteString(fmt.Sprintf(`<meta name="theme-color" content="%s">`+"\n", escapeAttr(p.pwaSetting.ThemeColor)))
+	}
+
+	sb.WriteString(`<meta name="apple-mobile-web-app-capable" content="yes">` + "\n")
+	sb.WriteString(`<meta name="mobile-web-app-capable" content="yes">` + "\n")
+	sb.WriteString(`<meta name="apple-mobile-web-app-status-bar-style" content="default">` + "\n")
+
+	appName := p.pwaSetting.AppName
+	if appName == "" {
+		appName = p.siteName
+	}
+	sb.WriteString(fmt.Sprintf(`<meta name="apple-mobile-web-app-title" content="%s">`+"\n", escapeAttr(appName)))
+
+	// apple-touch-icon 180x180（iOS 标准尺寸）
+	icon180 := "/images/icons/icon-180x180.png"
+	sb.WriteString(fmt.Sprintf(`<link rel="apple-touch-icon" sizes="180x180" href="%s">`+"\n", escapeAttr(icon180)))
+
+	// 标准 favicon 192x192（构建时统一生成到固定路径）
+	icon192 := "/images/icons/icon-192x192.png"
+	sb.WriteString(fmt.Sprintf(`<link rel="icon" type="image/png" sizes="192x192" href="%s">`+"\n", escapeAttr(icon192)))
+
+	// Windows 磁贴
+	if p.pwaSetting.ThemeColor != "" {
+		sb.WriteString(fmt.Sprintf(`<meta name="msapplication-TileColor" content="%s">`+"\n", escapeAttr(p.pwaSetting.ThemeColor)))
+	}
+	sb.WriteString(fmt.Sprintf(`<meta name="msapplication-TileImage" content="%s">`+"\n", escapeAttr(icon192)))
+
+	sb.WriteString(`<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js')}</script>` + "\n")
+
+	inject := sb.String()
+	idx := strings.LastIndex(strings.ToLower(html), "</head>")
+	if idx == -1 {
+		return html
+	}
+	return html[:idx] + inject + html[idx:]
+}
 
 // stripHTML 简单去除 HTML 标签
 func stripHTML(s string) string {

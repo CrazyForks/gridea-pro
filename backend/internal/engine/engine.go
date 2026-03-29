@@ -21,11 +21,12 @@ type Engine struct {
 	appDir string
 
 	// 子模块
-	dataBuilder  *TemplateDataBuilder
-	pageRenderer *PageRenderer
-	seoGenerator *SeoGenerator
+	dataBuilder   *TemplateDataBuilder
+	pageRenderer  *PageRenderer
+	seoGenerator  *SeoGenerator
+	pwaGenerator  *PwaGenerator
 	searchBuilder *SearchIndexBuilder
-	assetManager *AssetManager
+	assetManager  *AssetManager
 
 	// 主题配置
 	themeConfigService *ThemeConfigService
@@ -35,6 +36,7 @@ type Engine struct {
 	themeRepo      domain.ThemeRepository
 	seoSettingRepo domain.SeoSettingRepository
 	cdnSettingRepo domain.CdnSettingRepository
+	pwaSettingRepo domain.PwaSettingRepository
 
 	// 主题渲染器
 	renderer     render.ThemeRenderer
@@ -59,6 +61,7 @@ func New(
 		dataBuilder:        dataBuilder,
 		pageRenderer:       pageRenderer,
 		seoGenerator:       NewSeoGenerator(),
+		pwaGenerator:       NewPwaGenerator(appDir),
 		searchBuilder:      NewSearchIndexBuilder(),
 		assetManager:       NewAssetManager(appDir, themeConfigService),
 		themeConfigService: themeConfigService,
@@ -104,6 +107,11 @@ func (s *Engine) SetSeoSettingRepo(repo domain.SeoSettingRepository) {
 // SetCdnSettingRepo 设置 CDN 设置仓库
 func (s *Engine) SetCdnSettingRepo(repo domain.CdnSettingRepository) {
 	s.cdnSettingRepo = repo
+}
+
+// SetPwaSettingRepo 设置 PWA 设置仓库
+func (s *Engine) SetPwaSettingRepo(repo domain.PwaSettingRepository) {
+	s.pwaSettingRepo = repo
 }
 
 // SetTheme 设置主题并初始化渲染器
@@ -173,8 +181,9 @@ func (s *Engine) RenderAll(ctx context.Context) error {
 		return fmt.Errorf("构建模板数据失败: %w", err)
 	}
 
-	// 4. 初始化 HTML 后处理器（SEO + CDN）
+	// 4. 初始化 HTML 后处理器（SEO + CDN + PWA）
 	var postProcessor *HtmlPostProcessor
+	var pwaSetting domain.PwaSetting
 	{
 		var seoSetting domain.SeoSetting
 		var cdnSetting domain.CdnSetting
@@ -184,8 +193,11 @@ func (s *Engine) RenderAll(ctx context.Context) error {
 		if s.cdnSettingRepo != nil {
 			cdnSetting, _ = s.cdnSettingRepo.GetCdnSetting(ctx)
 		}
+		if s.pwaSettingRepo != nil {
+			pwaSetting, _ = s.pwaSettingRepo.GetPwaSetting(ctx)
+		}
 		postProcessor = NewHtmlPostProcessor(
-			&seoSetting, &cdnSetting,
+			&seoSetting, &cdnSetting, &pwaSetting,
 			templateData.ThemeConfig.Domain,
 			templateData.ThemeConfig.SiteName,
 			templateData.ThemeConfig.SiteDescription,
@@ -246,6 +258,18 @@ func (s *Engine) RenderAll(ctx context.Context) error {
 		{"RSS订阅(feed.xml)", func() error { return s.seoGenerator.RenderRSS(buildDir, templateData) }},
 		{"站点地图(sitemap.xml)", func() error { return s.seoGenerator.RenderSitemap(buildDir, templateData) }},
 		{"Robots(robots.txt)", func() error { return s.seoGenerator.RenderRobotsTxt(buildDir, templateData) }},
+		{"PWA Manifest(manifest.json)", func() error {
+			if pwaSetting.Enabled {
+				return s.pwaGenerator.RenderManifest(buildDir, &pwaSetting, templateData.ThemeConfig.SiteName, templateData.ThemeConfig.Language)
+			}
+			return nil
+		}},
+		{"PWA ServiceWorker(sw.js)", func() error {
+			if pwaSetting.Enabled {
+				return s.pwaGenerator.RenderServiceWorker(buildDir)
+			}
+			return nil
+		}},
 	}
 
 	asyncGroup, asyncCtx := errgroup.WithContext(ctx)

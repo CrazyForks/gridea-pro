@@ -31,6 +31,9 @@ ref="lineRef" class="tab-transition absolute bottom-0 h-[2px] bg-primary rounded
             <basic-setting></basic-setting>
           </TabPanel>
           <TabPanel class="focus:outline-none">
+            <pwa-setting></pwa-setting>
+          </TabPanel>
+          <TabPanel class="focus:outline-none">
             <seo-setting></seo-setting>
           </TabPanel>
           <TabPanel class="focus:outline-none">
@@ -47,12 +50,13 @@ import { nextTick, onMounted, ref, watch, computed, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { TabGroup, TabList, Tab, TabPanels, TabPanel } from '@headlessui/vue'
 import BasicSetting from './components/BasicSetting.vue'
+import PwaSetting from './components/PwaSetting.vue'
 import SeoSetting from './components/SeoSetting.vue'
 import CdnSetting from './components/CdnSetting.vue'
 
 const { t } = useI18n()
 
-const tabs = ['network', 'seo', 'cdn']
+const tabs = ['network', 'pwa', 'seo', 'cdn']
 const currentTab = ref('network')
 
 const tabListRef = ref<any>(null)
