@@ -15,9 +15,9 @@ type TwikooProvider struct {
 }
 
 // NewTwikooProvider 创建 Twikoo Provider
-func NewTwikooProvider(config *TwikooConfig, logger *slog.Logger) *TwikooProvider {
+func NewTwikooProvider(config *TwikooConfig, proxyURL string, logger *slog.Logger) *TwikooProvider {
 	return &TwikooProvider{
-		BaseProvider: NewBaseProvider(15*time.Second, logger),
+		BaseProvider: NewBaseProvider(15*time.Second, proxyURL, logger),
 		config:       config,
 	}
 }

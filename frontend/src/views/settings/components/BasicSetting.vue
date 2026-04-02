@@ -210,6 +210,22 @@ href="https://gridea.pro/netlify" target="_blank"
         </div>
       </template>
 
+      <!-- Proxy Settings -->
+      <div class="grid grid-cols-[180px_1fr] items-center gap-4">
+        <label class="text-sm font-medium text-right text-muted-foreground">{{ t('settings.network.proxyEnabled') }}</label>
+        <div class="flex items-center space-x-2">
+          <input type="checkbox" v-model="form.proxyEnabled" class="rounded text-primary focus:ring-primary">
+          <span class="text-sm text-muted-foreground">{{ t('settings.network.proxyEnabledDesc') }}</span>
+        </div>
+      </div>
+      <div class="grid grid-cols-[180px_1fr] items-center gap-4" v-if="form.proxyEnabled">
+        <label class="text-sm font-medium text-right text-muted-foreground">{{ t('settings.network.proxyURL') }}</label>
+        <div class="max-w-sm">
+          <Input v-model="form.proxyURL" placeholder="http://127.0.0.1:7890" class="" />
+          <div class="text-xs text-muted-foreground mt-1.5">{{ t('settings.network.proxyURLDesc') }}</div>
+        </div>
+      </div>
+
     </div>
 
     <footer-box>
@@ -288,6 +304,8 @@ const form = reactive<ISettingForm>({
   remotePath: '',
   netlifyAccessToken: '',
   netlifySiteId: '',
+  proxyEnabled: false,
+  proxyURL: '',
 })
 
 // 将当前表单的平台专属字段保存到 platformConfigs
@@ -401,13 +419,17 @@ onMounted(() => {
   // 1. 恢复平台选择
   form.platform = setting.platform || 'github'
 
-  // 2. 恢复 platformConfigs
+  // 2. 恢复平台配置
   if (setting.platformConfigs) {
     platformConfigs.value = JSON.parse(JSON.stringify(setting.platformConfigs))
   }
 
   // 3. 从 platformConfigs 恢复当前平台的专属字段到表单（包括 domain）
   restorePlatformConfig(form.platform)
+
+  // 4. 恢复代理设置
+  form.proxyEnabled = setting.proxyEnabled || false
+  form.proxyURL = setting.proxyURL || ''
 
   // 5. 处理 domain 协议分离（restorePlatformConfig 恢复的是含协议的完整 domain）
   const domainVal = form.domain || ''
@@ -441,6 +463,8 @@ const buildFormData = () => {
   return {
     platform: form.platform,
     platformConfigs: configs,
+    proxyEnabled: form.proxyEnabled,
+    proxyURL: form.proxyURL,
   }
 }
 

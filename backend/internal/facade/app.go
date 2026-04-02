@@ -102,7 +102,7 @@ func NewAppServices(appDir string, assets embed.FS) *AppServices {
 	scaffoldService := service.NewScaffoldService(assets)
 	// CommentService
 	commentRepo := repository.NewCommentRepository(appDir)
-	commentService := service.NewCommentService(appDir, commentRepo, postRepo, themeRepo)
+	commentService := service.NewCommentService(appDir, commentRepo, postRepo, themeRepo, settingRepo)
 	memoService := service.NewMemoService(memoRepo)
 	previewService := service.NewPreviewService(filepath.Join(appDir, "output"))
 	// Set CommentRepo on RendererService for template injection

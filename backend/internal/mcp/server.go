@@ -96,7 +96,7 @@ func initServices(appDir string) *Services {
 	linkService := service.NewLinkService(linkRepo)
 	themeService := service.NewThemeService(themeRepo, appDir)
 	settingService := service.NewSettingService(appDir, settingRepo)
-	commentService := service.NewCommentService(appDir, commentRepo, postRepo, themeRepo)
+	commentService := service.NewCommentService(appDir, commentRepo, postRepo, themeRepo, settingRepo)
 	memoService := service.NewMemoService(memoRepo)
 
 	// Renderer (Complex dependencies)

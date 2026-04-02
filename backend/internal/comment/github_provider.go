@@ -14,9 +14,9 @@ type GitHubProvider struct {
 	config *GitHubConfig
 }
 
-func NewGitHubProvider(config *GitHubConfig, logger *slog.Logger) *GitHubProvider {
+func NewGitHubProvider(config *GitHubConfig, proxyURL string, logger *slog.Logger) *GitHubProvider {
 	return &GitHubProvider{
-		BaseProvider: NewBaseProvider(15*time.Second, logger),
+		BaseProvider: NewBaseProvider(15*time.Second, proxyURL, logger),
 		config:       config,
 	}
 }

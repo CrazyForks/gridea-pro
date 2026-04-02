@@ -3,6 +3,7 @@ package deploy
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -165,6 +166,47 @@ func (p *GitProvider) Deploy(ctx context.Context, outputDir string, setting *dom
 	// 定义 RefSpec：将本地的当前 HEAD 强制推送到远程的指定 branch
 	// 格式：+refs/heads/本地分支:refs/heads/远程分支 (+号代表强制推送 Force)
 	refSpecStr := fmt.Sprintf("+%s:refs/heads/%s", headRef.Name().String(), branch)
+
+	// 如果启用了代理，设置环境变量
+	var oldHTTPProxy, oldHTTPSProxy, oldAllProxy string
+	if setting.ProxyEnabled && setting.ProxyURL != "" {
+		proxyURL, err := url.Parse(setting.ProxyURL)
+		if err == nil {
+			// 检查代理协议类型
+			proxyScheme := strings.ToLower(proxyURL.Scheme)
+			switch proxyScheme {
+			case "socks4", "socks4a", "socks5", "socks":
+				// SOCKS 代理，使用 ALL_PROXY 环境变量
+				oldAllProxy = os.Getenv("ALL_PROXY")
+				os.Setenv("ALL_PROXY", setting.ProxyURL)
+				defer func() {
+					if oldAllProxy != "" {
+						os.Setenv("ALL_PROXY", oldAllProxy)
+					} else {
+						os.Unsetenv("ALL_PROXY")
+					}
+				}()
+			default:
+				// HTTP/HTTPS 代理
+				oldHTTPProxy = os.Getenv("HTTP_PROXY")
+				oldHTTPSProxy = os.Getenv("HTTPS_PROXY")
+				os.Setenv("HTTP_PROXY", setting.ProxyURL)
+				os.Setenv("HTTPS_PROXY", setting.ProxyURL)
+				defer func() {
+					if oldHTTPProxy != "" {
+						os.Setenv("HTTP_PROXY", oldHTTPProxy)
+					} else {
+						os.Unsetenv("HTTP_PROXY")
+					}
+					if oldHTTPSProxy != "" {
+						os.Setenv("HTTPS_PROXY", oldHTTPSProxy)
+					} else {
+						os.Unsetenv("HTTPS_PROXY")
+					}
+				}()
+			}
+		}
+	}
 
 	err = r.PushContext(ctx, &git.PushOptions{
 		RemoteName: "origin",

@@ -7,9 +7,13 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
+
+	"golang.org/x/net/proxy"
 )
 
 // BaseProvider 提供所有 CommentProvider 共用的基础功能
@@ -21,7 +25,8 @@ type BaseProvider struct {
 
 // NewBaseProvider 创建基础 Provider
 // timeout: HTTP 请求超时时间，默认 30s
-func NewBaseProvider(timeout time.Duration, logger *slog.Logger) *BaseProvider {
+// proxyURL: 代理服务器 URL，为空则不使用代理
+func NewBaseProvider(timeout time.Duration, proxyURL string, logger *slog.Logger) *BaseProvider {
 	if timeout <= 0 {
 		timeout = 30 * time.Second
 	}
@@ -29,14 +34,38 @@ func NewBaseProvider(timeout time.Duration, logger *slog.Logger) *BaseProvider {
 		logger = slog.Default()
 	}
 
+	transport := &http.Transport{
+		MaxIdleConns:        100,
+		MaxIdleConnsPerHost: 10,
+		IdleConnTimeout:     30 * time.Second,
+	}
+
+	// 如果提供了代理 URL，则设置代理
+	if proxyURL != "" {
+		proxyURLParsed, err := url.Parse(proxyURL)
+		if err == nil {
+			// 检查代理协议类型
+			proxyScheme := strings.ToLower(proxyURLParsed.Scheme)
+			switch proxyScheme {
+			case "socks4", "socks4a", "socks5", "socks":
+				// SOCKS 代理
+				dialer, err := proxy.FromURL(proxyURLParsed, proxy.Direct)
+				if err == nil {
+					transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+						return dialer.Dial(network, addr)
+					}
+				}
+			default:
+				// HTTP/HTTPS 代理
+				transport.Proxy = http.ProxyURL(proxyURLParsed)
+			}
+		}
+	}
+
 	return &BaseProvider{
 		client: &http.Client{
-			Timeout: timeout,
-			Transport: &http.Transport{
-				MaxIdleConns:        100,
-				MaxIdleConnsPerHost: 10,
-				IdleConnTimeout:     30 * time.Second,
-			},
+			Timeout:   timeout,
+			Transport: transport,
 		},
 		logger: logger,
 	}

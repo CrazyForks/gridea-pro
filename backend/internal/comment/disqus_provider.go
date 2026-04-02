@@ -13,9 +13,9 @@ type DisqusProvider struct {
 	config *DisqusConfig
 }
 
-func NewDisqusProvider(config *DisqusConfig, logger *slog.Logger) *DisqusProvider {
+func NewDisqusProvider(config *DisqusConfig, proxyURL string, logger *slog.Logger) *DisqusProvider {
 	return &DisqusProvider{
-		BaseProvider: NewBaseProvider(10*time.Second, logger),
+		BaseProvider: NewBaseProvider(10*time.Second, proxyURL, logger),
 		config:       config,
 	}
 }
