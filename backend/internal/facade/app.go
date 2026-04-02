@@ -110,7 +110,7 @@ func NewAppServices(appDir string, assets embed.FS) *AppServices {
 	rendererService.SetSeoSettingRepo(seoSettingRepo)
 	rendererService.SetCdnSettingRepo(cdnSettingRepo)
 	rendererService.SetPwaSettingRepo(pwaSettingRepo)
-	cdnUploadService := service.NewCdnUploadService(cdnSettingRepo, appDir)
+	cdnUploadService := service.NewCdnUploadService(cdnSettingRepo, settingRepo, appDir)
 	deployService.SetCdnUploadService(cdnUploadService)
 	deployService.SetRenderer(rendererService)
 

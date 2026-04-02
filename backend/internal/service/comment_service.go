@@ -30,6 +30,18 @@ func NewCommentService(appDir string, repo domain.CommentRepository, postRepo do
 	}
 }
 
+// getProxyURL 从设置中读取代理 URL，未启用或读取失败返回空字符串
+func (s *CommentService) getProxyURL(ctx context.Context) string {
+	if s.settingRepo == nil {
+		return ""
+	}
+	setting, err := s.settingRepo.GetSetting(ctx)
+	if err != nil || !setting.ProxyEnabled {
+		return ""
+	}
+	return setting.ProxyURL
+}
+
 // GetSettings 获取评论设置
 func (s *CommentService) GetSettings(ctx context.Context) (*domain.CommentSettings, error) {
 	s.mu.RLock()
@@ -66,16 +78,7 @@ func (s *CommentService) FetchComments(ctx context.Context, page, pageSize int) 
 		return emptyResult, nil
 	}
 
-	// 获取代理设置
-	proxyURL := ""
-	if s.settingRepo != nil {
-		setting, err := s.settingRepo.GetSetting(ctx)
-		if err == nil && setting.ProxyEnabled && setting.ProxyURL != "" {
-			proxyURL = setting.ProxyURL
-		}
-	}
-
-	provider, err := comment.NewProvider(*settings, proxyURL)
+	provider, err := comment.NewProvider(*settings, s.getProxyURL(ctx))
 	if err != nil {
 		return emptyResult, fmt.Errorf("provider init failed: %w", err)
 	}
@@ -161,16 +164,7 @@ func (s *CommentService) ReplyComment(ctx context.Context, parentID string, cont
 		return fmt.Errorf(domain.ErrCommentNotEnabled)
 	}
 
-	// 获取代理设置
-	proxyURL := ""
-	if s.settingRepo != nil {
-		setting, err := s.settingRepo.GetSetting(ctx)
-		if err == nil && setting.ProxyEnabled && setting.ProxyURL != "" {
-			proxyURL = setting.ProxyURL
-		}
-	}
-
-	provider, err := comment.NewProvider(*settings, proxyURL)
+	provider, err := comment.NewProvider(*settings, s.getProxyURL(ctx))
 	if err != nil {
 		return err
 	}
@@ -243,16 +237,7 @@ func (s *CommentService) DeleteComment(ctx context.Context, commentID string) er
 		return fmt.Errorf(domain.ErrCommentNotEnabled)
 	}
 
-	// 获取代理设置
-	proxyURL := ""
-	if s.settingRepo != nil {
-		setting, err := s.settingRepo.GetSetting(ctx)
-		if err == nil && setting.ProxyEnabled && setting.ProxyURL != "" {
-			proxyURL = setting.ProxyURL
-		}
-	}
-
-	provider, err := comment.NewProvider(*settings, proxyURL)
+	provider, err := comment.NewProvider(*settings, s.getProxyURL(ctx))
 	if err != nil {
 		return err
 	}

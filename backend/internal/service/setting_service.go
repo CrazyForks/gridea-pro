@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"gridea-pro/backend/internal/domain"
 	"io"
 	"net/http"
 	"os"
@@ -11,8 +10,11 @@ import (
 	"strings"
 	"sync"
 
+	"gridea-pro/backend/internal/domain"
+
 	gogit "github.com/go-git/go-git/v5"
 	gitconfig "github.com/go-git/go-git/v5/config"
+	gittransport "github.com/go-git/go-git/v5/plumbing/transport"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 )
 
@@ -126,15 +128,20 @@ func (s *SettingService) RemoteDetect(ctx context.Context, setting domain.Settin
 			tokenUser = setting.Username()
 		}
 
-		_, err := gogit.NewRemote(nil, &gitconfig.RemoteConfig{
-			Name: "origin",
-			URLs: []string{safeUrl},
-		}).ListContext(ctx, &gogit.ListOptions{
+		listOptions := &gogit.ListOptions{
 			Auth: &githttp.BasicAuth{
 				Username: tokenUser,
 				Password: setting.Token(),
 			},
-		})
+		}
+		if setting.ProxyEnabled && setting.ProxyURL != "" {
+			listOptions.ProxyOptions = gittransport.ProxyOptions{URL: setting.ProxyURL}
+		}
+
+		_, err := gogit.NewRemote(nil, &gitconfig.RemoteConfig{
+			Name: "origin",
+			URLs: []string{safeUrl},
+		}).ListContext(ctx, listOptions)
 
 		if err != nil {
 			message = fmt.Sprintf("连接失败: %v", err)
@@ -152,7 +159,11 @@ func (s *SettingService) RemoteDetect(ctx context.Context, setting domain.Settin
 		}
 		req.Header.Set("Authorization", "Bearer "+setting.Token())
 
-		resp, err := http.DefaultClient.Do(req)
+		vercelClient := http.DefaultClient
+		if setting.ProxyEnabled && setting.ProxyURL != "" {
+			vercelClient = newHTTPClient(setting.ProxyURL)
+		}
+		resp, err := vercelClient.Do(req)
 		if err != nil {
 			message = fmt.Sprintf("连接失败: %v", err)
 			break

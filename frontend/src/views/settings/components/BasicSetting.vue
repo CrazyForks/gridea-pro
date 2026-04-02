@@ -211,18 +211,19 @@ href="https://gridea.pro/netlify" target="_blank"
       </template>
 
       <!-- Proxy Settings -->
-      <div class="grid grid-cols-[180px_1fr] items-center gap-4">
-        <label class="text-sm font-medium text-right text-muted-foreground">{{ t('settings.network.proxyEnabled') }}</label>
-        <div class="flex items-center space-x-2">
-          <input type="checkbox" v-model="form.proxyEnabled" class="rounded text-primary focus:ring-primary">
-          <span class="text-sm text-muted-foreground">{{ t('settings.network.proxyEnabledDesc') }}</span>
+      <div class="grid grid-cols-[180px_1fr] items-start gap-4">
+        <label class="text-sm font-medium text-right text-muted-foreground pt-2">{{ t('settings.network.proxyEnabled') }}</label>
+        <div class="flex items-center gap-3">
+          <Switch :checked="form.proxyEnabled" @update:checked="(v: boolean) => form.proxyEnabled = v" />
+          <span class="text-xs text-muted-foreground">{{ t('settings.network.proxyEnabledDesc') }}</span>
         </div>
       </div>
-      <div class="grid grid-cols-[180px_1fr] items-center gap-4" v-if="form.proxyEnabled">
-        <label class="text-sm font-medium text-right text-muted-foreground">{{ t('settings.network.proxyURL') }}</label>
+      <div class="grid grid-cols-[180px_1fr] items-start gap-4" v-if="form.proxyEnabled">
+        <label class="text-sm font-medium text-right text-muted-foreground pt-2">{{ t('settings.network.proxyURL') }}</label>
         <div class="max-w-sm">
-          <Input v-model="form.proxyURL" placeholder="http://127.0.0.1:7890" class="" />
+          <Input v-model="form.proxyURL" placeholder="http://127.0.0.1:7890" />
           <div class="text-xs text-muted-foreground mt-1.5">{{ t('settings.network.proxyURLDesc') }}</div>
+          <div v-if="proxyURLError" class="text-xs text-destructive mt-1">{{ proxyURLError }}</div>
         </div>
       </div>
 
@@ -259,6 +260,7 @@ import FooterBox from '@/components/FooterBox/index.vue'
 import ga from '@/helpers/analytics'
 import type { ISettingForm } from '@/interfaces/setting'
 import { EyeIcon, EyeSlashIcon } from '@heroicons/vue/24/outline'
+import { Switch } from '@/components/ui/switch'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -409,7 +411,22 @@ const canSubmit = computed(() => {
     && form.repository
     && form.token
 
-  return pagesPlatfomValid || sftpPlatformValid || netlifyPlatformValid || vercelPlatformValid
+  const proxyValid = !form.proxyEnabled || !form.proxyURL || proxyURLError.value === ''
+  return (pagesPlatfomValid || sftpPlatformValid || netlifyPlatformValid || vercelPlatformValid) && proxyValid
+})
+
+const proxyURLError = computed(() => {
+  if (!form.proxyEnabled || !form.proxyURL) return ''
+  try {
+    const u = new URL(form.proxyURL)
+    const validSchemes = ['http:', 'https:', 'socks4:', 'socks4a:', 'socks5:', 'socks:']
+    if (!validSchemes.includes(u.protocol)) {
+      return t('settings.network.proxyURLInvalid')
+    }
+    return ''
+  } catch {
+    return t('settings.network.proxyURLInvalid')
+  }
 })
 
 onMounted(() => {

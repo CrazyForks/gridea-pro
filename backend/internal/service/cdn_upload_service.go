@@ -7,16 +7,20 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"gridea-pro/backend/internal/domain"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
+	"gridea-pro/backend/internal/domain"
+
 	gonanoid "github.com/matoous/go-nanoid/v2"
+	"golang.org/x/net/proxy"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -24,14 +28,54 @@ const cdnAlphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvw
 
 type CdnUploadService struct {
 	cdnSettingRepo domain.CdnSettingRepository
+	settingRepo    domain.SettingRepository
 	appDir         string
 }
 
-func NewCdnUploadService(cdnSettingRepo domain.CdnSettingRepository, appDir string) *CdnUploadService {
+func NewCdnUploadService(cdnSettingRepo domain.CdnSettingRepository, settingRepo domain.SettingRepository, appDir string) *CdnUploadService {
 	return &CdnUploadService{
 		cdnSettingRepo: cdnSettingRepo,
+		settingRepo:    settingRepo,
 		appDir:         appDir,
 	}
+}
+
+// newHTTPClient 创建支持代理的 HTTP client，支持 HTTP/HTTPS/SOCKS 协议
+func newHTTPClient(proxyURL string) *http.Client {
+	transport := &http.Transport{
+		MaxIdleConns:        100,
+		MaxIdleConnsPerHost: 10,
+		IdleConnTimeout:     30 * time.Second,
+	}
+	if proxyURL != "" {
+		if u, err := url.Parse(proxyURL); err == nil {
+			switch strings.ToLower(u.Scheme) {
+			case "socks4", "socks4a", "socks5", "socks":
+				if dialer, err := proxy.FromURL(u, proxy.Direct); err == nil {
+					transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+						return dialer.Dial(network, addr)
+					}
+				}
+			default:
+				transport.Proxy = http.ProxyURL(u)
+			}
+		}
+	}
+	return &http.Client{
+		Timeout:   60 * time.Second,
+		Transport: transport,
+	}
+}
+
+// httpClient 根据当前代理设置返回合适的 HTTP client
+func (s *CdnUploadService) httpClient(ctx context.Context) *http.Client {
+	if s.settingRepo != nil {
+		setting, err := s.settingRepo.GetSetting(ctx)
+		if err == nil && setting.ProxyEnabled && setting.ProxyURL != "" {
+			return newHTTPClient(setting.ProxyURL)
+		}
+	}
+	return http.DefaultClient
 }
 
 // ResolveSavePath 解析路径模板变量
@@ -118,7 +162,7 @@ func (s *CdnUploadService) uploadToGitHub(ctx context.Context, setting domain.Cd
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := s.httpClient(ctx).Do(req)
 	if err != nil {
 		return fmt.Errorf("上传失败: %w", err)
 	}
@@ -158,7 +202,7 @@ func (s *CdnUploadService) getGithubFileSHA(ctx context.Context, setting domain.
 	req.Header.Set("Authorization", "Bearer "+setting.GithubToken)
 	req.Header.Set("Accept", "application/vnd.github.v3+json")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := s.httpClient(ctx).Do(req)
 	if err != nil {
 		return "", err
 	}

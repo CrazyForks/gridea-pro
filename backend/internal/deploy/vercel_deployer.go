@@ -8,20 +8,55 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"gridea-pro/backend/internal/domain"
 
+	"golang.org/x/net/proxy"
 	"golang.org/x/sync/errgroup"
 )
 
 // VercelProvider 实现了 Vercel API 直传部署策略
-type VercelProvider struct{}
+type VercelProvider struct {
+	client *http.Client
+}
 
-func NewVercelProvider() *VercelProvider {
-	return &VercelProvider{}
+// NewVercelProvider 创建 VercelProvider，proxyURL 为空则不使用代理
+func NewVercelProvider(proxyURL string) *VercelProvider {
+	return &VercelProvider{client: newVercelHTTPClient(proxyURL)}
+}
+
+// newVercelHTTPClient 创建支持代理的 HTTP client，支持 HTTP/HTTPS/SOCKS 协议
+func newVercelHTTPClient(proxyURL string) *http.Client {
+	transport := &http.Transport{
+		MaxIdleConns:        100,
+		MaxIdleConnsPerHost: 10,
+		IdleConnTimeout:     30 * time.Second,
+	}
+	if proxyURL != "" {
+		if u, err := url.Parse(proxyURL); err == nil {
+			switch strings.ToLower(u.Scheme) {
+			case "socks4", "socks4a", "socks5", "socks":
+				if dialer, err := proxy.FromURL(u, proxy.Direct); err == nil {
+					transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+						return dialer.Dial(network, addr)
+					}
+				}
+			default:
+				transport.Proxy = http.ProxyURL(u)
+			}
+		}
+	}
+	return &http.Client{
+		Timeout:   60 * time.Second,
+		Transport: transport,
+	}
 }
 
 // VercelFileResult 表示用于创建部署的文件哈希映射
@@ -201,7 +236,7 @@ func (p *VercelProvider) uploadSingleFile(ctx context.Context, filePath, sha str
 	req.Header.Set("x-vercel-digest", sha)
 	req.ContentLength = size
 
-	resp, err := (&http.Client{}).Do(req)
+	resp, err := p.client.Do(req)
 	if err != nil {
 		return err
 	}
@@ -240,7 +275,7 @@ func (p *VercelProvider) createDeployment(ctx context.Context, projectName strin
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+token)
 
-	resp, err := (&http.Client{}).Do(req)
+	resp, err := p.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -272,8 +307,8 @@ func (p *VercelProvider) createDeployment(ctx context.Context, projectName strin
 func (p *VercelProvider) AddCustomDomain(ctx context.Context, projectName, domainName, token string) error {
 	payload, _ := json.Marshal(map[string]string{"name": domainName})
 
-	url := fmt.Sprintf("https://api.vercel.com/v10/projects/%s/domains", projectName)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(payload))
+	u := fmt.Sprintf("https://api.vercel.com/v10/projects/%s/domains", projectName)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, bytes.NewReader(payload))
 	if err != nil {
 		return err
 	}
@@ -281,7 +316,7 @@ func (p *VercelProvider) AddCustomDomain(ctx context.Context, projectName, domai
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+token)
 
-	resp, err := (&http.Client{}).Do(req)
+	resp, err := p.client.Do(req)
 	if err != nil {
 		return err
 	}
@@ -303,15 +338,15 @@ func (p *VercelProvider) AddCustomDomain(ctx context.Context, projectName, domai
 
 // RemoveCustomDomain 通过 Vercel API 解绑项目的自定义域名
 func (p *VercelProvider) RemoveCustomDomain(ctx context.Context, projectName, domainName, token string) error {
-	url := fmt.Sprintf("https://api.vercel.com/v9/projects/%s/domains/%s", projectName, domainName)
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, nil)
+	u := fmt.Sprintf("https://api.vercel.com/v9/projects/%s/domains/%s", projectName, domainName)
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, u, nil)
 	if err != nil {
 		return err
 	}
 
 	req.Header.Set("Authorization", "Bearer "+token)
 
-	resp, err := (&http.Client{}).Do(req)
+	resp, err := p.client.Do(req)
 	if err != nil {
 		return err
 	}
