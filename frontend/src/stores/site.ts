@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { IPost } from '@/interfaces/post'
 import type { ITag } from '@/interfaces/tag'
-import type { ITheme } from '@/interfaces/theme'
+import type { ITheme, IThemeConfigItem } from '@/interfaces/theme'
 import type { ILink } from '@/interfaces/link'
 
 export type { ITag, ILink }
@@ -52,7 +52,7 @@ export interface SiteState {
   links: ILink[]
   themeConfig: ITheme
   themeCustomConfig: ThemeCustomConfig
-  currentThemeConfig: ThemeCustomConfig
+  currentThemeConfig: IThemeConfigItem[]
   themes: ThemeInfo[]
   setting: ISetting
   commentSetting: ICommentSetting
@@ -116,7 +116,7 @@ export const useSiteStore = defineStore('site', () => {
   const links = ref<ILink[]>([])
   const themeConfig = ref<ITheme>({ ...defaultThemeConfig })
   const themeCustomConfig = ref<ThemeCustomConfig>({})
-  const currentThemeConfig = ref<ThemeCustomConfig>({})
+  const currentThemeConfig = ref<IThemeConfigItem[]>([])
   const themes = ref<ThemeInfo[]>([])
   const setting = ref<ISetting>({ ...defaultSetting })
   const commentSetting = ref<ICommentSetting>({ ...defaultCommentSetting })
@@ -218,7 +218,7 @@ export const useSiteStore = defineStore('site', () => {
       }
 
       if (siteData.currentThemeConfig !== undefined) {
-        currentThemeConfig.value = siteData.currentThemeConfig || {}
+        currentThemeConfig.value = Array.isArray(siteData.currentThemeConfig) ? siteData.currentThemeConfig : []
       }
 
       if (siteData.setting !== undefined) {
@@ -248,7 +248,7 @@ export const useSiteStore = defineStore('site', () => {
     links.value = []
     themeConfig.value = { ...defaultThemeConfig }
     themeCustomConfig.value = {}
-    currentThemeConfig.value = {}
+    currentThemeConfig.value = []
     themes.value = []
     setting.value = { ...defaultSetting }
     commentSetting.value = { ...defaultCommentSetting }

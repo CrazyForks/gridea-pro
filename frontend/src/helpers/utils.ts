@@ -1,10 +1,7 @@
 import markdown from './markdown'
+import type { IThemeConfigItem } from '@/interfaces/theme'
 
-interface ThemeConfigItem {
-  name: string
-  type: string
-  arrayItems?: Array<{ name: string; type: string }>
-}
+type ThemeConfigItem = IThemeConfigItem
 
 interface ConfigObject {
   [key: string]: unknown

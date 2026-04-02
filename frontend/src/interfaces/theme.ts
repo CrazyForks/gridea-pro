@@ -1,3 +1,29 @@
+export interface IThemeConfigItemOption {
+  value: string | number | boolean
+  label?: string
+}
+
+export interface IThemeConfigArrayField {
+  name: string
+  type: string
+  label?: string
+  note?: string
+  card?: string
+  options?: IThemeConfigItemOption[]
+}
+
+export interface IThemeConfigItem {
+  name: string
+  type: string
+  label?: string
+  group?: string
+  note?: string
+  card?: string
+  value?: unknown
+  options?: IThemeConfigItemOption[]
+  arrayItems?: IThemeConfigArrayField[]
+}
+
 export interface ITheme {
   themeName: string
   postPageSize: number

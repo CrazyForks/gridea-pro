@@ -259,6 +259,7 @@
 
 <script lang="ts" setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue'
+import type { IThemeConfigItem } from '@/interfaces/theme'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useSiteStore } from '@/stores/site'
@@ -290,14 +291,15 @@ const siteStore = useSiteStore()
 
 const form = reactive<Record<string, any>>({})
 
-const currentThemeConfig = computed<any[]>(() => {
-  return (siteStore.site.currentThemeConfig || []) as unknown as any[]
+const currentThemeConfig = computed<IThemeConfigItem[]>(() => {
+  const val = siteStore.site.currentThemeConfig
+  return Array.isArray(val) ? val : []
 })
 
 const groups = computed(() => {
-  if (!currentThemeConfig.value) return []
-  let list = currentThemeConfig.value.map((item: any) => item.group)
-  list = list.filter((g: any) => g) // filter undefined or null
+  if (!currentThemeConfig.value.length) return []
+  let list = currentThemeConfig.value.map((item) => item.group)
+  list = list.filter((g) => g) // filter undefined or null
   list = [...new Set(list)]
   return list
 })
@@ -346,7 +348,7 @@ const loadCustomConfig = () => {
   keys.forEach((key: string) => {
     form[key] = siteStore.site.themeCustomConfig[key]
   })
-  currentThemeConfig.value.forEach((item: any) => {
+  currentThemeConfig.value.forEach((item) => {
     if (form[item.name] === undefined) {
       form[item.name] = item.value
     }
@@ -426,9 +428,9 @@ const handleImageUpload = async (formItemName: string, arrayFieldItemName?: stri
 }
 
 const resetFormItem = (formItemName: string, arrayFieldItemName?: string, configItemIndex?: number) => {
-  const originalItem = currentThemeConfig.value.find((item: any) => item.name === formItemName)
+  const originalItem = currentThemeConfig.value.find((item) => item.name === formItemName)
   if (arrayFieldItemName && typeof configItemIndex === 'number') {
-    const foundItem = originalItem.arrayItems.find((item: any) => item.name === arrayFieldItemName)
+    const foundItem = originalItem?.arrayItems?.find((item) => item.name === arrayFieldItemName)
     form[formItemName][configItemIndex][arrayFieldItemName] = foundItem.value
   } else {
     form[formItemName] = originalItem.value
