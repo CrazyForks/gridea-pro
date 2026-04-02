@@ -68,7 +68,11 @@ func (f *SettingFacade) SaveSettingFromFrontend(setting domain.Setting) error {
 		token := setting.Token()
 
 		if projectName != "" && token != "" {
-			vercel := deploy.NewVercelProvider()
+			proxyURL := ""
+			if setting.ProxyEnabled {
+				proxyURL = setting.ProxyURL
+			}
+			vercel := deploy.NewVercelProvider(proxyURL)
 
 			// 域名变更时，先删除旧域名
 			if oldCname != "" && oldCname != newCname {

@@ -25,6 +25,8 @@ export interface ISettingForm {
   remotePath: string
   netlifyAccessToken: string
   netlifySiteId: string
+  proxyEnabled: boolean
+  proxyURL: string
   [index: string]: any
 }
 

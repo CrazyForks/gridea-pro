@@ -19,13 +19,13 @@ type ValineProvider struct {
 }
 
 // NewValineProvider 创建 Valine Provider
-func NewValineProvider(config *ValineConfig, logger *slog.Logger) *ValineProvider {
+func NewValineProvider(config *ValineConfig, proxyURL string, logger *slog.Logger) *ValineProvider {
 	if config.ServerURLs == "" {
 		// 默认 LeanCloud API 域名 (主要用于国际版，国内版通常需要自定义域名)
 		config.ServerURLs = "https://leancloud.cn"
 	}
 	return &ValineProvider{
-		BaseProvider: NewBaseProvider(15*time.Second, logger),
+		BaseProvider: NewBaseProvider(15*time.Second, proxyURL, logger),
 		config:       config,
 	}
 }

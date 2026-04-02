@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"sort"
+	"strconv"
 )
 
 // Setting 系统设置
@@ -13,6 +14,8 @@ import (
 type Setting struct {
 	Platform        string                       `json:"platform"`
 	PlatformConfigs map[string]map[string]any    `json:"platformConfigs,omitempty"`
+	ProxyEnabled    bool                         `json:"proxyEnabled"`
+	ProxyURL        string                       `json:"proxyURL"`
 }
 
 // platformFieldOrder 定义各平台配置项的输出顺序，与前端表单顺序一致
@@ -101,6 +104,13 @@ func (s Setting) MarshalJSON() ([]byte, error) {
 		}
 		buf.WriteByte('}')
 	}
+
+	// 序列化代理设置
+	buf.WriteString(`,"proxyEnabled":`)
+	buf.WriteString(strconv.FormatBool(s.ProxyEnabled))
+	buf.WriteString(`,"proxyURL":`)
+	proxyURL, _ := json.Marshal(s.ProxyURL)
+	buf.Write(proxyURL)
 
 	buf.WriteByte('}')
 	return buf.Bytes(), nil

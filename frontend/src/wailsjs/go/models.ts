@@ -408,6 +408,8 @@ export namespace domain {
 	export class Setting {
 	    platform: string;
 	    platformConfigs?: Record<string, any>;
+	    proxyEnabled: boolean;
+	    proxyURL: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Setting(source);
@@ -417,6 +419,8 @@ export namespace domain {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.platform = source["platform"];
 	        this.platformConfigs = source["platformConfigs"];
+	        this.proxyEnabled = source["proxyEnabled"];
+	        this.proxyURL = source["proxyURL"];
 	    }
 	}
 	export class Tag {

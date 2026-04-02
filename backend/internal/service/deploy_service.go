@@ -99,7 +99,11 @@ func (s *DeployService) DeployToRemote(ctx context.Context) error {
 	case "github", "gitee":
 		provider = deploy.NewGitProvider()
 	case "vercel":
-		provider = deploy.NewVercelProvider()
+		proxyURL := ""
+		if setting.ProxyEnabled {
+			proxyURL = setting.ProxyURL
+		}
+		provider = deploy.NewVercelProvider(proxyURL)
 	default:
 		// Fallback or handle appropriately
 		provider = deploy.NewGitProvider()

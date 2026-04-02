@@ -13,6 +13,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 )
 
@@ -166,15 +167,20 @@ func (p *GitProvider) Deploy(ctx context.Context, outputDir string, setting *dom
 	// 格式：+refs/heads/本地分支:refs/heads/远程分支 (+号代表强制推送 Force)
 	refSpecStr := fmt.Sprintf("+%s:refs/heads/%s", headRef.Name().String(), branch)
 
-	err = r.PushContext(ctx, &git.PushOptions{
+	pushOptions := &git.PushOptions{
 		RemoteName: "origin",
 		Auth: &http.BasicAuth{
 			Username: tokenUser,
 			Password: token,
 		},
-		RefSpecs: []config.RefSpec{config.RefSpec(refSpecStr)}, // <- 必须显式指定！
+		RefSpecs: []config.RefSpec{config.RefSpec(refSpecStr)},
 		Force:    true,
-	})
+	}
+	if setting.ProxyEnabled && setting.ProxyURL != "" {
+		pushOptions.ProxyOptions = transport.ProxyOptions{URL: setting.ProxyURL}
+	}
+
+	err = r.PushContext(ctx, pushOptions)
 
 	if err == git.NoErrAlreadyUpToDate {
 		logger("Remote is already up-to-date!")

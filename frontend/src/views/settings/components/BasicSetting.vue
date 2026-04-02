@@ -210,6 +210,23 @@ href="https://gridea.pro/netlify" target="_blank"
         </div>
       </template>
 
+      <!-- Proxy Settings -->
+      <div class="grid grid-cols-[180px_1fr] items-start gap-4">
+        <label class="text-sm font-medium text-right text-muted-foreground pt-2">{{ t('settings.network.proxyEnabled') }}</label>
+        <div class="flex items-center gap-3">
+          <Switch :checked="form.proxyEnabled" @update:checked="(v: boolean) => form.proxyEnabled = v" />
+          <span class="text-xs text-muted-foreground">{{ t('settings.network.proxyEnabledDesc') }}</span>
+        </div>
+      </div>
+      <div class="grid grid-cols-[180px_1fr] items-start gap-4" v-if="form.proxyEnabled">
+        <label class="text-sm font-medium text-right text-muted-foreground pt-2">{{ t('settings.network.proxyURL') }}</label>
+        <div class="max-w-sm">
+          <Input v-model="form.proxyURL" placeholder="http://127.0.0.1:7890" />
+          <div class="text-xs text-muted-foreground mt-1.5">{{ t('settings.network.proxyURLDesc') }}</div>
+          <div v-if="proxyURLError" class="text-xs text-destructive mt-1">{{ proxyURLError }}</div>
+        </div>
+      </div>
+
     </div>
 
     <footer-box>
@@ -243,6 +260,7 @@ import FooterBox from '@/components/FooterBox/index.vue'
 import ga from '@/helpers/analytics'
 import type { ISettingForm } from '@/interfaces/setting'
 import { EyeIcon, EyeSlashIcon } from '@heroicons/vue/24/outline'
+import { Switch } from '@/components/ui/switch'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -288,6 +306,8 @@ const form = reactive<ISettingForm>({
   remotePath: '',
   netlifyAccessToken: '',
   netlifySiteId: '',
+  proxyEnabled: false,
+  proxyURL: '',
 })
 
 // 将当前表单的平台专属字段保存到 platformConfigs
@@ -391,7 +411,22 @@ const canSubmit = computed(() => {
     && form.repository
     && form.token
 
-  return pagesPlatfomValid || sftpPlatformValid || netlifyPlatformValid || vercelPlatformValid
+  const proxyValid = !form.proxyEnabled || !form.proxyURL || proxyURLError.value === ''
+  return (pagesPlatfomValid || sftpPlatformValid || netlifyPlatformValid || vercelPlatformValid) && proxyValid
+})
+
+const proxyURLError = computed(() => {
+  if (!form.proxyEnabled || !form.proxyURL) return ''
+  try {
+    const u = new URL(form.proxyURL)
+    const validSchemes = ['http:', 'https:', 'socks4:', 'socks4a:', 'socks5:', 'socks:']
+    if (!validSchemes.includes(u.protocol)) {
+      return t('settings.network.proxyURLInvalid')
+    }
+    return ''
+  } catch {
+    return t('settings.network.proxyURLInvalid')
+  }
 })
 
 onMounted(() => {
@@ -401,13 +436,17 @@ onMounted(() => {
   // 1. 恢复平台选择
   form.platform = setting.platform || 'github'
 
-  // 2. 恢复 platformConfigs
+  // 2. 恢复平台配置
   if (setting.platformConfigs) {
     platformConfigs.value = JSON.parse(JSON.stringify(setting.platformConfigs))
   }
 
   // 3. 从 platformConfigs 恢复当前平台的专属字段到表单（包括 domain）
   restorePlatformConfig(form.platform)
+
+  // 4. 恢复代理设置
+  form.proxyEnabled = setting.proxyEnabled || false
+  form.proxyURL = setting.proxyURL || ''
 
   // 5. 处理 domain 协议分离（restorePlatformConfig 恢复的是含协议的完整 domain）
   const domainVal = form.domain || ''
@@ -441,6 +480,8 @@ const buildFormData = () => {
   return {
     platform: form.platform,
     platformConfigs: configs,
+    proxyEnabled: form.proxyEnabled,
+    proxyURL: form.proxyURL,
   }
 }
 

@@ -287,7 +287,7 @@ defineExpose({
 </script>
 
 <style lang="less" scoped>
-@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap');
+/* @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap'); */
 
 .monaco-editor-wrapper {
   position: relative;

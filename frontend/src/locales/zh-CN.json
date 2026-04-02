@@ -303,7 +303,12 @@
             "connectType": "连接方式",
             "password": "密码",
             "privateKeyPath": "私钥路径",
-            "remotePath": "远程路径"
+            "remotePath": "远程路径",
+            "proxyEnabled": "启用代理",
+            "proxyEnabledDesc": "通过代理服务器访问外部服务",
+            "proxyURL": "代理服务器地址",
+            "proxyURLDesc": "支持 HTTP/HTTPS/SOCKS5 协议，例如：http://127.0.0.1:7890 或 socks5://127.0.0.1:1080",
+            "proxyURLInvalid": "地址格式不正确，请使用 http://、https:// 或 socks5:// 开头"
         },
         "system": {
             "displayLanguage": "显示语言",

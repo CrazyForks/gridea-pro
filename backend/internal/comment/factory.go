@@ -85,7 +85,7 @@ func IsConfigured(settings domain.CommentSettings) bool {
 }
 
 // NewProvider 创建评论提供者
-func NewProvider(settings domain.CommentSettings) (domain.CommentProvider, error) {
+func NewProvider(settings domain.CommentSettings, proxyURL string) (domain.CommentProvider, error) {
 	if !settings.Enable {
 		return nil, ErrInvalidConfig // Or specific "disabled" error if needed, but usually we just don't init
 	}
@@ -116,7 +116,7 @@ func NewProvider(settings domain.CommentSettings) (domain.CommentProvider, error
 		if cfg.AppID == "" || cfg.AppKey == "" {
 			return nil, fmt.Errorf("%w: Valine AppID and AppKey are required", ErrInvalidConfig)
 		}
-		return NewValineProvider(&cfg, logger), nil
+		return NewValineProvider(&cfg, proxyURL, logger), nil
 
 	case domain.CommentPlatformWaline:
 		var cfg WalineConfig
@@ -126,7 +126,7 @@ func NewProvider(settings domain.CommentSettings) (domain.CommentProvider, error
 		if cfg.ServerURLs == "" {
 			return nil, fmt.Errorf("%w: Waline ServerURLs is required", ErrInvalidConfig)
 		}
-		return NewWalineProvider(&cfg, logger), nil
+		return NewWalineProvider(&cfg, proxyURL, logger), nil
 
 	case domain.CommentPlatformTwikoo:
 		var cfg TwikooConfig
@@ -136,7 +136,7 @@ func NewProvider(settings domain.CommentSettings) (domain.CommentProvider, error
 		if cfg.EnvID == "" {
 			return nil, fmt.Errorf("%w: Twikoo EnvID is required", ErrInvalidConfig)
 		}
-		return NewTwikooProvider(&cfg, logger), nil
+		return NewTwikooProvider(&cfg, proxyURL, logger), nil
 
 	case domain.CommentPlatformGitalk:
 		var cfg GitHubConfig
@@ -147,7 +147,7 @@ func NewProvider(settings domain.CommentSettings) (domain.CommentProvider, error
 			return nil, fmt.Errorf("%w: GitHub Owner and Repo are required", ErrInvalidConfig)
 		}
 		// Gitalk uses GitHub Provider backed logic
-		return NewGitHubProvider(&cfg, logger), nil
+		return NewGitHubProvider(&cfg, proxyURL, logger), nil
 
 	case domain.CommentPlatformGiscus:
 		return nil, fmt.Errorf("%w: Giscus provider not implemented yet (use GitHub Provider internally?)", ErrNotImplemented)
@@ -167,7 +167,7 @@ func NewProvider(settings domain.CommentSettings) (domain.CommentProvider, error
 			// If we dictate API Key is required for backend fetching (which it is for Disqus API)
 			// context: Disqus public widget uses shortname, but backend API needs public key.
 		}
-		return NewDisqusProvider(&cfg, logger), nil
+		return NewDisqusProvider(&cfg, proxyURL, logger), nil
 
 	default:
 		return nil, fmt.Errorf("%w: %s", ErrNotImplemented, settings.Platform)

@@ -70,7 +70,11 @@ func deploySiteHandler(settingService *service.SettingService, renderer *engine.
 		case "github", "gitee":
 			provider = deploy.NewGitProvider()
 		case "vercel":
-			provider = deploy.NewVercelProvider()
+			proxyURL := ""
+			if setting.ProxyEnabled {
+				proxyURL = setting.ProxyURL
+			}
+			provider = deploy.NewVercelProvider(proxyURL)
 		default:
 			provider = deploy.NewGitProvider()
 		}

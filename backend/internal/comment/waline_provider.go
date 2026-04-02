@@ -20,9 +20,9 @@ type WalineProvider struct {
 }
 
 // NewWalineProvider 创建 Waline Provider
-func NewWalineProvider(config *WalineConfig, logger *slog.Logger) *WalineProvider {
+func NewWalineProvider(config *WalineConfig, proxyURL string, logger *slog.Logger) *WalineProvider {
 	return &WalineProvider{
-		BaseProvider: NewBaseProvider(15*time.Second, logger),
+		BaseProvider: NewBaseProvider(15*time.Second, proxyURL, logger),
 		config:       config,
 	}
 }
