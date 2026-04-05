@@ -9,7 +9,7 @@ import (
 // Tag 标签结构
 // Added json tags for frontend compatibility.
 type Tag struct {
-	ID    string `json:"_id"`
+	ID    string `json:"id"`
 	Name  string `json:"name"`
 	Slug  string `json:"slug"`
 	Used  bool   `json:"used"`

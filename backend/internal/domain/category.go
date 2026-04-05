@@ -8,7 +8,7 @@ import (
 // Category 分类实体 (Pure Entity)
 // Added json tags for frontend compatibility.
 type Category struct {
-	ID          string `json:"_id"` // 不可变 UUID，前端与遗留数据中称为 _id
+	ID          string `json:"id"`
 	Name        string `json:"name"`
 	Slug        string `json:"slug"`
 	Description string `json:"description"`

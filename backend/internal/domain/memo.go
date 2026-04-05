@@ -9,7 +9,7 @@ import (
 // Memo 闪念实体 (Pure Entity)
 // Added json tags for frontend compatibility.
 type Memo struct {
-	ID        string    `json:"_id"`
+	ID        string    `json:"id"`
 	Content   string    `json:"content"`
 	Tags      []string  `json:"tags"`
 	Images    []string  `json:"images"`

@@ -1,11 +1,15 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 
 	"gridea-pro/backend/internal/domain"
+	"gridea-pro/backend/internal/repository"
 
 	gonanoid "github.com/matoous/go-nanoid/v2"
 )
@@ -78,8 +82,35 @@ func (m *DataMigrator) isValidID(id string) bool {
 	return true
 }
 
+// migrateUnderscoreIdToId 将旧版 JSON 配置文件中的 "_id" key 迁移为 "id"
+// 该方法必须在任何 Repository.List() 调用之前执行，因为 Repository 使用懒加载
+func (m *DataMigrator) migrateUnderscoreIdToId() {
+	configDir := filepath.Join(m.appDir, "config")
+	files := []string{"tags.json", "categories.json", "links.json", "menus.json", "memos.json"}
+
+	for _, fileName := range files {
+		filePath := filepath.Join(configDir, fileName)
+		data, err := os.ReadFile(filePath)
+		if err != nil {
+			continue // 文件可能不存在，跳过
+		}
+
+		newData := bytes.ReplaceAll(data, []byte(`"_id"`), []byte(`"id"`))
+		if !bytes.Equal(data, newData) {
+			if err := repository.WriteFileAtomic(filePath, newData, 0644); err != nil {
+				log.Printf("[DataMigrator] 迁移 _id -> id 失败 [%s]: %v", fileName, err)
+			} else {
+				log.Printf("[DataMigrator] 已迁移 _id -> id [%s]", fileName)
+			}
+		}
+	}
+}
+
 func (m *DataMigrator) RunMigration(ctx context.Context) error {
 	log.Println("[DataMigrator] --------- 开始全量检查与迁移历史基础关联数据 ID ---------")
+
+	// ---------------- 第零步：将旧版 "_id" key 迁移为 "id" ----------------
+	m.migrateUnderscoreIdToId()
 
 	// ---------------- 第一步：基础数据清洗与映射构建 ----------------
 

@@ -1,6 +1,6 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useSiteStore, type ILink, normalizeId } from '@/stores/site'
+import { useSiteStore, type ILink } from '@/stores/site'
 import { toast } from '@/helpers/toast'
 import { SaveLinkFromFrontend, DeleteLinkFromFrontend, SaveLinks } from '@/wailsjs/go/facade/LinkFacade'
 import { BrowserOpenURL } from '@/wailsjs/runtime'
@@ -100,9 +100,8 @@ export function useLink() {
             const links = await SaveLinkFromFrontend(linkForm)
 
             if (links) {
-                const normalized = normalizeId(links as any[]) as ILink[]
-                siteStore.links = normalized
-                linkList.value = [...normalized]
+                siteStore.links = links as ILink[]
+                linkList.value = [...links as ILink[]]
                 toast.success(t('link.saved'))
                 visible.value = false
             }
@@ -121,9 +120,8 @@ export function useLink() {
             try {
                 const links = await DeleteLinkFromFrontend(linkToDelete.value)
                 if (links) {
-                    const normalized = normalizeId(links as any[]) as ILink[]
-                    siteStore.links = normalized
-                    linkList.value = [...normalized]
+                    siteStore.links = links as ILink[]
+                    linkList.value = [...links as ILink[]]
                     toast.success(t('link.deleted'))
                 }
             } catch (e: any) {

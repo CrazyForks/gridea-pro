@@ -101,10 +101,6 @@ const defaultCommentSetting: ICommentSetting = {
   },
 }
 
-export function normalizeId<T extends Record<string, any>>(items: T[]): T[] {
-  return items.map(item => ({ ...item, id: item._id || item.id }))
-}
-
 export const useSiteStore = defineStore('site', () => {
   // State
   const appDir = ref('')
@@ -173,15 +169,11 @@ export const useSiteStore = defineStore('site', () => {
       }
 
       if (siteData.categories !== undefined) {
-        categories.value = Array.isArray(siteData.categories)
-          ? normalizeId(siteData.categories)
-          : []
+        categories.value = Array.isArray(siteData.categories) ? siteData.categories : []
       }
 
       if (siteData.links !== undefined) {
-        links.value = Array.isArray(siteData.links)
-          ? normalizeId(siteData.links)
-          : []
+        links.value = Array.isArray(siteData.links) ? siteData.links : []
       }
 
       if (siteData.themes !== undefined) {

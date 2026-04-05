@@ -1,7 +1,7 @@
 export namespace domain {
 	
 	export class Category {
-	    _id: string;
+	    id: string;
 	    name: string;
 	    slug: string;
 	    description: string;
@@ -12,7 +12,7 @@ export namespace domain {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this._id = source["_id"];
+	        this.id = source["id"];
 	        this.name = source["name"];
 	        this.slug = source["slug"];
 	        this.description = source["description"];
@@ -111,7 +111,7 @@ export namespace domain {
 	    }
 	}
 	export class Link {
-	    _id: string;
+	    id: string;
 	    name: string;
 	    url: string;
 	    description: string;
@@ -123,7 +123,7 @@ export namespace domain {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this._id = source["_id"];
+	        this.id = source["id"];
 	        this.name = source["name"];
 	        this.url = source["url"];
 	        this.description = source["description"];
@@ -131,7 +131,7 @@ export namespace domain {
 	    }
 	}
 	export class Memo {
-	    _id: string;
+	    id: string;
 	    content: string;
 	    tags: string[];
 	    images: string[];
@@ -144,7 +144,7 @@ export namespace domain {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this._id = source["_id"];
+	        this.id = source["id"];
 	        this.content = source["content"];
 	        this.tags = source["tags"];
 	        this.images = source["images"];
@@ -234,7 +234,7 @@ export namespace domain {
 	}
 	
 	export class Menu {
-	    _id: string;
+	    id: string;
 	    name: string;
 	    link: string;
 	    openType: string;
@@ -245,7 +245,7 @@ export namespace domain {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this._id = source["_id"];
+	        this.id = source["id"];
 	        this.name = source["name"];
 	        this.link = source["link"];
 	        this.openType = source["openType"];
@@ -424,7 +424,7 @@ export namespace domain {
 	    }
 	}
 	export class Tag {
-	    _id: string;
+	    id: string;
 	    name: string;
 	    slug: string;
 	    used: boolean;
@@ -436,7 +436,7 @@ export namespace domain {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this._id = source["_id"];
+	        this.id = source["id"];
 	        this.name = source["name"];
 	        this.slug = source["slug"];
 	        this.used = source["used"];
