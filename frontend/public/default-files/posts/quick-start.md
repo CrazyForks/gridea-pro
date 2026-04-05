@@ -1,5 +1,5 @@
 ---
-title: 'Gridea Pro 快速上手指南'
+title: '5 分钟，从零到发布你的第一个博客'
 date: __INIT_DATE_01__
 tags: ['Gridea Pro', '入门']
 published: true

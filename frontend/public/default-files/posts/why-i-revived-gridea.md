@@ -1,5 +1,5 @@
 ---
-title: '我为什么复活了 Gridea'
+title: '我为什么复活了 Gridea —— 每个想写点什么的人，都值得一个更简单的开始'
 date: __INIT_DATE_04__
 tags: ['Gridea Pro', 'Gridea']
 published: true
