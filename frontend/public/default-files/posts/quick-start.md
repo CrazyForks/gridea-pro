@@ -110,6 +110,17 @@ Gridea Pro 支持以下平台：
 
 支持自定义域名，智能增量部署。需要填写 Vercel 项目名称和 Access Token。
 
+### 自定义域名（CNAME）
+
+如果你有自己的域名（比如 `blog.example.com`），可以在上面的配置中填写 **CNAME** 字段：
+
+1. 在你的域名 DNS 管理后台，添加一条 CNAME 记录，将你的域名指向 `你的用户名.github.io`（GitHub）或对应的平台域名
+2. 回到 Gridea Pro 的「配 置」页面，将 **域 名** 改为你的自定义域名（如 `https://blog.example.com`）
+3. 在 **CNAME** 字段中填写你的自定义域名（如 `blog.example.com`）
+4. 保存后重新同步，GitHub Pages 会自动识别并生效
+
+如果暂时没有自己的域名，跳过这步即可，后面随时可以配置。
+
 > **提示**：Gridea Pro 内置了完整的 Git 引擎，你的电脑上**不需要安装 Git**，填好配置信息就可以直接发布。
 
 ---
