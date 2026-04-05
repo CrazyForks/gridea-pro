@@ -1,18 +1,18 @@
 {
     "tags": [
         {
-            "id": "Gridea",
-            "name": "Gridea",
-            "slug": "gridea",
-            "used": true,
-            "color": "#eab308"
-        },
-        {
             "id": "GrideaPro",
             "name": "Gridea Pro",
             "slug": "gridea-pro",
             "used": true,
             "color": "#22c55e"
+        },
+        {
+            "id": "RuMen0",
+            "name": "入门",
+            "slug": "getting-started",
+            "used": true,
+            "color": "#3b82f6"
         }
     ]
 }
