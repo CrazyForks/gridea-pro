@@ -1,5 +1,5 @@
 ---
-title: '念念不忘，必有回响 —— Hello Gridea Pro'
+title: '念念不忘，必有回响 —— Gridea Pro，我们回来了'
 date: __INIT_DATE_00__
 tags: ['Gridea Pro']
 published: true
