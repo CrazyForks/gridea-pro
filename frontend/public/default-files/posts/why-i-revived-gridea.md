@@ -1,6 +1,6 @@
 ---
 title: '我为什么复活了 Gridea'
-date: 2026-02-01 08:00:00
+date:
 tags: ['Gridea Pro', 'Gridea']
 published: true
 hideInList: false

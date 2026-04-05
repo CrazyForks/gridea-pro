@@ -1,6 +1,6 @@
 ---
 title: 'Gridea Pro 快速上手指南'
-date: 2026-02-01 11:00:00
+date:
 tags: ['Gridea Pro', '入门']
 published: true
 hideInList: false
@@ -158,7 +158,7 @@ Gridea Pro 支持以下平台：
 
 **CDN** — 在「配 置」→「CDN」标签页中，可以开启图片和静态资源的 CDN 加速。配置好 CDN 仓库后，文章中插入的图片会自动上传到 CDN，加快博客的访问速度，尤其适合图片较多的博客。
 
-**MCP — 用 AI 管理你的博客**
+## 彩蛋：MCP — 用 AI 管理你的博客
 
 这是 Gridea Pro 最独特的能力之一。
 
@@ -215,5 +215,7 @@ Gridea Pro 内置了完整的 [MCP（Model Context Protocol）](https://modelcon
 保存后重启 Claude Desktop，就可以在对话中直接管理你的博客了。它通过本地管道通信，不需要网络、不需要端口、不需要认证，数据始终在你的电脑上。
 
 ---
+
+看到这里，相信你对 Gridea Pro 的使用已经有了全面的了解。
 
 这篇指南可以随时删除。祝你博客之旅愉快！

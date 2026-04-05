@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"embed"
 	"encoding/json"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"path"
 	"path/filepath"
 	"sync"
+	"time"
 )
 
 type ScaffoldService struct {
@@ -51,7 +53,10 @@ func (s *ScaffoldService) InitSite(appDir string) error {
 		return fmt.Errorf("failed to copy default files: %w", err)
 	}
 
-	// 3. Create directories that might not be in default-files (e.g. output)
+	// 3. Fill empty dates in default posts and memos with current time
+	s.fillDefaultDates(appDir)
+
+	// 4. Create directories that might not be in default-files (e.g. output)
 	// Ensure essential directories exist just in case
 	ensureDirs := []string{
 		filepath.Join(appDir, "output"),
@@ -60,7 +65,7 @@ func (s *ScaffoldService) InitSite(appDir string) error {
 		_ = os.MkdirAll(dir, 0755)
 	}
 
-	// 4. Patch config.json with dynamic sourceFolder
+	// 5. Patch config.json with dynamic sourceFolder
 	configPath := filepath.Join(appDir, "config", "config.json")
 	// Only patch if file exists (it should, copied from defaults)
 	if content, err := os.ReadFile(configPath); err == nil {
@@ -77,6 +82,55 @@ func (s *ScaffoldService) InitSite(appDir string) error {
 	}
 
 	return nil
+}
+
+// fillDefaultDates scans default posts and memos, replacing empty date fields with current time.
+// Posts: replaces "date:" (empty) in YAML frontmatter with "date: 2006-01-02 15:04:05".
+// Memos: replaces empty createdAt/updatedAt strings in JSON with RFC3339 timestamps.
+// Each item gets a slightly offset time to maintain correct sort order.
+func (s *ScaffoldService) fillDefaultDates(appDir string) {
+	now := time.Now()
+
+	// Fill post dates — each post gets a 1-minute offset to maintain order
+	postsDir := filepath.Join(appDir, "posts")
+	entries, err := os.ReadDir(postsDir)
+	if err != nil {
+		return
+	}
+	offset := 0
+	for _, entry := range entries {
+		if entry.IsDir() || filepath.Ext(entry.Name()) != ".md" {
+			continue
+		}
+		postPath := filepath.Join(postsDir, entry.Name())
+		data, err := os.ReadFile(postPath)
+		if err != nil {
+			continue
+		}
+		// Only fill if "date:" is empty (the line is exactly "date:" or "date: ")
+		if bytes.Contains(data, []byte("date:")) && !bytes.Contains(data, []byte("date: 2")) {
+			postTime := now.Add(-time.Duration(offset) * time.Minute)
+			dateStr := postTime.Format("2006-01-02 15:04:05")
+			newData := bytes.Replace(data, []byte("date:"), []byte("date: "+dateStr), 1)
+			if !bytes.Equal(data, newData) {
+				_ = os.WriteFile(postPath, newData, 0644)
+				offset++
+			}
+		}
+	}
+
+	// Fill memo dates
+	memosPath := filepath.Join(appDir, "config", "memos.json")
+	memosData, err := os.ReadFile(memosPath)
+	if err != nil {
+		return
+	}
+	if bytes.Contains(memosData, []byte(`"createdAt": ""`)) {
+		memoTime := now.Format(time.RFC3339)
+		memosData = bytes.ReplaceAll(memosData, []byte(`"createdAt": ""`), []byte(`"createdAt": "`+memoTime+`"`))
+		memosData = bytes.ReplaceAll(memosData, []byte(`"updatedAt": ""`), []byte(`"updatedAt": "`+memoTime+`"`))
+		_ = os.WriteFile(memosPath, memosData, 0644)
+	}
 }
 
 func (s *ScaffoldService) copyDirFromEmbed(src string, dst string) error {
