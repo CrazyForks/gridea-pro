@@ -133,9 +133,14 @@ func (b *TemplateDataBuilder) Build(ctx context.Context, posts []domain.Post, co
 	if b.menuRepo != nil {
 		menus, _ := b.menuRepo.List(ctx)
 		for _, menu := range menus {
+			link := menu.Link
+			// 内部链接自动补 "/" 前缀，避免生成相对路径
+			if menu.OpenType == "Internal" && link != "" && !strings.HasPrefix(link, "/") && !strings.HasPrefix(link, "http") {
+				link = "/" + link
+			}
 			menuViews = append(menuViews, template.MenuView{
 				Name:     menu.Name,
-				Link:     menu.Link,
+				Link:     link,
 				OpenType: menu.OpenType,
 			})
 		}

@@ -112,7 +112,7 @@
         "link": "链接",
         "saved": "菜单已保存",
         "deleted": "菜单已删除",
-        "inputOrSelect": "输入或从下面选择",
+        "inputOrSelect": "如 /links 或 https://example.com",
         "selectInternalLink": "选择内部链接..."
     },
     "settings": {

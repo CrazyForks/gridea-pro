@@ -30,9 +30,8 @@
                         <Label class="mb-1 block">{{ t('siteMenu.link') }}</Label>
                         <div class="space-y-2">
                             <div class="relative">
-                                <span class="absolute left-3 top-2.5 text-muted-foreground text-sm">/</span>
                                 <Input
-:model-value="form.link" class="pl-7" :placeholder="t('siteMenu.inputOrSelect')"
+:model-value="form.link" :placeholder="t('siteMenu.inputOrSelect')"
                                     @update:model-value="$emit('link-change', $event as string)" />
                             </div>
                             <Select
