@@ -229,7 +229,7 @@ func (r *PageRenderer) RenderPost(buildDir string, post domain.Post, baseData *t
 	isSpecialPage := false
 	commonTemplates := map[string]bool{
 		"post": true, "index": true, "blog": true, "tag": true, "tags": true,
-		"category": true, "archives": true, "friends": true, "memos": true,
+		"category": true, "archives": true, "links": true, "memos": true,
 		"404": true, "base": true,
 	}
 	if !commonTemplates[post.FileName] {
@@ -547,7 +547,7 @@ func (r *PageRenderer) RenderFriends(ctx context.Context, buildDir string, data 
 	default:
 	}
 
-	html, err := r.renderer.Render("friends", data)
+	html, err := r.renderer.Render("links", data)
 	if err != nil {
 		r.logger.Error(fmt.Sprintf("友链页模板不存在或渲染失败: %v，跳过", err))
 		return nil
@@ -557,7 +557,7 @@ func (r *PageRenderer) RenderFriends(ctx context.Context, buildDir string, data 
 	if linkPath == "" {
 		linkPath = DefaultLinksPath
 	}
-	html = r.postProcess(html, "friends", "/"+linkPath+"/", nil)
+	html = r.postProcess(html, "links", "/"+linkPath+"/", nil)
 
 	buf := bufferPool.Get().(*bytes.Buffer)
 	buf.Reset()

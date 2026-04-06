@@ -201,7 +201,7 @@ func (b *TemplateDataBuilder) Build(ctx context.Context, posts []domain.Post, co
 			if customConfig == nil {
 				customConfig = make(map[string]interface{})
 			}
-			customConfig["friends"] = friendList
+			customConfig["links"] = friendList
 		}
 	}
 

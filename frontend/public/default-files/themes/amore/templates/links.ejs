@@ -15,8 +15,8 @@
                 <div class="mod-post__entry wzulli">
 
                     <ul class="links-list">
-                        <% if (site.customConfig.friends && site.customConfig.friends.length> 0) { %>
-                            <% site.customConfig.friends.forEach(function(friend) { %>
+                        <% if (site.customConfig.links && site.customConfig.links.length> 0) { %>
+                            <% site.customConfig.links.forEach(function(friend) { %>
                                 <li>
                                     <a href="<%= friend.siteLink %>" target="_blank" title="<%= friend.description %>">
                                         <% if (friend.avatar) { %>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  {{ template "head" . }}
+  <title>友链 | {{ .ThemeConfig.SiteName }}</title>
+</head>
+<body class="claudo-theme">
+  {{ template "header" . }}
+  <main class="site-main">
+
+<div class="container">
+  <div class="page-header">
+    <h1 class="page-title">友链</h1>
+    <p class="page-description">志同道合的朋友们</p>
+  </div>
+
+  {{ if notEmpty (index .Site.CustomConfig "linksContent") }}
+  <div class="friends-intro">
+    {{ safeHTML (index .Site.CustomConfig "linksContent") }}
+  </div>
+  {{ end }}
+
+  {{ if notEmpty (index .Site.CustomConfig "linksHtml") }}
+  <div class="friends-grid">
+    {{ safeHTML (index .Site.CustomConfig "linksHtml") }}
+  </div>
+  {{ else }}
+  <div class="empty-state">
+    <p class="empty-text">暂无友链</p>
+    <p class="empty-hint">在主题设置中添加友情链接</p>
+  </div>
+  {{ end }}
+</div>
+
+  </main>
+  {{ template "footer" . }}
+  <script>
+  (function(){
+    var html = document.documentElement;
+    var toggle = document.getElementById('themeToggle');
+    var saved = null;
+    try { saved = window.__themePreference; } catch(e) {}
+    if (!saved) {
+      saved = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    html.setAttribute('data-theme', saved);
+    if (toggle) {
+      toggle.addEventListener('click', function() {
+        var current = html.getAttribute('data-theme');
+        var next = current === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', next);
+      });
+    }
+  })();
+  </script>
+</body>
+</html>

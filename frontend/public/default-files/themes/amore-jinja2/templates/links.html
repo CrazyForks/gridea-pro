@@ -16,8 +16,8 @@
         <div class="mod-post__entry wzulli">
 
             <ul class="links-list">
-                {% if theme_config.friends and theme_config.friends|length > 0 %}
-                {% for friend in theme_config.friends %}
+                {% if theme_config.links and theme_config.links|length > 0 %}
+                {% for friend in theme_config.links %}
                 <li>
                     <a href="{{ friend.siteLink }}" target="_blank" title="{{ friend.description }}">
                         {% if friend.avatar %}

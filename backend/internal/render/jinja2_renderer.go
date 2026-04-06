@@ -230,12 +230,12 @@ func (r *Jinja2Renderer) buildContext(data *template.TemplateData) pongo2.Contex
 		configValue = configMap
 	}
 
-	// 提取 links 数据（从 customConfig.friends）
+	// 提取 links 数据（从 customConfig.links）
 	var linksValue interface{}
 	if siteMap, ok := configValue.(map[string]interface{}); ok {
 		if cc, ok2 := siteMap["customConfig"].(map[string]interface{}); ok2 {
-			if friends, ok3 := cc["friends"]; ok3 {
-				linksValue = friends
+			if links, ok3 := cc["links"]; ok3 {
+				linksValue = links
 			}
 		}
 	}

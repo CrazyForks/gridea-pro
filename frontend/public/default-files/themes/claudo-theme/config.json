@@ -1,0 +1,191 @@
+{
+  "name": "Sonnet",
+  "version": "1.0.0",
+  "author": "Gridea Pro",
+  "description": "A premium dark theme inspired by modern tech aesthetics. Features glassmorphism cards, smooth gradients, and elegant typography.",
+  "engine": "gotemplate",
+  "templateEngine": "gotemplate",
+  "customConfig": [
+    {
+      "name": "siteLogo",
+      "label": "站点 Logo",
+      "group": "基础设置",
+      "type": "image",
+      "value": "",
+      "note": "推荐 40x40 正方形 PNG"
+    },
+    {
+      "name": "siteSubtitle",
+      "label": "站点副标题",
+      "group": "基础设置",
+      "type": "input",
+      "value": "",
+      "note": "显示在站点名下方"
+    },
+    {
+      "name": "heroTitle",
+      "label": "首页大标题",
+      "group": "首页设置",
+      "type": "input",
+      "value": ""
+    },
+    {
+      "name": "heroSubtitle",
+      "label": "首页副标题",
+      "group": "首页设置",
+      "type": "textarea",
+      "value": ""
+    },
+    {
+      "name": "showHero",
+      "label": "显示 Hero 区域",
+      "group": "首页设置",
+      "type": "boolean",
+      "value": true
+    },
+    {
+      "name": "featuredCount",
+      "label": "精选文章数",
+      "group": "首页设置",
+      "type": "select",
+      "value": "3",
+      "options": [
+        {
+          "label": "3",
+          "value": "3"
+        },
+        {
+          "label": "4",
+          "value": "4"
+        },
+        {
+          "label": "6",
+          "value": "6"
+        }
+      ]
+    },
+    {
+      "name": "accentColor",
+      "label": "主题强调色",
+      "group": "外观设置",
+      "type": "input",
+      "value": "#C27A1A",
+      "note": "默认 Warm Gold"
+    },
+    {
+      "name": "defaultTheme",
+      "label": "默认主题",
+      "group": "外观设置",
+      "type": "select",
+      "value": "auto",
+      "options": [
+        {
+          "label": "跟随系统",
+          "value": "auto"
+        },
+        {
+          "label": "浅色",
+          "value": "light"
+        },
+        {
+          "label": "深色",
+          "value": "dark"
+        }
+      ]
+    },
+    {
+      "name": "showSearch",
+      "label": "显示搜索",
+      "group": "功能开关",
+      "type": "boolean",
+      "value": true
+    },
+    {
+      "name": "showToc",
+      "label": "文章页显示目录",
+      "group": "功能开关",
+      "type": "boolean",
+      "value": true
+    },
+    {
+      "name": "showBackToTop",
+      "label": "显示回到顶部",
+      "group": "功能开关",
+      "type": "boolean",
+      "value": true
+    },
+    {
+      "name": "aboutContent",
+      "label": "关于页内容",
+      "group": "页面内容",
+      "type": "textarea",
+      "value": "",
+      "note": "支持 HTML"
+    },
+    {
+      "name": "linksContent",
+      "label": "友链页介绍",
+      "group": "页面内容",
+      "type": "textarea",
+      "value": ""
+    },
+    {
+      "name": "linksHtml",
+      "label": "友链 HTML",
+      "group": "页面内容",
+      "type": "textarea",
+      "value": "",
+      "note": "支持 HTML，用于自定义友链卡片"
+    },
+    {
+      "name": "githubUrl",
+      "label": "GitHub",
+      "group": "社交链接",
+      "type": "input",
+      "value": ""
+    },
+    {
+      "name": "twitterUrl",
+      "label": "Twitter/X",
+      "group": "社交链接",
+      "type": "input",
+      "value": ""
+    },
+    {
+      "name": "weiboUrl",
+      "label": "微博",
+      "group": "社交链接",
+      "type": "input",
+      "value": ""
+    },
+    {
+      "name": "emailAddress",
+      "label": "邮箱",
+      "group": "社交链接",
+      "type": "input",
+      "value": ""
+    },
+    {
+      "name": "customCss",
+      "label": "自定义 CSS",
+      "group": "高级设置",
+      "type": "textarea",
+      "value": ""
+    },
+    {
+      "name": "customJs",
+      "label": "自定义 JavaScript",
+      "group": "高级设置",
+      "type": "textarea",
+      "value": ""
+    },
+    {
+      "name": "footerInfo",
+      "label": "页脚信息",
+      "group": "基础设置",
+      "type": "textarea",
+      "value": "",
+      "note": "支持 HTML"
+    }
+  ]
+}
