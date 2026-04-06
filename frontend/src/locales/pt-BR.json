@@ -303,7 +303,9 @@
             "server": "Servidor",
             "connectType": "Tipo de Conexão",
             "password": "Senha",
-            "privateKeyPath": "Caminho da Chave Privada",
+            "privateKeyPath": "Chave Privada",
+            "selectKeyFile": "Selecionar arquivo de chave",
+            "browse": "Procurar",
             "remotePath": "Caminho Remoto"
         },
         "system": {

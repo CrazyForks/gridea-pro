@@ -303,7 +303,9 @@
             "server": "伺服器",
             "connectType": "連線方式",
             "password": "密碼",
-            "privateKeyPath": "私鑰路徑",
+            "privateKeyPath": "私鑰檔案",
+            "selectKeyFile": "選擇私鑰檔案",
+            "browse": "選擇",
             "remotePath": "遠端路徑"
         },
         "system": {

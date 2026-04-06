@@ -197,8 +197,10 @@ href="https://gridea.pro/netlify" target="_blank"
         <div v-else class="grid grid-cols-[180px_1fr] items-center gap-4">
           <label class="text-sm font-medium text-right text-muted-foreground">{{ t('settings.network.privateKeyPath') }}</label>
           <div class="max-w-sm">
-            <Input v-model="form.privateKey" class="" />
-            <div class="text-xs text-muted-foreground mt-1.5">{{ t('settings.network.privateKeyTip') }}</div>
+            <div class="flex gap-2">
+              <Input v-model="form.privateKey" class="flex-1" readonly :placeholder="t('settings.network.selectKeyFile')" />
+              <Button variant="outline" class="shrink-0" @click="selectKeyFile">{{ t('settings.network.browse') }}</Button>
+            </div>
           </div>
         </div>
         <div class="grid grid-cols-[180px_1fr] items-center gap-4">
@@ -284,6 +286,7 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { EventsEmit, EventsOnce } from '@/wailsjs/runtime'
 import { SaveSettingFromFrontend, RemoteDetectFromFrontend } from '@/wailsjs/go/facade/SettingFacade'
+import { OpenKeyFileDialog } from '@/wailsjs/go/app/App'
 import { domain } from '@/wailsjs/go/models'
 
 const { t } = useI18n()
@@ -293,6 +296,13 @@ const passVisible = ref(false)
 const detectLoading = ref(false)
 const remoteType = ref('password')
 const protocol = ref('https://')
+
+const selectKeyFile = async () => {
+  const filePath = await OpenKeyFileDialog()
+  if (filePath) {
+    form.privateKey = filePath
+  }
+}
 
 // 每个平台的专属字段（切换时独立保存/恢复）
 const platformFields: Record<string, string[]> = {

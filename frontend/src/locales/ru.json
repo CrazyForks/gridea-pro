@@ -303,7 +303,9 @@
             "server": "Сервер",
             "connectType": "Тип подключения",
             "password": "Пароль",
-            "privateKeyPath": "Путь к приватному ключу",
+            "privateKeyPath": "Приватный ключ",
+            "selectKeyFile": "Выбрать файл ключа",
+            "browse": "Обзор",
             "remotePath": "Удалённый путь"
         },
         "system": {

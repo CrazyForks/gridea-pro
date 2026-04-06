@@ -255,6 +255,18 @@ func (a *App) OpenImageDialog() (string, error) {
 	return res, nil
 }
 
+// OpenKeyFileDialog 选择 SSH 私钥文件
+func (a *App) OpenKeyFileDialog() (string, error) {
+	opts := runtime.OpenDialogOptions{
+		Title: "选择 SSH 私钥文件",
+	}
+	res, err := runtime.OpenFileDialog(a.ctx, opts)
+	if err != nil {
+		return "", err
+	}
+	return res, nil
+}
+
 func (a *App) LoadSite() map[string]interface{} {
 	// 确保预览服务已启动
 	if a.previewService != nil && !a.previewService.IsRunning() {
