@@ -75,7 +75,7 @@ v-for="item in navItems" :key="item.key"
               <button
                 class="text-muted-foreground/30 hover:text-foreground transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
                 @click="handleEditSite(site)">
-                <PencilSquareIcon class="size-3.5" />
+                <PencilIcon class="size-3.5" />
               </button>
 
               <!-- 删除按钮 -->
@@ -178,7 +178,7 @@ import {
   PlusIcon,
   Bars3Icon,
   TrashIcon,
-  PencilSquareIcon,
+  PencilIcon,
 } from '@heroicons/vue/24/outline'
 import { EventsEmit, BrowserOpenURL } from '@/wailsjs/runtime'
 import { OpenFolderDialog, GetSites, AddSite, RemoveSite, UpdateSites, SwitchSite } from '@/wailsjs/go/app/App'
