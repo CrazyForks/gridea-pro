@@ -332,6 +332,16 @@
     },
     "memo": {
         "inputPlaceholder": "今の気持ちを記録しよう...",
+        "placeholder": {
+            "thinking": "今、何を考えていますか？",
+            "idea": "ひらめきを記録💡",
+            "discovery": "今日の新しい発見は？",
+            "writeDown": "書き留めないと忘れてしまう",
+            "oneLine": "一行でも書く価値がある",
+            "tagTip": "# を入力してタグを追加",
+            "markdownTip": "Markdown に対応",
+            "imageTip": "画像やリンクを貼り付け可能"
+        },
         "heatmap": "毎日の記録",
         "selectCategory": "カテゴリーを選択",
         "default": "デフォルト",

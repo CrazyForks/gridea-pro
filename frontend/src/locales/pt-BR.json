@@ -332,6 +332,16 @@
     },
     "memo": {
         "inputPlaceholder": "Capture seus pensamentos...",
+        "placeholder": {
+            "thinking": "No que está pensando?",
+            "idea": "Registre uma ideia💡",
+            "discovery": "Alguma novidade hoje?",
+            "writeDown": "Anote antes que escape",
+            "oneLine": "Uma frase já vale a pena",
+            "tagTip": "Digite # para adicionar tags",
+            "markdownTip": "Markdown é suportado",
+            "imageTip": "Cole imagens ou links"
+        },
         "heatmap": "Registros Diários",
         "selectCategory": "Selecionar categoria",
         "default": "Padrão",

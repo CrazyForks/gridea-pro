@@ -332,6 +332,16 @@
     },
     "memo": {
         "inputPlaceholder": "Gedanken festhalten...",
+        "placeholder": {
+            "thinking": "Was denkst du gerade?",
+            "idea": "Eine Idee festhalten💡",
+            "discovery": "Etwas Neues entdeckt heute?",
+            "writeDown": "Schreib es auf, bevor es weg ist",
+            "oneLine": "Auch ein Satz ist es wert",
+            "tagTip": "# eingeben für Tags",
+            "markdownTip": "Markdown wird unterstützt",
+            "imageTip": "Bilder oder Links einfügen"
+        },
         "heatmap": "Tägliche Einträge",
         "selectCategory": "Kategorie auswählen",
         "default": "Standard",

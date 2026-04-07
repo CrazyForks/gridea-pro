@@ -332,6 +332,16 @@
     },
     "memo": {
         "inputPlaceholder": "Capture your thoughts...",
+        "placeholder": {
+            "thinking": "What's on your mind?",
+            "idea": "Capture an idea💡",
+            "discovery": "Any new discoveries today?",
+            "writeDown": "Write it down before it slips away",
+            "oneLine": "Even one line is worth writing",
+            "tagTip": "Type # to add a tag",
+            "markdownTip": "Markdown is supported",
+            "imageTip": "Paste images or links"
+        },
         "heatmap": "Daily Records",
         "selectCategory": "Select category",
         "default": "Default",

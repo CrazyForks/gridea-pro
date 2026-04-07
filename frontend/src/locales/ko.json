@@ -332,6 +332,16 @@
     },
     "memo": {
         "inputPlaceholder": "지금 떠오르는 생각을 기록하세요...",
+        "placeholder": {
+            "thinking": "지금 무슨 생각을 하고 있나요?",
+            "idea": "영감을 기록하세요💡",
+            "discovery": "오늘 새로운 발견이 있나요?",
+            "writeDown": "생각을 적어두세요, 놓치지 마세요",
+            "oneLine": "한 줄이라도 적으면 의미가 있어요",
+            "tagTip": "# 을 입력하여 태그 추가",
+            "markdownTip": "Markdown 문법 지원",
+            "imageTip": "이미지나 링크를 붙여넣기 가능"
+        },
         "heatmap": "일별 기록",
         "selectCategory": "카테고리 선택",
         "default": "기본",

@@ -3,13 +3,14 @@
         class="memo-input-wrapper bg-card/50 border border-border/50 rounded-xl transition-all duration-200 ring-offset-background focus-within:ring-1 focus-within:ring-primary/10 relative overflow-visible">
         <div class="px-6 py-6 relative">
             <!-- Typewriter placeholder -->
-            <div v-if="!content" class="absolute inset-0 px-6 py-6 pointer-events-none text-sm leading-5 tracking-wider text-muted-foreground/50">
+            <div v-if="!content && !isFocused" class="absolute inset-0 px-6 py-6 pointer-events-none text-sm leading-5 tracking-wider text-muted-foreground/50">
                 {{ typewriterText }}<span class="animate-blink">|</span>
             </div>
             <textarea
 ref="textareaRef" v-model="content"
                 class="w-full bg-transparent border-none focus:ring-0 resize-none p-0 min-h-[80px] text-sm leading-5 tracking-wider text-foreground outline-none relative z-10"
-                :rows="1" @input="handleInput" @keydown="handleKeydown" @click="handleInput" />
+                :rows="1" @input="handleInput" @keydown="handleKeydown" @click="handleInput"
+                @focus="handleFocus" @blur="handleBlur" />
 
             <!-- Tag Suggestions Dropdown -->
             <div
@@ -73,49 +74,49 @@ const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const submitBtnText = computed(() => props.submitText || t('memo.publish'))
 
 // Typewriter placeholder
-const placeholderMessages = [
-  '此刻在想什么？',
-  '记录一个灵感💡',
-  '今天有什么新发现？',
-  '把想法写下来，别让它溜走',
-  '一句话也好，写下来就有意义',
-  '输入 # 可以添加标签',
-  '支持 Markdown 语法',
-  '可以粘贴图片或链接',
+const placeholderKeys = [
+  'memo.placeholder.thinking',
+  'memo.placeholder.idea',
+  'memo.placeholder.discovery',
+  'memo.placeholder.writeDown',
+  'memo.placeholder.oneLine',
+  'memo.placeholder.tagTip',
+  'memo.placeholder.markdownTip',
+  'memo.placeholder.imageTip',
 ]
 
 const typewriterText = ref('')
+const isFocused = ref(false)
 let typewriterTimer: ReturnType<typeof setTimeout> | null = null
-let currentMsgIndex = Math.floor(Math.random() * placeholderMessages.length)
+let currentMsgIndex = Math.floor(Math.random() * placeholderKeys.length)
 let currentCharIndex = 0
 let isDeleting = false
 
 function typewriterTick() {
-  const msg = placeholderMessages[currentMsgIndex]
+  if (isFocused.value) return // 聚焦时停止打字
+
+  const msg = t(placeholderKeys[currentMsgIndex])
 
   if (!isDeleting) {
-    // Typing
     currentCharIndex++
     typewriterText.value = msg.slice(0, currentCharIndex)
 
     if (currentCharIndex >= msg.length) {
-      // Pause before deleting
       typewriterTimer = setTimeout(() => {
         isDeleting = true
         typewriterTick()
-      }, 2000)
+      }, 3500)
       return
     }
     typewriterTimer = setTimeout(typewriterTick, 80 + Math.random() * 40)
   } else {
-    // Deleting
     currentCharIndex--
     typewriterText.value = msg.slice(0, currentCharIndex)
 
     if (currentCharIndex <= 0) {
       isDeleting = false
-      currentMsgIndex = (currentMsgIndex + 1) % placeholderMessages.length
-      typewriterTimer = setTimeout(typewriterTick, 400)
+      currentMsgIndex = (currentMsgIndex + 1) % placeholderKeys.length
+      typewriterTimer = setTimeout(typewriterTick, 800)
       return
     }
     typewriterTimer = setTimeout(typewriterTick, 30)
@@ -133,6 +134,18 @@ function stopTypewriter() {
   if (typewriterTimer) {
     clearTimeout(typewriterTimer)
     typewriterTimer = null
+  }
+}
+
+function handleFocus() {
+  isFocused.value = true
+  stopTypewriter()
+}
+
+function handleBlur() {
+  isFocused.value = false
+  if (!content.value) {
+    startTypewriter()
   }
 }
 

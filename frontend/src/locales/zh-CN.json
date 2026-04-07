@@ -332,6 +332,16 @@
     },
     "memo": {
         "inputPlaceholder": "记录当下的想法...",
+        "placeholder": {
+            "thinking": "此刻在想什么？",
+            "idea": "记录一个灵感💡",
+            "discovery": "今天有什么新发现？",
+            "writeDown": "把想法写下来，别让它溜走",
+            "oneLine": "一句话也好，写下来就有意义",
+            "tagTip": "输入 # 可以添加标签",
+            "markdownTip": "支持 Markdown 语法",
+            "imageTip": "可以粘贴图片或链接"
+        },
         "heatmap": "每日记录",
         "selectCategory": "选择分类",
         "default": "默认",

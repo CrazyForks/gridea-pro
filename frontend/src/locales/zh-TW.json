@@ -332,6 +332,16 @@
     },
     "memo": {
         "inputPlaceholder": "記錄當下的想法...",
+        "placeholder": {
+            "thinking": "此刻在想什麼？",
+            "idea": "記錄一個靈感💡",
+            "discovery": "今天有什麼新發現？",
+            "writeDown": "把想法寫下來，別讓它溜走",
+            "oneLine": "一句話也好，寫下來就有意義",
+            "tagTip": "輸入 # 可以新增標籤",
+            "markdownTip": "支援 Markdown 語法",
+            "imageTip": "可以貼上圖片或連結"
+        },
         "heatmap": "每日紀錄",
         "selectCategory": "選擇分類",
         "default": "預設",
