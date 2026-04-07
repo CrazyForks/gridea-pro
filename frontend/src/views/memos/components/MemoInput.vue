@@ -1,10 +1,14 @@
 <template>
     <div
         class="memo-input-wrapper bg-card/50 border border-border/50 rounded-xl transition-all duration-200 ring-offset-background focus-within:ring-1 focus-within:ring-primary/10 relative overflow-visible">
-        <div class="px-6 py-6">
+        <div class="px-6 py-6 relative">
+            <!-- Typewriter placeholder -->
+            <div v-if="!content" class="absolute inset-0 px-6 py-6 pointer-events-none text-sm leading-5 tracking-wider text-muted-foreground/50">
+                {{ typewriterText }}<span class="animate-blink">|</span>
+            </div>
             <textarea
-ref="textareaRef" v-model="content" :placeholder="placeholderText"
-                class="w-full bg-transparent border-none focus:ring-0 resize-none p-0 min-h-[80px] text-sm leading-5 tracking-wider text-foreground placeholder:text-muted-foreground outline-none"
+ref="textareaRef" v-model="content"
+                class="w-full bg-transparent border-none focus:ring-0 resize-none p-0 min-h-[80px] text-sm leading-5 tracking-wider text-foreground outline-none relative z-10"
                 :rows="1" @input="handleInput" @keydown="handleKeydown" @click="handleInput" />
 
             <!-- Tag Suggestions Dropdown -->
@@ -43,7 +47,7 @@ variant="default" size="sm"
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Button } from '@/components/ui/button/index'
 import { useMemoStore } from '@/stores/memo'
@@ -66,8 +70,71 @@ const memoStore = useMemoStore()
 const content = ref('')
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 
-const placeholderText = computed(() => props.placeholder || t('memo.inputPlaceholder'))
 const submitBtnText = computed(() => props.submitText || t('memo.publish'))
+
+// Typewriter placeholder
+const placeholderMessages = [
+  '此刻在想什么？',
+  '记录一个灵感💡',
+  '今天有什么新发现？',
+  '把想法写下来，别让它溜走',
+  '一句话也好，写下来就有意义',
+  '输入 # 可以添加标签',
+  '支持 Markdown 语法',
+  '可以粘贴图片或链接',
+]
+
+const typewriterText = ref('')
+let typewriterTimer: ReturnType<typeof setTimeout> | null = null
+let currentMsgIndex = Math.floor(Math.random() * placeholderMessages.length)
+let currentCharIndex = 0
+let isDeleting = false
+
+function typewriterTick() {
+  const msg = placeholderMessages[currentMsgIndex]
+
+  if (!isDeleting) {
+    // Typing
+    currentCharIndex++
+    typewriterText.value = msg.slice(0, currentCharIndex)
+
+    if (currentCharIndex >= msg.length) {
+      // Pause before deleting
+      typewriterTimer = setTimeout(() => {
+        isDeleting = true
+        typewriterTick()
+      }, 2000)
+      return
+    }
+    typewriterTimer = setTimeout(typewriterTick, 80 + Math.random() * 40)
+  } else {
+    // Deleting
+    currentCharIndex--
+    typewriterText.value = msg.slice(0, currentCharIndex)
+
+    if (currentCharIndex <= 0) {
+      isDeleting = false
+      currentMsgIndex = (currentMsgIndex + 1) % placeholderMessages.length
+      typewriterTimer = setTimeout(typewriterTick, 400)
+      return
+    }
+    typewriterTimer = setTimeout(typewriterTick, 30)
+  }
+}
+
+function startTypewriter() {
+  stopTypewriter()
+  currentCharIndex = 0
+  isDeleting = false
+  typewriterTick()
+}
+
+function stopTypewriter() {
+  if (typewriterTimer) {
+    clearTimeout(typewriterTimer)
+    typewriterTimer = null
+  }
+}
 
 const isMac = computed(() => navigator.platform.toUpperCase().indexOf('MAC') >= 0)
 
@@ -272,5 +339,20 @@ defineExpose({
 
 onMounted(() => {
     autoResize()
+    startTypewriter()
+})
+
+onUnmounted(() => {
+    stopTypewriter()
 })
 </script>
+
+<style scoped>
+.animate-blink {
+    animation: blink 1s step-end infinite;
+}
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+</style>
