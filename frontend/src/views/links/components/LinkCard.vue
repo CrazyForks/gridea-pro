@@ -31,17 +31,17 @@
             <!-- Action Buttons (Right) -->
             <div class="flex items-center gap-1">
                 <button
-                    class="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-colors"
+                    class="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-colors cursor-pointer"
                     :title="t('nav.preview')" @click.stop="$emit('preview', link.url)">
                     <EyeIcon class="size-3" />
                 </button>
                 <button
-                    class="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-colors"
+                    class="p-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-colors cursor-pointer"
                     :title="t('common.edit')" @click.stop="$emit('edit', link, index)">
                     <PencilIcon class="size-3" />
                 </button>
                 <button
-                    class="p-1.5 text-muted-foreground hover:text-destructive hover:bg-primary/10 rounded-md transition-colors"
+                    class="p-1.5 text-muted-foreground hover:text-destructive hover:bg-primary/10 rounded-md transition-colors cursor-pointer"
                     :title="t('common.delete')" @click.stop="$emit('delete', link.id)">
                     <TrashIcon class="size-3" />
                 </button>
