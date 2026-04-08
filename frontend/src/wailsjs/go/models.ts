@@ -21,6 +21,20 @@ export namespace config {
 
 export namespace domain {
 	
+	export class AISetting {
+	    zhipuApiKey: string;
+	    model: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new AISetting(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.zhipuApiKey = source["zhipuApiKey"];
+	        this.model = source["model"];
+	    }
+	}
 	export class Category {
 	    id: string;
 	    name: string;

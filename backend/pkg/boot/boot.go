@@ -265,6 +265,7 @@ func Run(assets embed.FS, version string) {
 			services.CdnSetting,
 			services.CdnUpload,
 			services.PwaSetting,
+			services.AI,
 		},
 		Windows: &windows.Options{
 			WebviewIsTransparent:              false,

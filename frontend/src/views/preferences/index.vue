@@ -99,6 +99,47 @@ v-for="item in navItems" :key="item.key"
         </div>
       </div>
 
+      <!-- AI 配置 -->
+      <div v-if="activeTab === 'ai'" class="animate-fade-in">
+        <h2 class="text-xl font-semibold mb-6 text-foreground">{{ t('settings.ai.title') }}</h2>
+
+        <div class="flex justify-between items-start py-4 border-b border-border">
+          <div class="flex-1">
+            <div class="text-sm font-medium text-foreground mb-1">{{ t('settings.ai.zhipuApiKey') }}</div>
+            <div class="text-xs text-muted-foreground">{{ t('settings.ai.zhipuApiKeyDesc') }}</div>
+          </div>
+          <div class="w-[260px]">
+            <Input v-model="aiForm.zhipuApiKey" type="password" placeholder="sk-..." />
+          </div>
+        </div>
+
+        <div class="flex justify-between items-center py-4 border-b border-border">
+          <div class="flex-1">
+            <div class="text-sm font-medium text-foreground mb-1">{{ t('settings.ai.model') }}</div>
+          </div>
+          <div class="w-[260px]">
+            <Select v-model="aiForm.model">
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="glm-4-flash">glm-4-flash（免费）</SelectItem>
+                <SelectItem value="glm-4-flash-250414">glm-4-flash-250414（免费）</SelectItem>
+                <SelectItem value="glm-4-plus">glm-4-plus</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div class="flex justify-end mt-6">
+          <Button variant="default"
+            class="h-8 px-5 text-xs rounded-full bg-primary text-background hover:bg-primary/90 cursor-pointer"
+            @click="saveAISetting">
+            {{ t('common.save') }}
+          </Button>
+        </div>
+      </div>
+
       <!-- 关于 -->
       <div v-if="activeTab === 'about'" class="animate-fade-in">
         <h2 class="text-xl font-semibold mb-6 text-foreground">{{ t('nav.about') }}</h2>
@@ -179,9 +220,12 @@ import {
   Bars3Icon,
   TrashIcon,
   PencilIcon,
+  SparklesIcon,
 } from '@heroicons/vue/24/outline'
 import { EventsEmit, BrowserOpenURL } from '@/wailsjs/runtime'
 import { OpenFolderDialog, GetSites, AddSite, RemoveSite, UpdateSites, SwitchSite } from '@/wailsjs/go/app/App'
+import { GetAISetting, SaveAISettingFromFrontend } from '@/wailsjs/go/facade/AIFacade'
+import { domain } from '@/wailsjs/go/models'
 import { setI18nLanguage, type LocaleType } from '@/locales'
 
 interface SiteEntry {
@@ -225,8 +269,33 @@ const navItems = computed(() => [
   { key: 'appearance', icon: SwatchIcon, label: t('settings.theme.appearance') },
   { key: 'language', icon: LanguageIcon, label: t('common.language') },
   { key: 'sites', icon: GlobeAltIcon, label: t('settings.sites.title') },
+  { key: 'ai', icon: SparklesIcon, label: t('settings.ai.title') },
   { key: 'about', icon: InformationCircleIcon, label: t('nav.about') },
 ])
+
+// AI 配置
+const aiForm = ref<domain.AISetting>(new domain.AISetting({ zhipuApiKey: '', model: 'glm-4-flash' }))
+
+const loadAISetting = async () => {
+  try {
+    const setting = await GetAISetting()
+    aiForm.value = new domain.AISetting({
+      zhipuApiKey: setting.zhipuApiKey || '',
+      model: setting.model || 'glm-4-flash',
+    })
+  } catch (e) {
+    console.error('Failed to load AI setting:', e)
+  }
+}
+
+const saveAISetting = async () => {
+  try {
+    await SaveAISettingFromFrontend(aiForm.value)
+    toast.success(t('settings.ai.saveSuccess'))
+  } catch (e: any) {
+    toast.error(e.message || 'Failed to save AI setting')
+  }
+}
 
 watch(locale, (val) => {
   currentLanguage.value = val as LocaleType
@@ -235,6 +304,7 @@ watch(locale, (val) => {
 onMounted(async () => {
   currentLanguage.value = locale.value as LocaleType
   await loadSites()
+  await loadAISetting()
 })
 
 const loadSites = async () => {

@@ -9,7 +9,21 @@
                 <!-- URL -->
                 <div class="space-y-2">
                     <Label>URL</Label>
-                    <Input v-model="form.fileName" @change="(e: any) => $emit('fileNameChange', e)" />
+                    <div class="flex gap-2">
+                        <Input v-model="form.fileName" class="flex-1"
+                            @change="(e: any) => $emit('fileNameChange', e)" />
+                        <Button variant="outline" size="icon"
+                            class="shrink-0 size-9 border-primary/20 text-primary/60 hover:text-primary hover:bg-primary/5 cursor-pointer"
+                            :disabled="isGeneratingSlug"
+                            :title="$t('settings.ai.generateSlug')"
+                            @click="$emit('generateSlug')">
+                            <SparklesIcon v-if="!isGeneratingSlug" class="size-4" />
+                            <svg v-else class="size-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            </svg>
+                        </Button>
+                    </div>
                 </div>
 
                 <!-- Categories -->
@@ -157,7 +171,7 @@ import { Calendar } from '@/components/ui/calendar'
 import { Sheet, SheetContent, SheetTitle, SheetHeader, SheetFooter } from '@/components/ui/sheet'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { CalendarIcon, ClockIcon, TrashIcon, XMarkIcon } from '@heroicons/vue/24/outline'
+import { CalendarIcon, ClockIcon, TrashIcon, XMarkIcon, SparklesIcon } from '@heroicons/vue/24/outline'
 import type { DateValue } from '@internationalized/date'
 import type { ArticleFormState } from '../composables/useArticleForm'
 
@@ -171,6 +185,7 @@ const props = defineProps<{
     timeValue: string
     featureDisplayValue: string
     featureImagePreviewSrc: string
+    isGeneratingSlug?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -186,6 +201,7 @@ const emit = defineEmits<{
     selectFeatureImage: []
     clearFeatureImage: []
     confirmPublish: []
+    generateSlug: []
 }>()
 
 // 选择分类时同步更新 category（名称）和 categoryId（UUID）

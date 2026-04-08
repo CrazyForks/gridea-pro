@@ -34,12 +34,13 @@
             <ArticleSettingsDrawer v-model:open="articleSettingsVisible" :form="form" :tag-input="tagInput"
                 :available-tags="availableTags" :available-categories="availableCategories" :date-value="dateValue"
                 :time-value="timeValue" :feature-display-value="featureDisplayValue"
-                :feature-image-preview-src="featureImagePreviewSrc" @update:tag-input="tagInput = $event"
+                :feature-image-preview-src="featureImagePreviewSrc" :is-generating-slug="isGeneratingSlug"
+                @update:tag-input="tagInput = $event"
                 @update:date-value="dateValue = $event" @update:time-value="timeValue = $event"
                 @update:feature-display-value="featureDisplayValue = $event" @add-tag="addTag" @remove-tag="removeTag"
                 @select-tag="selectTag" @file-name-change="handleFileNameChange"
                 @select-feature-image="selectFeatureImage" @clear-feature-image="clearFeatureImage"
-                @confirm-publish="handleConfirmPublish" />
+                @confirm-publish="handleConfirmPublish" @generate-slug="handleGenerateSlug" />
 
             <!-- Unsaved Dialog -->
             <UnsavedDialog v-model:open="showUnsavedDialog" @confirm-close="confirmClose" />
@@ -53,6 +54,9 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useSiteStore } from '@/stores/site'
 import MonacoMarkdownEditor from '@/components/MonacoMarkdownEditor/index.vue'
+import { useI18n } from 'vue-i18n'
+import { toast } from '@/helpers/toast'
+import { GenerateSlug } from '@/wailsjs/go/facade/AIFacade'
 
 import EditorHeader from './components/EditorHeader.vue'
 import ArticleSettingsDrawer from './components/ArticleSettingsDrawer.vue'
@@ -73,6 +77,7 @@ const emit = defineEmits<{
     fetchData: []
 }>()
 
+const { t } = useI18n()
 const siteStore = useSiteStore()
 
 // ── Composables ─────────────────────────────────────────
@@ -104,6 +109,23 @@ const {
 
 const articleSettingsVisible = ref(false)
 const showUnsavedDialog = ref(false)
+const isGeneratingSlug = ref(false)
+
+const handleGenerateSlug = async () => {
+    if (!form.title.trim()) {
+        toast.warning(t('settings.ai.noTitle'))
+        return
+    }
+    isGeneratingSlug.value = true
+    try {
+        const slug = await GenerateSlug(form.title)
+        form.fileName = slug
+    } catch (e: any) {
+        toast.error(`${t('settings.ai.generateFailed')}: ${e.message || e}`)
+    } finally {
+        isGeneratingSlug.value = false
+    }
+}
 
 const {
     saveDraft,

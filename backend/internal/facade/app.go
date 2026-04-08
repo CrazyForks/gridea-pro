@@ -32,6 +32,7 @@ type AppServices struct {
 	CdnSetting *CdnSettingFacade
 	PwaSetting *PwaSettingFacade
 	CdnUpload  *CdnUploadFacade
+	AI         *AIFacade
 	// Internal services for event/update handling
 	Services struct {
 		Category *service.CategoryService
@@ -82,6 +83,7 @@ func NewAppServices(appDir string, assets embed.FS) *AppServices {
 	seoSettingRepo := repository.NewSeoSettingRepository(appDir)
 	cdnSettingRepo := repository.NewCdnSettingRepository(appDir)
 	pwaSettingRepo := repository.NewPwaSettingRepository(appDir)
+	aiSettingRepo := repository.NewAISettingRepository(appDir)
 
 	// 2. Init Services
 	tagService := service.NewTagService(tagRepo)
@@ -113,6 +115,7 @@ func NewAppServices(appDir string, assets embed.FS) *AppServices {
 	cdnUploadService := service.NewCdnUploadService(cdnSettingRepo, settingRepo, appDir)
 	deployService.SetCdnUploadService(cdnUploadService)
 	deployService.SetRenderer(rendererService)
+	aiService := service.NewAIService(aiSettingRepo)
 
 	// 3. Wrap with Facades
 	return &AppServices{
@@ -132,6 +135,7 @@ func NewAppServices(appDir string, assets embed.FS) *AppServices {
 		CdnSetting: NewCdnSettingFacade(cdnSettingRepo),
 		PwaSetting: NewPwaSettingFacade(pwaSettingRepo, appDir),
 		CdnUpload:  NewCdnUploadFacade(cdnUploadService),
+		AI:         NewAIFacade(aiSettingRepo, aiService),
 		Services: struct {
 			Category  *service.CategoryService
 			Post      *service.PostService
@@ -227,6 +231,8 @@ func (s *AppServices) UpdateAppDir(appDir string) {
 	s.CdnSetting.repo = newServices.CdnSetting.repo
 	s.PwaSetting.repo = newServices.PwaSetting.repo
 	s.CdnUpload.internal = newServices.Services.CdnUpload
+	s.AI.repo = newServices.AI.repo
+	s.AI.service = newServices.AI.service
 	// Scaffold service doesn't need update generally, but good to keep in sync
 	s.Services.Scaffold = newServices.Services.Scaffold
 	s.Services.Comment = newServices.Services.Comment

@@ -288,6 +288,17 @@
             "saveSuccess": "CDN 配置已保存",
             "saveFailed": "CDN 配置保存失败"
         },
+        "ai": {
+            "title": "AI 配置",
+            "zhipuApiKey": "Zhipu API Key",
+            "zhipuApiKeyDesc": "留空则使用内置免费额度（有使用上限）",
+            "model": "AI 模型",
+            "saveSuccess": "AI 配置已保存",
+            "generateSlug": "AI 生成 Slug",
+            "generating": "生成中...",
+            "generateFailed": "生成失败",
+            "noTitle": "请先填写文章标题"
+        },
         "network": {
             "title": "配 置",
             "platform": "平 台",
