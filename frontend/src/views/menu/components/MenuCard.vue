@@ -69,7 +69,7 @@
                         <div class="pl-2 pr-2 text-muted-foreground/30">
                             <div class="w-2 h-px bg-current"></div>
                         </div>
-                        <div class="py-2.5 flex-1 min-w-0">
+                        <div class="py-3.5 flex-1 min-w-0">
                             <div class="text-xs font-medium text-foreground">{{ child.name }}</div>
                             <div class="text-[10px] text-muted-foreground truncate">{{ child.link }}</div>
                         </div>
