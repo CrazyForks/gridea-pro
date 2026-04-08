@@ -63,7 +63,7 @@
                     <div
                         class="group flex items-center rounded-lg cursor-pointer transition-all duration-150 bg-primary/2 border border-primary/10 hover:border-primary/20 hover:bg-primary/5 mb-1"
                         @click="$emit('edit-child', index, menu, childIdx, child)">
-                        <div class="flex items-center pl-3 child-handle cursor-move" @click.stop>
+                        <div class="flex items-center pl-3 pr-3 child-handle cursor-move" @click.stop>
                             <Bars3Icon class="size-3 text-muted-foreground/50" />
                         </div>
                         <div class="py-3.5 flex-1 min-w-0">
