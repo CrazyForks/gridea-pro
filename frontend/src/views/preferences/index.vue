@@ -142,7 +142,7 @@ v-for="item in navItems" :key="item.key"
                 <!-- 厂商 -->
                 <div class="flex items-center gap-3">
                   <Label class="w-20 text-xs shrink-0">{{ t('settings.ai.provider') }}</Label>
-                  <Select v-model="aiForm.custom.provider" @update:model-value="onProviderChange">
+                  <Select :model-value="aiForm.activeProvider" @update:model-value="onProviderChange">
                     <SelectTrigger class="flex-1">
                       <SelectValue :placeholder="t('settings.ai.selectProvider')" />
                     </SelectTrigger>
@@ -153,11 +153,11 @@ v-for="item in navItems" :key="item.key"
                 </div>
 
                 <!-- 模型 -->
-                <div v-if="aiForm.custom.provider" class="flex items-start gap-3">
+                <div v-if="aiForm.activeProvider" class="flex items-start gap-3">
                   <Label class="w-20 text-xs shrink-0 pt-2">{{ t('settings.ai.model') }}</Label>
                   <div class="flex-1 space-y-2">
                     <div class="flex items-center gap-2">
-                      <Select v-if="!useCustomModelId" v-model="aiForm.custom.model">
+                      <Select v-if="!useCustomModelId" v-model="currentModel">
                         <SelectTrigger class="flex-1">
                           <SelectValue :placeholder="t('settings.ai.selectModel')" />
                         </SelectTrigger>
@@ -185,10 +185,10 @@ v-for="item in navItems" :key="item.key"
                 </div>
 
                 <!-- API Key -->
-                <div v-if="aiForm.custom.provider" class="flex items-start gap-3">
+                <div v-if="aiForm.activeProvider" class="flex items-start gap-3">
                   <Label class="w-20 text-xs shrink-0 pt-2">{{ t('settings.ai.apiKey') }}</Label>
                   <div class="flex-1 space-y-1.5">
-                    <Input v-model="aiForm.custom.apiKey" type="password" placeholder="sk-..." />
+                    <Input v-model="currentApiKey" type="password" placeholder="sk-..." />
                     <div v-if="currentProviderInfo?.apiKeyURL" class="text-xs">
                       <a class="inline-flex items-center gap-1 text-primary hover:underline cursor-pointer"
                         @click.prevent="openApiKeyURL(currentProviderInfo!.apiKeyURL)">
@@ -200,7 +200,7 @@ v-for="item in navItems" :key="item.key"
                 </div>
 
                 <!-- 测试连接 -->
-                <div v-if="aiForm.custom.provider" class="flex items-center gap-3">
+                <div v-if="aiForm.activeProvider" class="flex items-center gap-3">
                   <Label class="w-20 text-xs shrink-0">&nbsp;</Label>
                   <Button variant="outline" type="button"
                     class="h-8 px-4 text-xs rounded-full border-primary/30 text-primary hover:bg-primary/5 cursor-pointer"
@@ -371,19 +371,57 @@ const navItems = computed(() => [
 const aiForm = ref<domain.AISetting>(
   new domain.AISetting({
     mode: 'builtin',
-    custom: { provider: '', model: '', apiKey: '' },
+    activeProvider: '',
+    customs: {},
   }),
 )
 const builtInModels = ref<string[]>([])
 const providerRegistry = ref<aiNS.ProviderInfo[]>([])
 const currentProviderInfo = computed<aiNS.ProviderInfo | undefined>(() =>
-  providerRegistry.value.find((p) => p.id === aiForm.value.custom.provider),
+  providerRegistry.value.find((p) => p.id === aiForm.value.activeProvider),
 )
-const currentModelOptions = ref<string[]>([]) // 当前选中厂商的模型列表（默认或刷新后的）
-const useCustomModelId = ref(false) // 是否手动输入模型 ID
+// 当前选中厂商的模型列表（默认或刷新后），按厂商隔离
+const modelOptionsByProvider = ref<Record<string, string[]>>({})
+const currentModelOptions = computed<string[]>(() => {
+  const provider = aiForm.value.activeProvider
+  if (!provider) return []
+  return modelOptionsByProvider.value[provider] || currentProviderInfo.value?.defaultModels || []
+})
+const useCustomModelId = ref(false) // 是否手动输入模型 ID（UI 状态，不持久化）
 const customModelInput = ref('')
 const refreshingModels = ref(false)
 const testingConnection = ref(false)
+
+// 确保 customs[provider] 存在
+const ensureCustomEntry = (provider: string) => {
+  if (!provider) return
+  if (!aiForm.value.customs) aiForm.value.customs = {}
+  if (!aiForm.value.customs[provider]) {
+    aiForm.value.customs[provider] = { model: '', apiKey: '' }
+  }
+}
+
+// 当前激活厂商的 model
+const currentModel = computed<string>({
+  get: () => aiForm.value.customs?.[aiForm.value.activeProvider]?.model || '',
+  set: (val) => {
+    const provider = aiForm.value.activeProvider
+    if (!provider) return
+    ensureCustomEntry(provider)
+    aiForm.value.customs[provider].model = val
+  },
+})
+
+// 当前激活厂商的 apiKey
+const currentApiKey = computed<string>({
+  get: () => aiForm.value.customs?.[aiForm.value.activeProvider]?.apiKey || '',
+  set: (val) => {
+    const provider = aiForm.value.activeProvider
+    if (!provider) return
+    ensureCustomEntry(provider)
+    aiForm.value.customs[provider].apiKey = val
+  },
+})
 
 const loadAISetting = async () => {
   try {
@@ -396,71 +434,70 @@ const loadAISetting = async () => {
     providerRegistry.value = registry || []
     aiForm.value = new domain.AISetting({
       mode: setting.mode || 'builtin',
-      custom: {
-        provider: setting.custom?.provider || '',
-        model: setting.custom?.model || '',
-        apiKey: setting.custom?.apiKey || '',
-      },
+      activeProvider: setting.activeProvider || '',
+      customs: setting.customs || {},
     })
-    // 同步默认模型列表
-    syncCurrentModelOptions()
-    // 如果当前 model 不在默认列表里，自动开启自定义模型 ID 模式
-    if (
-      aiForm.value.custom.model &&
-      currentModelOptions.value.length > 0 &&
-      !currentModelOptions.value.includes(aiForm.value.custom.model)
-    ) {
-      useCustomModelId.value = true
-      customModelInput.value = aiForm.value.custom.model
-    }
+    // 同步当前厂商的 UI 状态
+    refreshUIStateForCurrentProvider()
   } catch (e) {
     console.error('Failed to load AI setting:', e)
   }
 }
 
-const syncCurrentModelOptions = () => {
-  const info = currentProviderInfo.value
-  currentModelOptions.value = info ? [...info.defaultModels] : []
+// 切换厂商或加载后，根据 currentModel 决定 useCustomModelId 状态
+const refreshUIStateForCurrentProvider = () => {
+  const model = currentModel.value
+  const defaults = currentProviderInfo.value?.defaultModels || []
+  const refreshed = modelOptionsByProvider.value[aiForm.value.activeProvider] || []
+  const knownModels = refreshed.length > 0 ? refreshed : defaults
+  if (model && knownModels.length > 0 && !knownModels.includes(model)) {
+    useCustomModelId.value = true
+    customModelInput.value = model
+  } else {
+    useCustomModelId.value = false
+    customModelInput.value = ''
+  }
 }
 
-const onProviderChange = () => {
-  // 切换厂商时重置 model 与自定义输入
-  aiForm.value.custom.model = ''
-  useCustomModelId.value = false
-  customModelInput.value = ''
-  syncCurrentModelOptions()
+const onProviderChange = (newProvider: any) => {
+  aiForm.value.activeProvider = String(newProvider || '')
+  // 不清除任何已存在的 customs 数据，只切换显示的对象
+  ensureCustomEntry(aiForm.value.activeProvider)
+  refreshUIStateForCurrentProvider()
 }
 
 const onUseCustomModelToggle = (val: boolean) => {
   useCustomModelId.value = val
   if (val) {
-    customModelInput.value = aiForm.value.custom.model || ''
+    customModelInput.value = currentModel.value
   } else {
-    // 切回下拉时如果当前值不在选项里，清空
-    if (!currentModelOptions.value.includes(aiForm.value.custom.model)) {
-      aiForm.value.custom.model = ''
+    // 切回下拉时，如果当前 model 不在已知列表里就清空
+    const known = currentModelOptions.value
+    if (!known.includes(currentModel.value)) {
+      currentModel.value = ''
     }
   }
 }
 
 const handleCustomModelInputChange = () => {
-  aiForm.value.custom.model = customModelInput.value.trim()
+  currentModel.value = customModelInput.value.trim()
 }
 
 const handleRefreshModels = async () => {
-  if (!aiForm.value.custom.provider) {
+  const provider = aiForm.value.activeProvider
+  if (!provider) {
     toast.warning(t('settings.ai.selectProviderFirst'))
     return
   }
-  if (!aiForm.value.custom.apiKey) {
+  if (!currentApiKey.value) {
     toast.warning(t('settings.ai.fillApiKeyFirst'))
     return
   }
   refreshingModels.value = true
   try {
-    const models = await ListProviderModels(aiForm.value.custom.provider, aiForm.value.custom.apiKey)
+    const models = await ListProviderModels(provider, currentApiKey.value)
     if (models && models.length > 0) {
-      currentModelOptions.value = models
+      modelOptionsByProvider.value[provider] = models
       toast.success(t('settings.ai.refreshSuccess'))
     } else {
       toast.warning(t('settings.ai.refreshEmpty'))
@@ -474,17 +511,14 @@ const handleRefreshModels = async () => {
 }
 
 const handleTestConnection = async () => {
-  if (!aiForm.value.custom.provider || !aiForm.value.custom.model || !aiForm.value.custom.apiKey) {
+  const provider = aiForm.value.activeProvider
+  if (!provider || !currentModel.value || !currentApiKey.value) {
     toast.warning(t('settings.ai.testIncomplete'))
     return
   }
   testingConnection.value = true
   try {
-    await TestConnection(
-      aiForm.value.custom.provider,
-      aiForm.value.custom.model,
-      aiForm.value.custom.apiKey,
-    )
+    await TestConnection(provider, currentModel.value, currentApiKey.value)
     toast.success(t('settings.ai.testSuccess'))
   } catch (e: any) {
     console.error('Test connection failed:', e)

@@ -49,7 +49,6 @@ export namespace config {
 export namespace domain {
 	
 	export class AICustomConfig {
-	    provider: string;
 	    model: string;
 	    apiKey: string;
 	
@@ -59,14 +58,14 @@ export namespace domain {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.provider = source["provider"];
 	        this.model = source["model"];
 	        this.apiKey = source["apiKey"];
 	    }
 	}
 	export class AISetting {
 	    mode: string;
-	    custom: AICustomConfig;
+	    activeProvider: string;
+	    customs: Record<string, AICustomConfig>;
 	
 	    static createFrom(source: any = {}) {
 	        return new AISetting(source);
@@ -75,7 +74,8 @@ export namespace domain {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.mode = source["mode"];
-	        this.custom = this.convertValues(source["custom"], AICustomConfig);
+	        this.activeProvider = source["activeProvider"];
+	        this.customs = this.convertValues(source["customs"], AICustomConfig, true);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

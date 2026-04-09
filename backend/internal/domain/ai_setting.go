@@ -10,15 +10,16 @@ const (
 
 // AISetting AI 功能配置
 type AISetting struct {
-	Mode   string         `json:"mode"`   // "builtin" | "custom"
-	Custom AICustomConfig `json:"custom"` // 自定义模式下的厂商/模型/Key
+	Mode           string                    `json:"mode"`           // "builtin" | "custom"
+	ActiveProvider string                    `json:"activeProvider"` // 当前激活的自定义厂商 ID
+	Customs        map[string]AICustomConfig `json:"customs"`        // 各厂商的独立配置（key 为厂商 ID）
 }
 
-// AICustomConfig 自定义模型配置
+// AICustomConfig 单个自定义厂商的配置
+// 注意：厂商 ID 由 AISetting.Customs 的 map key 表示，不在此结构中冗余存储
 type AICustomConfig struct {
-	Provider string `json:"provider"` // 厂商 ID，如 "openai" / "anthropic" / "glm" 等
-	Model    string `json:"model"`    // 模型 ID
-	APIKey   string `json:"apiKey"`   // API Key
+	Model  string `json:"model"`  // 模型 ID
+	APIKey string `json:"apiKey"` // API Key
 }
 
 // AISettingRepository AI 配置存储接口

@@ -55,10 +55,14 @@ func (s *AIService) resolveProvider(ctx context.Context) (ai.Provider, string, s
 		return ai.NewBuiltInProvider(), ai.PickBuiltInModel(), key, true, nil
 	}
 
-	// 自定义模式
-	cfg := setting.Custom
-	if strings.TrimSpace(cfg.Provider) == "" {
+	// 自定义模式：从 customs[activeProvider] 取配置
+	activeProvider := strings.TrimSpace(setting.ActiveProvider)
+	if activeProvider == "" {
 		return nil, "", "", false, errors.New("请先在「偏好设置 → AI 配置」中选择模型厂商")
+	}
+	cfg, ok := setting.Customs[activeProvider]
+	if !ok {
+		return nil, "", "", false, errors.New("请先在「偏好设置 → AI 配置」中完成当前厂商的配置")
 	}
 	if strings.TrimSpace(cfg.APIKey) == "" {
 		return nil, "", "", false, errors.New("请先在「偏好设置 → AI 配置」中填写 API Key")
@@ -66,7 +70,7 @@ func (s *AIService) resolveProvider(ctx context.Context) (ai.Provider, string, s
 	if strings.TrimSpace(cfg.Model) == "" {
 		return nil, "", "", false, errors.New("请先在「偏好设置 → AI 配置」中选择模型")
 	}
-	provider, _, err := ai.NewProvider(cfg.Provider)
+	provider, _, err := ai.NewProvider(activeProvider)
 	if err != nil {
 		return nil, "", "", false, err
 	}
