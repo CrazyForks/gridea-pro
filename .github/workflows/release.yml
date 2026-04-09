@@ -106,11 +106,11 @@ jobs:
       - name: List build output
         run: ls -la "build/bin/${{ env.BIN_NAME }}.app/Contents/MacOS/"
 
-      - name: Install create-dmg
-        run: brew install create-dmg
+      - name: Install create-dmg + librsvg
+        run: brew install create-dmg librsvg
 
-      - name: Generate DMG background image
-        run: bash build/darwin/dmg/create-background.sh build/bin/dmg-background.png
+      - name: Generate DMG background (hidpi tiff from SVG)
+        run: bash build/darwin/dmg/create-background.sh build/bin/dmg-background.tiff
 
       - name: Create DMG
         run: |
@@ -132,7 +132,7 @@ jobs:
           #   --background dmg-background.png← 自定义背景
           create-dmg \
             --volname "${{ env.APP_NAME }}" \
-            --background "dmg-background.png" \
+            --background "dmg-background.tiff" \
             --window-pos 200 120 \
             --window-size 600 400 \
             --icon-size 110 \
@@ -145,7 +145,7 @@ jobs:
             dmg-src/
 
           # 清理临时目录，避免被 upload-artifact 误传
-          rm -rf dmg-src dmg-background.png
+          rm -rf dmg-src dmg-background.tiff
 
       - uses: actions/upload-artifact@v4
         with:

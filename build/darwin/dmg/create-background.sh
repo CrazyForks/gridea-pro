@@ -2,41 +2,40 @@
 # =============================================================================
 # Gridea Pro — macOS DMG installer background generator
 # -----------------------------------------------------------------------------
-# 用 ImageMagick 生成一张 600x400 的安装背景图（@2x 渲染后下采样，更清晰）。
+# 把 background.svg 渲染成一张 hidpi background.tiff（包含 1x + 2x 两份位图），
+# create-dmg 用这张 tiff 作为窗口背景，retina 屏幕上像素级清晰、无缩放损失。
 #
 # 用法：
-#   ./create-background.sh [output.png]
+#   ./create-background.sh [output.tiff]
 #
-# 依赖：
-#   ImageMagick v7（macOS GitHub runner 已预装；本地可 `brew install imagemagick`）
-#
-# 设计说明：
-#   - 600x400 窗口尺寸，与 release.yml 中 create-dmg 的 --window-size 一致
-#   - 图标位置：App 在 (150, 200)，Applications 在 (450, 200)
-#   - 标题居顶，副标题在标题下方
-#   - 中间一根紫色箭头从 App 指向 Applications，提示拖拽方向
+# 依赖（macos-latest GitHub runner 全部已预装或可 brew 安装）：
+#   - librsvg     (rsvg-convert)   ← 把 SVG 渲染成 PNG，质量远好于 ImageMagick
+#   - tiffutil    (macOS 自带)     ← 把 1x + 2x PNG 合成 hidpi tiff
 # =============================================================================
 set -euo pipefail
 
-OUT="${1:-background.png}"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SVG="${SCRIPT_DIR}/background.svg"
+OUT="${1:-background.tiff}"
 
-# 在 2x 画布上绘制后缩小，得到更锐利的文字与曲线
-W=1200
-H=800
+if ! command -v rsvg-convert >/dev/null 2>&1; then
+  echo "✗ rsvg-convert 未安装。请先 brew install librsvg" >&2
+  exit 1
+fi
+if ! command -v tiffutil >/dev/null 2>&1; then
+  echo "✗ tiffutil 未找到（应为 macOS 自带工具）" >&2
+  exit 1
+fi
 
-magick -size ${W}x${H} \
-  gradient:'#EEF2FF-#FFFFFF' \
-  -font Helvetica-Bold -pointsize 64 -fill '#1E293B' \
-    -gravity North -annotate +0+70 'Gridea Pro' \
-  -font Helvetica -pointsize 26 -fill '#64748B' \
-    -gravity North -annotate +0+170 'Drag the app into your Applications folder' \
-  -stroke '#6366F1' -strokewidth 8 -strokelinecap round -fill none \
-    -draw "line 460,400 740,400" \
-  -fill '#6366F1' -stroke none \
-    -draw "polygon 740,378 790,400 740,422" \
-  -font Helvetica -pointsize 22 -fill '#94A3B8' \
-    -gravity South -annotate +0+60 'gridea.pro' \
-  -resize 600x400 \
-  "$OUT"
+TMP="$(mktemp -d)"
+trap 'rm -rf "$TMP"' EXIT
+
+# 1x = 600x400  → 普通屏幕
+rsvg-convert -w 600  -h 400  "$SVG" -o "${TMP}/bg-1x.png"
+# 2x = 1200x800 → retina 屏幕
+rsvg-convert -w 1200 -h 800  "$SVG" -o "${TMP}/bg-2x.png"
+
+# 合成 hidpi tiff：Finder 会根据屏幕分辨率自动选用对应像素
+tiffutil -cathidpicheck "${TMP}/bg-1x.png" "${TMP}/bg-2x.png" -out "$OUT" >/dev/null
 
 echo "✔ Generated DMG background → $OUT"
