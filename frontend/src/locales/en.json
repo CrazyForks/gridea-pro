@@ -288,6 +288,20 @@
             "saveSuccess": "CDN settings saved",
             "saveFailed": "Failed to save CDN settings"
         },
+        "ai": {
+            "title": "AI Settings",
+            "zhipuApiKey": "Zhipu API Key",
+            "zhipuApiKeyDesc": "Leave empty to use the built-in free quota (subject to limits)",
+            "model": "AI Model",
+            "saveSuccess": "AI settings saved",
+            "generateSlug": "Generate Slug with AI",
+            "generating": "Generating...",
+            "generateSuccess": "Slug generated",
+            "generateFailed": "Failed to generate slug, please try again",
+            "noApiKey": "Please set your Zhipu API Key in Preferences → AI Settings first",
+            "networkError": "Network request failed, please check your network or proxy settings",
+            "noTitle": "Please enter the article title first"
+        },
         "network": {
             "title": "Server",
             "platform": "Platform",

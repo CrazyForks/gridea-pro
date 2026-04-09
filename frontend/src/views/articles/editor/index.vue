@@ -120,8 +120,17 @@ const handleGenerateSlug = async () => {
     try {
         const slug = await GenerateSlug(form.title)
         form.fileName = slug
+        toast.success(t('settings.ai.generateSuccess'))
     } catch (e: any) {
-        toast.error(`${t('settings.ai.generateFailed')}: ${e.message || e}`)
+        console.error('Generate slug failed:', e)
+        const msg = String(e?.message || e || '')
+        let toastMsg = t('settings.ai.generateFailed')
+        if (msg.includes('API Key')) {
+            toastMsg = t('settings.ai.noApiKey')
+        } else if (msg.includes('请求失败') || /network|timeout/i.test(msg)) {
+            toastMsg = t('settings.ai.networkError')
+        }
+        toast.error(toastMsg)
     } finally {
         isGeneratingSlug.value = false
     }

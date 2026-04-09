@@ -288,6 +288,20 @@
             "saveSuccess": "Paramètres CDN enregistrés",
             "saveFailed": "Échec de l'enregistrement des paramètres CDN"
         },
+        "ai": {
+            "title": "Paramètres IA",
+            "zhipuApiKey": "Zhipu API Key",
+            "zhipuApiKeyDesc": "Laissez vide pour utiliser le quota gratuit intégré (avec limite)",
+            "model": "Modèle d'IA",
+            "saveSuccess": "Paramètres IA enregistrés",
+            "generateSlug": "Générer un Slug avec l'IA",
+            "generating": "Génération...",
+            "generateSuccess": "Slug généré",
+            "generateFailed": "Échec de la génération du slug, veuillez réessayer",
+            "noApiKey": "Veuillez d'abord configurer votre Zhipu API Key dans Préférences → Paramètres IA",
+            "networkError": "Échec de la requête réseau, veuillez vérifier votre réseau ou les paramètres du proxy",
+            "noTitle": "Veuillez d'abord saisir le titre de l'article"
+        },
         "network": {
             "title": "Serveur",
             "platform": "Plateforme",

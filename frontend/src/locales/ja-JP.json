@@ -288,6 +288,20 @@
             "saveSuccess": "CDN 設定を保存しました",
             "saveFailed": "CDN 設定の保存に失敗しました"
         },
+        "ai": {
+            "title": "AI 設定",
+            "zhipuApiKey": "Zhipu API Key",
+            "zhipuApiKeyDesc": "空欄の場合は組み込みの無料枠を使用します（利用制限あり）",
+            "model": "AI モデル",
+            "saveSuccess": "AI 設定を保存しました",
+            "generateSlug": "AI で Slug を生成",
+            "generating": "生成中...",
+            "generateSuccess": "Slug を生成しました",
+            "generateFailed": "Slug の生成に失敗しました。もう一度お試しください",
+            "noApiKey": "「環境設定 → AI 設定」で Zhipu API Key を設定してください",
+            "networkError": "ネットワークリクエストに失敗しました。ネットワークまたはプロキシの設定を確認してください",
+            "noTitle": "先に記事タイトルを入力してください"
+        },
         "network": {
             "title": "設定",
             "platform": "プラットフォーム",

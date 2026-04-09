@@ -296,7 +296,10 @@
             "saveSuccess": "AI 配置已保存",
             "generateSlug": "AI 生成 Slug",
             "generating": "生成中...",
-            "generateFailed": "生成失败",
+            "generateSuccess": "Slug 生成成功",
+            "generateFailed": "Slug 生成失败，请重试",
+            "noApiKey": "请先在「偏好设置 → AI 配置」中设置 Zhipu API Key",
+            "networkError": "网络请求失败，请检查网络或代理设置",
             "noTitle": "请先填写文章标题"
         },
         "network": {

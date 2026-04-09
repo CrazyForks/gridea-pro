@@ -13,7 +13,7 @@
                         <Input v-model="form.fileName" class="flex-1"
                             @change="(e: any) => $emit('fileNameChange', e)" />
                         <Button variant="outline" size="icon"
-                            class="shrink-0 size-9 border-primary/20 text-primary/60 hover:text-primary hover:bg-primary/5 cursor-pointer"
+                            class="shrink-0 size-10 border-primary/20 text-primary/60 hover:text-primary hover:bg-primary/5 cursor-pointer"
                             :disabled="isGeneratingSlug"
                             :title="$t('settings.ai.generateSlug')"
                             @click="$emit('generateSlug')">

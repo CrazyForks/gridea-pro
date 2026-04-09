@@ -288,6 +288,20 @@
             "saveSuccess": "CDN 설정 저장됨",
             "saveFailed": "CDN 설정 저장 실패"
         },
+        "ai": {
+            "title": "AI 설정",
+            "zhipuApiKey": "Zhipu API Key",
+            "zhipuApiKeyDesc": "비워두면 내장 무료 할당량을 사용합니다 (사용 제한 있음)",
+            "model": "AI 모델",
+            "saveSuccess": "AI 설정이 저장되었습니다",
+            "generateSlug": "AI로 Slug 생성",
+            "generating": "생성 중...",
+            "generateSuccess": "Slug가 생성되었습니다",
+            "generateFailed": "Slug 생성에 실패했습니다. 다시 시도해 주세요",
+            "noApiKey": "「환경설정 → AI 설정」에서 Zhipu API Key를 먼저 설정해 주세요",
+            "networkError": "네트워크 요청이 실패했습니다. 네트워크 또는 프록시 설정을 확인해 주세요",
+            "noTitle": "먼저 게시글 제목을 입력해 주세요"
+        },
         "network": {
             "title": "설정",
             "platform": "플랫폼",

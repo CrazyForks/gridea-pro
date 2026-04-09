@@ -288,6 +288,20 @@
             "saveSuccess": "CDN-Einstellungen gespeichert",
             "saveFailed": "CDN-Einstellungen konnten nicht gespeichert werden"
         },
+        "ai": {
+            "title": "KI-Einstellungen",
+            "zhipuApiKey": "Zhipu API Key",
+            "zhipuApiKeyDesc": "Leer lassen, um das integrierte Gratiskontingent zu nutzen (mit Limit)",
+            "model": "KI-Modell",
+            "saveSuccess": "KI-Einstellungen gespeichert",
+            "generateSlug": "Slug mit KI generieren",
+            "generating": "Wird generiert...",
+            "generateSuccess": "Slug generiert",
+            "generateFailed": "Slug konnte nicht generiert werden, bitte erneut versuchen",
+            "noApiKey": "Bitte legen Sie zuerst Ihren Zhipu API Key unter Einstellungen → KI-Einstellungen fest",
+            "networkError": "Netzwerkanfrage fehlgeschlagen, bitte Netzwerk- oder Proxy-Einstellungen prüfen",
+            "noTitle": "Bitte geben Sie zuerst den Artikeltitel ein"
+        },
         "network": {
             "title": "Server",
             "platform": "Plattform",

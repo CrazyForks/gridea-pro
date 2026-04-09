@@ -288,6 +288,20 @@
             "saveSuccess": "Configuración CDN guardada",
             "saveFailed": "Error al guardar la configuración CDN"
         },
+        "ai": {
+            "title": "Configuración de IA",
+            "zhipuApiKey": "Zhipu API Key",
+            "zhipuApiKeyDesc": "Dejar vacío para usar la cuota gratuita integrada (con límite)",
+            "model": "Modelo de IA",
+            "saveSuccess": "Configuración de IA guardada",
+            "generateSlug": "Generar Slug con IA",
+            "generating": "Generando...",
+            "generateSuccess": "Slug generado",
+            "generateFailed": "Error al generar el slug, inténtalo de nuevo",
+            "noApiKey": "Configura primero tu Zhipu API Key en Preferencias → Configuración de IA",
+            "networkError": "Error de red, comprueba tu conexión o configuración de proxy",
+            "noTitle": "Por favor, introduce primero el título del artículo"
+        },
         "network": {
             "title": "Servidor",
             "platform": "Plataforma",

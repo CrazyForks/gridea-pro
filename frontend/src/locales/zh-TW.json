@@ -288,6 +288,20 @@
             "saveSuccess": "CDN 設定已儲存",
             "saveFailed": "CDN 設定儲存失敗"
         },
+        "ai": {
+            "title": "AI 設定",
+            "zhipuApiKey": "Zhipu API Key",
+            "zhipuApiKeyDesc": "留空則使用內建免費額度（有使用上限）",
+            "model": "AI 模型",
+            "saveSuccess": "AI 設定已儲存",
+            "generateSlug": "AI 生成 Slug",
+            "generating": "生成中...",
+            "generateSuccess": "Slug 生成成功",
+            "generateFailed": "Slug 生成失敗，請重試",
+            "noApiKey": "請先在「偏好設定 → AI 設定」中設定 Zhipu API Key",
+            "networkError": "網路請求失敗，請檢查網路或代理設定",
+            "noTitle": "請先填寫文章標題"
+        },
         "network": {
             "title": "設定",
             "platform": "平台",
