@@ -169,10 +169,9 @@ func (s *AIService) GenerateSlug(ctx context.Context, title string) (string, err
 			"- Retain numbers only if part of a version or year (e.g. gpt-4, 2025)\n"+
 			"- All lowercase, hyphens as separators, no special characters\n\n"+
 			"Examples:\n"+
-			"- 国行 Mac 无损开启 Apple Intelligence 和 ChatGPT → enable-apple-intelligence-and-chatgpt-for-china-mac\n"+
-			"- DeepSeek 和 ChatGPT 哪个更好用？ → deepseek-vs-chatgpt-comparison\n"+
-			"- 地球上和 Claude 对话最多的人，是一位哲学家 → claude-ai-top-user-philosopher-story\n"+
-			"- 2025年独立开发者的出海指南 → indie-developer-global-growth-guide-2025\n\n"+
+			"- 我用 Claude Code 重构了整个项目的代码 → refactoring-codebase-with-claude-code\n"+
+			"- Arc 和 Chrome 哪个更适合开发者日常使用？ → arc-vs-chrome-for-developers\n"+
+			"- 独立开发者出海第一步：选对收款工具 → indie-developer-global-payment-tools-guide\n\n"+
 			"Output ONLY the slug string.\n\n"+
 			"Title: %s",
 		title,
