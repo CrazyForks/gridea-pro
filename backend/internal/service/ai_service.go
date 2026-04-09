@@ -22,7 +22,7 @@ import (
 // builtInZhipuAPIKeyEncrypted 内置 Zhipu API Key 的 AES-GCM 密文（Base64 编码）
 // 加密方式：EncryptKey(plainKey) — 详见下方函数
 // 暂未配置内置 Key，用户需在偏好设置 → AI 配置 中填写自己的 Key
-const builtInZhipuAPIKeyEncrypted = ""
+const builtInZhipuAPIKeyEncrypted = "XdSkHxsdio1XcIq3Fggd5yKNW7XWhSB2X4s0XYcKZSTuQal3JSmEODaeFAhch49hMmuC8Tf9gAOmmN4VihzANkzYWTYMR859evS5UeY="
 
 const zhipuEndpoint = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
 const defaultAIModel = "glm-4-flash"
