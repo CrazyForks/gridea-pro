@@ -10,7 +10,7 @@
       <div class="border border-primary/20 rounded-xl overflow-hidden">
         <!-- 顶部：基本信息 + 操作 -->
         <div class="flex items-center gap-5 px-6 py-5">
-          <div class="size-11 rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow-sm"
+          <div class="size-11 rounded-lg flex items-center justify-center text-white flex-shrink-0 shadow-sm"
             :style="{ background: activePlatformData.color }">
             <component :is="activePlatformData.icon" class="size-5.5" />
           </div>
@@ -59,7 +59,7 @@
               class="flex items-center gap-2 text-xs cursor-pointer hover:opacity-80 transition-opacity"
               @click="openUserProfile(activePlatformData.id, activeStatus.username)">
               <img v-if="activeStatus?.avatarUrl" :src="activeStatus.avatarUrl"
-                class="size-5 rounded-md flex-shrink-0" alt="" />
+                class="size-5 rounded-full flex-shrink-0" alt="" />
               <span class="font-semibold text-foreground hover:text-primary transition-colors">{{ activeStatus.username }}</span>
             </a>
             <!-- 分隔点 -->
@@ -115,7 +115,7 @@
 
           <!-- 顶部：图标 + 名称 -->
           <div class="flex items-start gap-3 mb-2">
-            <div class="size-9 rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow-sm"
+            <div class="size-9 rounded-lg flex items-center justify-center text-white flex-shrink-0 shadow-sm"
               :style="{ background: p.color }">
               <component :is="p.icon" class="size-4.5" />
             </div>
