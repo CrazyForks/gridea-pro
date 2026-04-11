@@ -5,6 +5,8 @@ export type PlatformType = 'github' | 'coding' | 'sftp' | 'gitee' | 'netlify' | 
 export interface ISetting {
   platform: PlatformType
   platformConfigs: Record<string, Record<string, any>>
+  proxyEnabled?: boolean
+  proxyURL?: string
 }
 
 /** 设置表单（BasicSetting 内部使用的 UI 层平铺结构） */
