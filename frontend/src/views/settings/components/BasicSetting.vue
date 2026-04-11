@@ -265,8 +265,7 @@
               <FormField :label="t('settings.network.domain')">
                 <div class="relative">
                   <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">https://</span>
-                  <Input v-model="drawerForm.repository"
-                    class="pl-16" readonly tabindex="-1"
+                  <Input v-model="drawerForm.domain" class="pl-16"
                     :placeholder="drawerPlatform === 'github' ? 'username.github.io' : drawerPlatform === 'gitee' ? 'username.gitee.io' : ''" />
                 </div>
               </FormField>
@@ -444,7 +443,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSiteStore } from '@/stores/site'
 import { toast } from '@/helpers/toast'
@@ -559,6 +558,13 @@ const activeConfigItems = computed(() => {
   return items
 })
 
+
+// 用户名 → 域名联动（填写用户名时自动生成域名，允许用户修改）
+watch(() => drawerForm.username, (val) => {
+  if (!val || !['github', 'gitee'].includes(drawerPlatform.value)) return
+  const suffix = drawerPlatform.value === 'github' ? '.github.io' : '.gitee.io'
+  drawerForm.domain = val.toLowerCase() + suffix
+})
 
 // ── 生命周期 ──────────────────────────────────────────────────────────────
 
@@ -829,11 +835,7 @@ function getCardItems(platformId: string): { icon: any; value: string }[] {
 function buildSettingForPlatform(platformId: string) {
   const existingConfigs = JSON.parse(JSON.stringify(siteStore.site.setting.platformConfigs || {}))
 
-  // GitHub/Gitee/Coding: domain = repository（仓库名即域名）
-  const domainValue = ['github', 'gitee', 'coding'].includes(platformId)
-    ? drawerForm.repository
-    : drawerForm.domain
-  const domain = domainValue ? `https://${domainValue.replace(/\/+$/, '')}` : ''
+  const domain = drawerForm.domain ? `https://${drawerForm.domain.replace(/\/+$/, '')}` : ''
 
   const platformFieldMap: Record<string, string[]> = {
     github:  ['domain', 'repository', 'branch', 'username', 'email', 'tokenUsername', 'token', 'cname'],
