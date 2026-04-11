@@ -64,10 +64,9 @@
             </a>
             <!-- 分隔点 -->
             <span v-if="activeStatus?.username && activeConfigItems.length > 0" class="text-muted-foreground/30">·</span>
-            <div v-for="item in activeConfigItems" :key="item.label"
+            <div v-for="item in activeConfigItems" :key="item.value"
               class="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <component :is="item.icon" class="size-3.5 flex-shrink-0 opacity-60" />
-              <span class="text-foreground/70 font-medium">{{ item.label }}:</span>
+              <component :is="item.icon" class="size-3.5 flex-shrink-0 opacity-50" />
               <span class="truncate max-w-[200px]">{{ item.value }}</span>
             </div>
           </div>
@@ -482,25 +481,27 @@ const activeStatus = computed(() => statuses.value[activePlatform.value])
 const activeConfigItems = computed(() => {
   const pid = activePlatform.value
   const cfg = (siteStore.site.setting.platformConfigs || {})[pid] || {}
-  const items: { icon: any; label: string; value: string }[] = []
+  const items: { icon: any; value: string }[] = []
 
-  // 域名
-  if (cfg.domain) {
-    const d = String(cfg.domain).replace(/^https?:\/\//, '')
-    if (d) items.push({ icon: GlobeAltIcon, label: t('settings.network.domain'), value: d })
-  }
-
+  // 域名：有 CNAME 显示 CNAME，否则显示 domain
   if (['github', 'gitee', 'coding'].includes(pid)) {
-    if (cfg.repository) items.push({ icon: CodeBracketIcon, label: t('settings.network.repository'), value: cfg.repository })
-    if (cfg.branch) items.push({ icon: BranchIcon, label: t('settings.network.branch'), value: cfg.branch })
-    if (cfg.cname) items.push({ icon: LinkIcon, label: 'CNAME', value: cfg.cname })
+    const displayDomain = cfg.cname || (cfg.domain ? String(cfg.domain).replace(/^https?:\/\//, '') : '')
+    if (displayDomain) items.push({ icon: GlobeAltIcon, value: displayDomain })
+    if (cfg.repository) items.push({ icon: CodeBracketIcon, value: cfg.repository })
+    if (cfg.branch) items.push({ icon: BranchIcon, value: cfg.branch })
   } else if (pid === 'netlify') {
-    if (cfg.netlifySiteId) items.push({ icon: CodeBracketIcon, label: 'Site ID', value: cfg.netlifySiteId })
+    const d = cfg.domain ? String(cfg.domain).replace(/^https?:\/\//, '') : ''
+    if (d) items.push({ icon: GlobeAltIcon, value: d })
+    if (cfg.netlifySiteId) items.push({ icon: CodeBracketIcon, value: cfg.netlifySiteId })
   } else if (pid === 'vercel') {
-    if (cfg.repository) items.push({ icon: CodeBracketIcon, label: t('settings.network.projectName'), value: cfg.repository })
+    const displayDomain = cfg.cname || (cfg.domain ? String(cfg.domain).replace(/^https?:\/\//, '') : '')
+    if (displayDomain) items.push({ icon: GlobeAltIcon, value: displayDomain })
+    if (cfg.repository) items.push({ icon: CodeBracketIcon, value: cfg.repository })
   } else if (pid === 'sftp') {
+    const d = cfg.domain ? String(cfg.domain).replace(/^https?:\/\//, '') : ''
+    if (d) items.push({ icon: GlobeAltIcon, value: d })
     const addr = [cfg.server, cfg.port].filter(Boolean).join(':')
-    if (addr) items.push({ icon: ServerStackIcon, label: t('settings.network.server'), value: addr })
+    if (addr) items.push({ icon: ServerStackIcon, value: addr })
   }
 
   return items
