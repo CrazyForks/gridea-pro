@@ -518,7 +518,9 @@ async function handleOAuth(platformId: string) {
     await StartOAuthFlow(platformId)
   } catch (e: any) {
     oauthLoading.value[platformId] = false
-    toast.error(e?.message || t('settings.network.authFailed'))
+    // Wails 返回的错误是字符串，不是 Error 对象
+    const msg = typeof e === 'string' ? e : (e?.message || t('settings.network.authFailed'))
+    toast.error(msg)
   }
 }
 
@@ -529,7 +531,8 @@ async function handleRevoke(platformId: string) {
     statuses.value[platformId] = { connected: false, connectedVia: '', username: '', avatarUrl: '', email: '' }
     toast.success(`${getPlatformName(platformId)} ${t('settings.network.disconnected')}`)
   } catch (e: any) {
-    toast.error(e?.message || t('settings.network.disconnectFailed'))
+    const msg = typeof e === 'string' ? e : (e?.message || t('settings.network.disconnectFailed'))
+    toast.error(msg)
   }
 }
 
