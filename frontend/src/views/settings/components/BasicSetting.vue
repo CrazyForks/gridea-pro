@@ -391,7 +391,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSiteStore } from '@/stores/site'
 import { toast } from '@/helpers/toast'
-import { FolderOpenIcon, Cog6ToothIcon, ArrowPathIcon, XMarkIcon, InformationCircleIcon, KeyIcon, GlobeAltIcon, CodeBracketIcon, ServerStackIcon, UserIcon } from '@heroicons/vue/24/outline'
+import { FolderOpenIcon, Cog6ToothIcon, ArrowPathIcon, XMarkIcon, InformationCircleIcon, KeyIcon, GlobeAltIcon, CodeBracketIcon, ServerStackIcon, UserIcon, LinkIcon } from '@heroicons/vue/24/outline'
 import { Switch } from '@/components/ui/switch'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -480,6 +480,7 @@ const activeConfigItems = computed(() => {
   if (['github', 'gitee', 'coding'].includes(pid)) {
     if (cfg.repository) items.push({ icon: CodeBracketIcon, label: t('settings.network.repository'), value: cfg.repository })
     if (cfg.branch) items.push({ icon: BranchIcon, label: t('settings.network.branch'), value: cfg.branch })
+    if (cfg.cname) items.push({ icon: LinkIcon, label: 'CNAME', value: cfg.cname })
   } else if (pid === 'netlify') {
     if (cfg.netlifySiteId) items.push({ icon: CodeBracketIcon, label: 'Site ID', value: cfg.netlifySiteId })
   } else if (pid === 'vercel') {
