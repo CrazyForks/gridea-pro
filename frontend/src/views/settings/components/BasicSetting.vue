@@ -416,12 +416,12 @@ const GenericIcon = { template: `<svg viewBox="0 0 24 24" fill="none" stroke="cu
 const ServerIcon = { template: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="5" rx="1"/><rect x="2" y="10" width="20" height="5" rx="1"/><rect x="2" y="17" width="20" height="5" rx="1"/><circle cx="6" cy="5.5" r=".8" fill="currentColor"/><circle cx="6" cy="12.5" r=".8" fill="currentColor"/></svg>` }
 
 const platforms = [
-  { id: 'github',  name: 'GitHub Pages',    color: '#24292f', icon: GitHubIcon,  oauthAvailable: false, description: t('settings.network.github_desc') || '部署到 GitHub Pages，免费托管静态博客' },
-  { id: 'netlify', name: 'Netlify',         color: '#00c7b7', icon: GenericIcon, oauthAvailable: false, description: '自动 CI/CD，支持自定义域名与 HTTPS' },
-  { id: 'vercel',  name: 'Vercel',          color: '#000000', icon: VercelIcon,  oauthAvailable: false, description: '边缘网络加速，前端部署首选' },
-  { id: 'gitee',   name: 'Gitee Pages',     color: '#c71d23', icon: GenericIcon, oauthAvailable: false, description: '国内访问速度更快，无需代理' },
-  { id: 'coding',  name: 'Coding Pages',    color: '#0066ff', icon: GenericIcon, oauthAvailable: false, description: '腾讯旗下，国内稳定访问' },
-  { id: 'sftp',    name: 'SFTP / FTP',      color: '#5856d6', icon: ServerIcon,  oauthAvailable: false, description: '直接部署到你自己的服务器' },
+  { id: 'github',  name: 'GitHub Pages',    color: '#24292f', icon: GitHubIcon,  oauthAvailable: false, description: t('settings.network.githubDesc') },
+  { id: 'netlify', name: 'Netlify',         color: '#00c7b7', icon: GenericIcon, oauthAvailable: false, description: t('settings.network.netlifyDesc') },
+  { id: 'vercel',  name: 'Vercel',          color: '#000000', icon: VercelIcon,  oauthAvailable: false, description: t('settings.network.vercelDesc') },
+  { id: 'gitee',   name: 'Gitee Pages',     color: '#c71d23', icon: GenericIcon, oauthAvailable: false, description: t('settings.network.giteeDesc') },
+  { id: 'coding',  name: 'Coding Pages',    color: '#0066ff', icon: GenericIcon, oauthAvailable: false, description: t('settings.network.codingDesc') },
+  { id: 'sftp',    name: 'SFTP / FTP',      color: '#5856d6', icon: ServerIcon,  oauthAvailable: false, description: t('settings.network.sftpDesc') },
 ]
 
 // ── 状态 ──────────────────────────────────────────────────────────────────
