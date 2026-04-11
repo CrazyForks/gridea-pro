@@ -97,11 +97,11 @@ var oauthTextsZH = oauthTexts{
 }
 
 var oauthTextsEN = oauthTexts{
-	authSuccess: "Authorization Successful",
+	authSuccess: "Authorized",
 	authFailed:  "Authorization Failed",
-	connected:   "connected",
+	connected:   "Connected",
 	defaultUser: "Account",
-	hint:        "Please return to Gridea Pro. You can close this tab.",
+	hint:        "Close this tab and return to Gridea Pro.",
 	slogan:      "A modern, AI-powered static blog client.",
 }
 
