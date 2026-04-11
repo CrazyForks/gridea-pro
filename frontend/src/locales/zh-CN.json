@@ -372,6 +372,7 @@
       "proxyURLInvalid": "地址格式不正确，请使用 http://、https:// 或 socks5:// 开头",
       "notConnected": "未连接",
       "connected": "已连接",
+      "configured": "已配置",
       "tokenSaved": "Token 已保存",
       "connectViaOAuth": "OAuth 授权",
       "connectManual": "手动配置",

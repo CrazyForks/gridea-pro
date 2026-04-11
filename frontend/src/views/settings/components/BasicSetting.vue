@@ -19,10 +19,16 @@
             <div class="flex items-center gap-2.5">
               <span class="text-base font-bold text-foreground">{{ activePlatformData.name }}</span>
               <!-- 状态 chip -->
-              <template v-if="activeStatus?.connected">
+              <template v-if="activeStatus?.connected && activeStatus?.connectedVia === 'oauth'">
                 <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-green-500/10 text-green-600 dark:text-green-400 text-[11px] font-medium">
                   <span class="size-1.5 rounded-full bg-green-500 inline-block"></span>
                   {{ t('settings.network.connected') }}
+                </span>
+              </template>
+              <template v-else-if="activeStatus?.connected && activeStatus?.connectedVia === 'manual'">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[11px] font-medium">
+                  <span class="size-1.5 rounded-full bg-amber-500 inline-block"></span>
+                  {{ t('settings.network.configured') }}
                 </span>
               </template>
               <template v-else>
@@ -37,7 +43,8 @@
 
           <!-- 操作按钮（始终在右侧） -->
           <div class="flex items-center gap-2 flex-shrink-0">
-            <template v-if="activeStatus?.connected">
+            <!-- OAuth 已连接：编辑配置 + 断开连接 -->
+            <template v-if="activeStatus?.connected && activeStatus?.connectedVia === 'oauth'">
               <Button variant="outline" size="sm" class="h-8 text-xs rounded-full px-4 text-primary hover:bg-primary/10 hover:text-primary border-primary/20"
                 @click="openDrawer(activePlatformData.id)">
                 <Cog6ToothIcon class="size-3.5 mr-1.5" />
@@ -49,6 +56,28 @@
                 {{ t('settings.network.disconnect') }}
               </Button>
             </template>
+            <!-- 手动已配置：OAuth 授权 + 编辑配置（鼓励升级到 OAuth） -->
+            <template v-else-if="activeStatus?.connected && activeStatus?.connectedVia === 'manual'">
+              <template v-if="activePlatformData.hasOAuth">
+                <Button v-if="!oauthLoading[activePlatformData.id]"
+                  variant="default" size="sm" class="h-8 text-xs rounded-full px-4 bg-primary text-background hover:bg-primary/90"
+                  @click="handleOAuth(activePlatformData.id)">
+                  <KeyIcon class="size-3.5 mr-1.5" />
+                  {{ t('settings.network.connectViaOAuth') }}
+                </Button>
+                <Button v-else
+                  variant="default" size="sm" class="h-8 text-xs rounded-full px-4" disabled>
+                  <ArrowPathIcon class="size-3.5 animate-spin mr-1.5" />
+                  {{ t('settings.network.waitingAuth') }}
+                </Button>
+              </template>
+              <Button variant="outline" size="sm" class="h-8 text-xs rounded-full px-4 text-primary hover:bg-primary/10 hover:text-primary border-primary/20"
+                @click="openDrawer(activePlatformData.id)">
+                <Cog6ToothIcon class="size-3.5 mr-1.5" />
+                {{ t('settings.network.editConfig') }}
+              </Button>
+            </template>
+            <!-- 未连接：OAuth 授权 + 手动配置 -->
             <template v-else>
               <template v-if="activePlatformData.hasOAuth">
                 <Button v-if="!oauthLoading[activePlatformData.id]"
@@ -113,10 +142,15 @@
             <div class="flex-1 min-w-0 pt-0.5">
               <div class="flex items-center gap-2">
                 <span class="text-sm font-semibold text-foreground leading-tight">{{ p.name }}</span>
-                <span v-if="statuses[p.id]?.connected"
+                <span v-if="statuses[p.id]?.connected && statuses[p.id]?.connectedVia === 'oauth'"
                   class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-600 dark:text-green-400 text-[10px] font-medium">
                   <span class="size-1.5 rounded-full bg-green-500 inline-block"></span>
                   {{ t('settings.network.connected') }}
+                </span>
+                <span v-else-if="statuses[p.id]?.connected && statuses[p.id]?.connectedVia === 'manual'"
+                  class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-medium">
+                  <span class="size-1.5 rounded-full bg-amber-500 inline-block"></span>
+                  {{ t('settings.network.configured') }}
                 </span>
                 <span v-else
                   class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] font-medium">
@@ -206,8 +240,7 @@
               <div class="flex-1 min-w-0">
                 <div class="text-sm font-semibold text-foreground">{{ statuses[drawerPlatform].username }}</div>
                 <div class="text-[11px] text-green-600 dark:text-green-400">
-                  {{ statuses[drawerPlatform].connectedVia === 'oauth' ? 'OAuth' : t('settings.network.manualConfigTitle') }}
-                  · {{ t('settings.network.connected') }}
+                  {{ statuses[drawerPlatform].connectedVia === 'oauth' ? 'OAuth · ' + t('settings.network.connected') : t('settings.network.configured') }}
                 </div>
               </div>
             </div>
