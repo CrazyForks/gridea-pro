@@ -181,43 +181,6 @@
 
     </div>
 
-    <!-- ── 代理设置 ───────────────────────────────────────────── -->
-    <div class="mt-6 rounded-xl border border-border/60 px-4 py-4 space-y-4">
-      <div class="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-        {{ t('settings.network.proxy') }}
-      </div>
-      <div class="grid grid-cols-[160px_1fr] items-center gap-4">
-        <label class="text-sm font-medium text-right text-muted-foreground">
-          {{ t('settings.network.proxyEnabled') }}
-        </label>
-        <div class="flex items-center gap-3">
-          <Switch :checked="proxyEnabled" @update:checked="proxyEnabled = $event" size="sm" />
-          <span class="text-xs text-muted-foreground">{{ t('settings.network.proxyEnabledDesc') }}</span>
-        </div>
-      </div>
-      <div v-if="proxyEnabled" class="grid grid-cols-[160px_1fr] items-start gap-4">
-        <label class="text-sm font-medium text-right text-muted-foreground pt-2">
-          {{ t('settings.network.proxyURL') }}
-        </label>
-        <div class="max-w-sm">
-          <Input v-model="proxyURL" placeholder="http://127.0.0.1:7890" />
-          <div class="text-xs text-muted-foreground mt-1.5">{{ t('settings.network.proxyURLDesc') }}</div>
-          <div v-if="proxyURLError" class="text-xs text-destructive mt-1">{{ proxyURLError }}</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── 底部保存按钮（仅代理设置） ──────────────────────────── -->
-    <footer-box>
-      <div class="flex justify-end w-full">
-        <Button variant="default"
-          class="h-8 text-xs rounded-full bg-primary text-background hover:bg-primary/90 px-5"
-          @click="saveProxy">
-          {{ t('common.save') }}
-        </Button>
-      </div>
-    </footer-box>
-
     <!-- ── 手动配置抽屉 ───────────────────────────────────────── -->
     <Transition name="drawer">
       <div v-if="drawerOpen" class="fixed inset-0 z-50 flex justify-end" @click.self="closeDrawer">
@@ -377,6 +340,25 @@
               </FormField>
             </template>
 
+            <!-- ─ 代理设置（所有平台通用） ─ -->
+            <div class="mt-2 pt-4 border-t border-border/50">
+              <div class="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                {{ t('settings.network.proxy') }}
+              </div>
+              <div class="space-y-3">
+                <div class="flex items-center gap-3">
+                  <Switch :checked="drawerForm.proxyEnabled" @update:checked="drawerForm.proxyEnabled = $event" size="sm" />
+                  <span class="text-xs text-muted-foreground">{{ t('settings.network.proxyEnabled') }}</span>
+                </div>
+                <template v-if="drawerForm.proxyEnabled">
+                  <FormField :label="t('settings.network.proxyURL')">
+                    <Input v-model="drawerForm.proxyURL" placeholder="http://127.0.0.1:7890" />
+                    <template #hint>{{ t('settings.network.proxyURLDesc') }}</template>
+                  </FormField>
+                </template>
+              </div>
+            </div>
+
           </div>
 
           <!-- 抽屉底部按钮 -->
@@ -410,8 +392,7 @@ import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSiteStore } from '@/stores/site'
 import { toast } from '@/helpers/toast'
-import FooterBox from '@/components/FooterBox/index.vue'
-import { EyeIcon, EyeSlashIcon, FolderOpenIcon, Cog6ToothIcon, ArrowPathIcon, XMarkIcon, InformationCircleIcon } from '@heroicons/vue/24/outline'
+import { FolderOpenIcon, Cog6ToothIcon, ArrowPathIcon, XMarkIcon, InformationCircleIcon } from '@heroicons/vue/24/outline'
 import { Switch } from '@/components/ui/switch'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -448,8 +429,6 @@ const platforms = [
 const statuses = ref<Record<string, service.PlatformStatus>>({})
 const oauthLoading = ref<Record<string, boolean>>({})
 const activePlatform = ref('github')
-const proxyEnabled = ref(false)
-const proxyURL = ref('')
 const detectLoading = ref(false)
 const saveLoading = ref(false)
 
@@ -475,6 +454,8 @@ const drawerForm = reactive<Record<string, any>>({
   remotePath: '',
   netlifyAccessToken: '',
   netlifySiteId: '',
+  proxyEnabled: false,
+  proxyURL: '',
 })
 
 // ── 计算属性 ──────────────────────────────────────────────────────────────
@@ -483,24 +464,11 @@ const currentPlatform = computed(() => platforms.find(p => p.id === drawerPlatfo
 const activePlatformData = computed(() => platforms.find(p => p.id === activePlatform.value))
 const otherPlatforms = computed(() => platforms.filter(p => p.id !== activePlatform.value))
 
-const proxyURLError = computed(() => {
-  if (!proxyEnabled.value || !proxyURL.value) return ''
-  try {
-    const u = new URL(proxyURL.value)
-    const valid = ['http:', 'https:', 'socks4:', 'socks4a:', 'socks5:', 'socks:']
-    return valid.includes(u.protocol) ? '' : t('settings.network.proxyURLInvalid')
-  } catch {
-    return t('settings.network.proxyURLInvalid')
-  }
-})
-
 // ── 生命周期 ──────────────────────────────────────────────────────────────
 
 onMounted(async () => {
   const setting = siteStore.site.setting
   activePlatform.value = setting.platform || 'github'
-  proxyEnabled.value = setting.proxyEnabled || false
-  proxyURL.value = setting.proxyURL || ''
 
   // 加载各平台连接状态（从 Keychain）
   await loadStatuses()
@@ -576,8 +544,8 @@ async function savePlatformSelection() {
     const settingObj = new domain.Setting({
       platform: activePlatform.value,
       platformConfigs: setting.platformConfigs || {},
-      proxyEnabled: proxyEnabled.value,
-      proxyURL: proxyURL.value,
+      proxyEnabled: setting.proxyEnabled || false,
+      proxyURL: setting.proxyURL || '',
     })
     await SaveSettingFromFrontend(settingObj)
     EventsEmit('app-site-reload')
@@ -621,6 +589,11 @@ function loadDrawerForm(platformId: string) {
   if (platformId === 'sftp') {
     sftpAuthType.value = drawerForm.privateKey ? 'key' : 'password'
   }
+
+  // 加载代理设置
+  const setting = siteStore.site.setting
+  drawerForm.proxyEnabled = setting.proxyEnabled || false
+  drawerForm.proxyURL = setting.proxyURL || ''
 }
 
 function handleProtocolChange(v: string) {
@@ -679,23 +652,6 @@ async function saveDrawer() {
   }
 }
 
-async function saveProxy() {
-  try {
-    const setting = siteStore.site.setting
-    const settingObj = new domain.Setting({
-      platform: activePlatform.value,
-      platformConfigs: setting.platformConfigs || {},
-      proxyEnabled: proxyEnabled.value,
-      proxyURL: proxyURL.value,
-    })
-    await SaveSettingFromFrontend(settingObj)
-    EventsEmit('app-site-reload')
-    toast.success(t('settings.basic.saveSuccess'))
-  } catch (e) {
-    toast.error(t('settings.network.saveFailed'))
-  }
-}
-
 // ── 工具函数 ──────────────────────────────────────────────────────────────
 
 function buildSettingForPlatform(platformId: string) {
@@ -733,8 +689,8 @@ function buildSettingForPlatform(platformId: string) {
   return {
     platform: activePlatform.value,
     platformConfigs: existingConfigs,
-    proxyEnabled: proxyEnabled.value,
-    proxyURL: proxyURL.value,
+    proxyEnabled: drawerForm.proxyEnabled || false,
+    proxyURL: drawerForm.proxyURL || '',
   }
 }
 
