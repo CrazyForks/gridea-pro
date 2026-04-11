@@ -264,7 +264,7 @@
               </FormField>
               <FormField :label="t('settings.network.domain')">
                 <div class="relative">
-                  <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">https://</span>
+                  <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 text-sm">https://</span>
                   <Input v-model="drawerForm.domain" class="pl-16"
                     :placeholder="drawerPlatform === 'github' ? 'username.github.io' : drawerPlatform === 'gitee' ? 'username.gitee.io' : ''" />
                 </div>
@@ -278,7 +278,7 @@
             <template v-if="drawerPlatform === 'netlify'">
               <FormField :label="t('settings.network.domain')">
                 <div class="relative">
-                  <span class="absolute left-3 top-2 text-muted-foreground text-sm">https://</span>
+                  <span class="absolute left-3 top-2 text-muted-foreground/50 text-sm">https://</span>
                   <Input v-model="drawerForm.domain" class="pl-16" placeholder="mydomain.com" />
                 </div>
               </FormField>
@@ -309,7 +309,7 @@
             <template v-if="drawerPlatform === 'vercel'">
               <FormField :label="t('settings.network.domain')">
                 <div class="relative">
-                  <span class="absolute left-3 top-2 text-muted-foreground text-sm">https://</span>
+                  <span class="absolute left-3 top-2 text-muted-foreground/50 text-sm">https://</span>
                   <Input v-model="drawerForm.domain" class="pl-16" placeholder="mydomain.com" />
                 </div>
               </FormField>
@@ -388,7 +388,7 @@
               </FormField>
               <FormField :label="t('settings.network.domain')">
                 <div class="relative">
-                  <span class="absolute left-3 top-2 text-muted-foreground text-sm">https://</span>
+                  <span class="absolute left-3 top-2 text-muted-foreground/50 text-sm">https://</span>
                   <Input v-model="drawerForm.domain" class="pl-16" placeholder="myblog.com" />
                 </div>
               </FormField>
