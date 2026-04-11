@@ -501,14 +501,14 @@ const ServerIcon = { template: `<svg viewBox="0 0 24 24" fill="none" stroke="cur
 const BranchIcon = { template: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>` }
 
 // hasOAuth: 该平台是否支持 OAuth（始终显示授权按钮，不依赖后端 client ID 是否配置）
-const platforms = [
+const platforms = computed(() => [
   { id: 'github', name: 'GitHub Pages', color: '#24292f', icon: GitHubIcon, hasOAuth: true, profileUrl: 'https://github.com/', description: t('settings.network.githubDesc') },
   { id: 'netlify', name: 'Netlify', color: '#00c7b7', icon: NetlifyIcon, hasOAuth: true, profileUrl: '', description: t('settings.network.netlifyDesc') },
   { id: 'vercel', name: 'Vercel', color: '#000000', icon: VercelIcon, hasOAuth: false, profileUrl: '', description: t('settings.network.vercelDesc') },
   { id: 'gitee', name: 'Gitee Pages', color: '#c71d23', icon: GiteeIcon, hasOAuth: true, profileUrl: 'https://gitee.com/', description: t('settings.network.giteeDesc') },
   { id: 'coding', name: 'Coding Pages', color: '#0066ff', icon: CodingIcon, hasOAuth: false, profileUrl: '', description: t('settings.network.codingDesc') },
   { id: 'sftp', name: 'SFTP / FTP', color: '#5856d6', icon: ServerIcon, hasOAuth: false, profileUrl: '', description: t('settings.network.sftpDesc') },
-]
+])
 
 // ── 状态 ──────────────────────────────────────────────────────────────────
 
@@ -552,9 +552,9 @@ const drawerForm = reactive<Record<string, any>>({
 
 // ── 计算属性 ──────────────────────────────────────────────────────────────
 
-const currentPlatform = computed(() => platforms.find(p => p.id === drawerPlatform.value))
-const activePlatformData = computed(() => platforms.find(p => p.id === activePlatform.value))
-const otherPlatforms = computed(() => platforms.filter(p => p.id !== activePlatform.value))
+const currentPlatform = computed(() => platforms.value.find(p => p.id === drawerPlatform.value))
+const activePlatformData = computed(() => platforms.value.find(p => p.id === activePlatform.value))
+const otherPlatforms = computed(() => platforms.value.filter(p => p.id !== activePlatform.value))
 const activeStatus = computed(() => statuses.value[activePlatform.value])
 
 // 当前平台的配置信息条目（用于展示）
@@ -905,11 +905,11 @@ function buildSettingForPlatform(platformId: string) {
 }
 
 function getPlatformName(id: string) {
-  return platforms.find(p => p.id === id)?.name || id
+  return platforms.value.find(p => p.id === id)?.name || id
 }
 
 function openUserProfile(platformId: string, username: string) {
-  const platform = platforms.find(p => p.id === platformId)
+  const platform = platforms.value.find(p => p.id === platformId)
   if (platform?.profileUrl && username) {
     BrowserOpenURL(platform.profileUrl + username)
   }
