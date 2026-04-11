@@ -561,7 +561,11 @@ const activeConfigItems = computed(() => {
 
 // 用户名 → 域名联动（填写用户名时自动生成域名，允许用户修改）
 watch(() => drawerForm.username, (val) => {
-  if (!val || !['github', 'gitee'].includes(drawerPlatform.value)) return
+  if (!['github', 'gitee'].includes(drawerPlatform.value)) return
+  if (!val) {
+    drawerForm.domain = ''
+    return
+  }
   const suffix = drawerPlatform.value === 'github' ? '.github.io' : '.gitee.io'
   drawerForm.domain = val.toLowerCase() + suffix
 })
