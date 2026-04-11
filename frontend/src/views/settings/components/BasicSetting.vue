@@ -54,18 +54,20 @@
         <div v-if="activeStatus?.connected"
           class="px-6 pb-5 -mt-1">
           <div class="flex flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3 bg-muted/40 rounded-lg">
-            <!-- 用户头像 + 用户名 -->
-            <div v-if="activeStatus?.username" class="flex items-center gap-2 text-xs">
+            <!-- 用户头像 + 用户名（可点击跳转主页） -->
+            <a v-if="activeStatus?.username"
+              class="flex items-center gap-2 text-xs cursor-pointer hover:opacity-80 transition-opacity"
+              @click="openUserProfile(activePlatformData.id, activeStatus.username)">
               <img v-if="activeStatus?.avatarUrl" :src="activeStatus.avatarUrl"
-                class="size-5 rounded-full flex-shrink-0" alt="" />
-              <span class="font-semibold text-foreground">{{ activeStatus.username }}</span>
-            </div>
+                class="size-5 rounded-md flex-shrink-0" alt="" />
+              <span class="font-semibold text-foreground hover:text-primary transition-colors">{{ activeStatus.username }}</span>
+            </a>
             <!-- 分隔点 -->
             <span v-if="activeStatus?.username && activeConfigItems.length > 0" class="text-muted-foreground/30">·</span>
             <div v-for="item in activeConfigItems" :key="item.label"
               class="flex items-center gap-1.5 text-xs text-muted-foreground">
               <component :is="item.icon" class="size-3.5 flex-shrink-0 opacity-60" />
-              <span class="text-foreground/70 font-medium">{{ item.label }}</span>
+              <span class="text-foreground/70 font-medium">{{ item.label }}:</span>
               <span class="truncate max-w-[200px]">{{ item.value }}</span>
             </div>
           </div>
@@ -123,16 +125,22 @@
             </div>
           </div>
 
-          <!-- 状态 + 配置摘要 -->
+          <!-- 状态 + 用户信息 + 配置摘要 -->
           <div class="mb-3 space-y-1.5">
             <template v-if="statuses[p.id]?.connected">
               <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-500/10 text-green-600 dark:text-green-400 text-[11px] font-medium">
                 <span class="size-1.5 rounded-full bg-green-500 inline-block"></span>
-                {{ statuses[p.id].username || t('settings.network.connected') }}
+                {{ t('settings.network.connected') }}
               </div>
-              <!-- 配置摘要 -->
-              <div v-if="getConfigSummary(p.id)" class="text-[11px] text-muted-foreground truncate pl-0.5">
-                {{ getConfigSummary(p.id) }}
+              <!-- 用户头像 + 用户名 + 配置摘要 -->
+              <div class="flex items-center gap-1.5 pl-0.5 text-[11px] text-muted-foreground">
+                <img v-if="statuses[p.id]?.avatarUrl" :src="statuses[p.id].avatarUrl"
+                  class="size-4 rounded flex-shrink-0" alt="" />
+                <span v-if="statuses[p.id]?.username" class="font-medium text-foreground/70">{{ statuses[p.id].username }}</span>
+                <template v-if="statuses[p.id]?.username && getConfigSummary(p.id)">
+                  <span class="text-muted-foreground/30">·</span>
+                </template>
+                <span v-if="getConfigSummary(p.id)" class="truncate">{{ getConfigSummary(p.id) }}</span>
               </div>
             </template>
             <template v-else>
@@ -396,7 +404,7 @@ import { Switch } from '@/components/ui/switch'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { EventsEmit, EventsOn } from '@/wailsjs/runtime'
+import { EventsEmit, EventsOn, BrowserOpenURL } from '@/wailsjs/runtime'
 import { SaveSettingFromFrontend, RemoteDetectFromFrontend } from '@/wailsjs/go/facade/SettingFacade'
 import { GetAllStatuses, StartOAuthFlow, RevokeToken, HasCredential } from '@/wailsjs/go/facade/OAuthFacade'
 import { OpenKeyFileDialog } from '@/wailsjs/go/app/App'
@@ -410,18 +418,20 @@ const siteStore = useSiteStore()
 
 const GitHubIcon = { template: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>` }
 const VercelIcon = { template: `<svg viewBox="0 0 512 512" fill="currentColor"><path d="M256 48L496 464H16L256 48z"/></svg>` }
-const GenericIcon = { template: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>` }
+const NetlifyIcon = { template: `<svg viewBox="0 0 256 256" fill="currentColor"><path d="M134.4 4.8L255.2 125.6l-50.4 12-32.8-32.8-3.2 0-14 14 26.8 26.8-16.4 4-17.6-17.6-14 14L160 172.4l-16 3.6-10.8-10.8-14 14 4.4 4.4-16.4 4L76 156.4 4.8 134.4 0 128 128 0l6.4 4.8zM90 170.4l14-14L77.6 130l-14 14L90 170.4zm28-28l14-14-26.4-26.4-14 14L118 142.4zm28-28l14-14-26.4-26.4-14 14L146 114.4z"/></svg>` }
+const GiteeIcon = { template: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.984 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.016 0zm6.09 5.333c.328 0 .593.266.592.593v1.482a.594.594 0 0 1-.593.592H9.777c-.982 0-1.778.796-1.778 1.778v5.926c0 .327.266.592.593.592h5.926c.982 0 1.778-.796 1.778-1.778v-.296a.593.593 0 0 0-.592-.593h-4.15a.592.592 0 0 1-.592-.592v-1.482a.593.593 0 0 1 .593-.592h6.814c.328 0 .593.265.593.592v3.408a4 4 0 0 1-4 4H6.518a.593.593 0 0 1-.593-.593V8.333a4 4 0 0 1 4-3H18.074z"/></svg>` }
+const CodingIcon = { template: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm4.5 16.5h-9a1.5 1.5 0 0 1 0-3h9a1.5 1.5 0 0 1 0 3zm0-4.5h-9a1.5 1.5 0 0 1 0-3h9a1.5 1.5 0 0 1 0 3z"/></svg>` }
 const ServerIcon = { template: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="5" rx="1"/><rect x="2" y="10" width="20" height="5" rx="1"/><rect x="2" y="17" width="20" height="5" rx="1"/><circle cx="6" cy="5.5" r=".8" fill="currentColor"/><circle cx="6" cy="12.5" r=".8" fill="currentColor"/></svg>` }
 const BranchIcon = { template: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>` }
 
 // hasOAuth: 该平台是否支持 OAuth（始终显示授权按钮，不依赖后端 client ID 是否配置）
 const platforms = [
-  { id: 'github',  name: 'GitHub Pages',  color: '#24292f', icon: GitHubIcon,  hasOAuth: true,  description: t('settings.network.githubDesc') },
-  { id: 'netlify', name: 'Netlify',       color: '#00c7b7', icon: GenericIcon, hasOAuth: true,  description: t('settings.network.netlifyDesc') },
-  { id: 'vercel',  name: 'Vercel',        color: '#000000', icon: VercelIcon,  hasOAuth: false, description: t('settings.network.vercelDesc') },
-  { id: 'gitee',   name: 'Gitee Pages',   color: '#c71d23', icon: GenericIcon, hasOAuth: true,  description: t('settings.network.giteeDesc') },
-  { id: 'coding',  name: 'Coding Pages',  color: '#0066ff', icon: GenericIcon, hasOAuth: false, description: t('settings.network.codingDesc') },
-  { id: 'sftp',    name: 'SFTP / FTP',    color: '#5856d6', icon: ServerIcon,  hasOAuth: false, description: t('settings.network.sftpDesc') },
+  { id: 'github',  name: 'GitHub Pages',  color: '#24292f', icon: GitHubIcon,   hasOAuth: true,  profileUrl: 'https://github.com/',  description: t('settings.network.githubDesc') },
+  { id: 'netlify', name: 'Netlify',       color: '#00c7b7', icon: NetlifyIcon,  hasOAuth: true,  profileUrl: '',                       description: t('settings.network.netlifyDesc') },
+  { id: 'vercel',  name: 'Vercel',        color: '#000000', icon: VercelIcon,   hasOAuth: false, profileUrl: '',                       description: t('settings.network.vercelDesc') },
+  { id: 'gitee',   name: 'Gitee Pages',   color: '#c71d23', icon: GiteeIcon,    hasOAuth: true,  profileUrl: 'https://gitee.com/',     description: t('settings.network.giteeDesc') },
+  { id: 'coding',  name: 'Coding Pages',  color: '#0066ff', icon: CodingIcon,   hasOAuth: false, profileUrl: '',                       description: t('settings.network.codingDesc') },
+  { id: 'sftp',    name: 'SFTP / FTP',    color: '#5856d6', icon: ServerIcon,    hasOAuth: false, profileUrl: '',                       description: t('settings.network.sftpDesc') },
 ]
 
 // ── 状态 ──────────────────────────────────────────────────────────────────
@@ -720,8 +730,9 @@ function getConfigSummary(platformId: string): string {
   if (cfg.domain) {
     parts.push(String(cfg.domain).replace(/^https?:\/\//, ''))
   }
-  if (['github', 'gitee', 'coding'].includes(platformId) && cfg.repository) {
-    parts.push(cfg.repository)
+  if (['github', 'gitee', 'coding'].includes(platformId)) {
+    if (cfg.repository) parts.push(cfg.repository)
+    if (cfg.branch) parts.push(cfg.branch)
   } else if (platformId === 'netlify' && cfg.netlifySiteId) {
     parts.push(cfg.netlifySiteId)
   } else if (platformId === 'vercel' && cfg.repository) {
@@ -775,6 +786,13 @@ function buildSettingForPlatform(platformId: string) {
 
 function getPlatformName(id: string) {
   return platforms.find(p => p.id === id)?.name || id
+}
+
+function openUserProfile(platformId: string, username: string) {
+  const platform = platforms.find(p => p.id === platformId)
+  if (platform?.profileUrl && username) {
+    BrowserOpenURL(platform.profileUrl + username)
+  }
 }
 </script>
 
