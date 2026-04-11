@@ -165,25 +165,13 @@
               <Cog6ToothIcon class="size-3.5" />
             </button>
 
-            <!-- 设为当前 or OAuth -->
+            <!-- 操作按钮 -->
             <div class="flex items-center gap-1">
-              <Button v-if="p.oauthAvailable && !statuses[p.id]?.connected && !oauthLoading[p.id]"
-                size="sm" variant="ghost"
-                class="h-6 text-[10px] rounded-full px-2.5 text-primary hover:bg-primary/10"
-                @click.stop="handleOAuth(p.id)">
-                {{ t('settings.network.authorizeWith') }}
-              </Button>
-              <Button v-if="statuses[p.id]?.connected"
+              <Button
                 size="sm" variant="secondary"
-                class="h-6 text-[10px] rounded-full px-2.5 bg-primary/5 border border-primary/10 text-primary hover:bg-primary hover:text-white transition-colors cursor-pointer"
+                class="h-7 text-[10px] rounded-full px-3 bg-primary/5 border border-primary/10 text-primary hover:bg-primary hover:text-white transition-colors cursor-pointer"
                 @click.stop="setActive(p.id)">
                 {{ t('settings.network.setAsActive') }}
-              </Button>
-              <Button v-else-if="!p.oauthAvailable"
-                size="sm" variant="secondary"
-                class="h-6 text-[10px] rounded-full px-2.5 bg-primary/5 border border-primary/10 text-primary hover:bg-primary hover:text-white transition-colors cursor-pointer"
-                @click.stop="openDrawer(p.id)">
-                {{ t('settings.network.configure') }}
               </Button>
             </div>
           </div>
