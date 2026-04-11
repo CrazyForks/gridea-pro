@@ -229,24 +229,6 @@
 
             <!-- ─ GitHub / Gitee / Coding ─ -->
             <template v-if="['github', 'gitee', 'coding'].includes(drawerPlatform)">
-              <FormField :label="t('settings.network.domain')">
-                <div class="relative">
-                  <span class="absolute left-3 top-2 text-muted-foreground text-sm">https://</span>
-                  <Input v-model="drawerForm.domain" class="pl-16" placeholder="mydomain.com" />
-                </div>
-              </FormField>
-              <FormField :label="t('settings.network.repository')">
-                <div class="relative">
-                  <CodeBracketIcon class="absolute left-3 top-2.5 size-4 text-muted-foreground/60" />
-                  <Input v-model="drawerForm.repository" class="pl-9" placeholder="repo-name" />
-                </div>
-              </FormField>
-              <FormField :label="t('settings.network.branch')">
-                <div class="relative">
-                  <BranchIcon class="absolute left-3 top-2.5 size-4 text-muted-foreground/60" />
-                  <Input v-model="drawerForm.branch" class="pl-9" :placeholder="drawerPlatform === 'github' ? 'main' : 'master'" />
-                </div>
-              </FormField>
               <FormField :label="t('settings.network.username')">
                 <Input v-model="drawerForm.username" />
               </FormField>
@@ -257,8 +239,37 @@
                 <Input v-model="drawerForm.tokenUsername" />
               </FormField>
               <FormField :label="t('settings.network.token')">
-                <Input v-model="drawerForm.token" type="password"
-                  :placeholder="hasExistingCredential(drawerPlatform, 'token') ? t('settings.network.tokenPlaceholder') : ''" />
+                <div class="relative">
+                  <Input v-model="drawerForm.token" :type="tokenVisible ? 'text' : 'password'"
+                    class="pr-9"
+                    :placeholder="hasExistingCredential(drawerPlatform, 'token') ? t('settings.network.tokenPlaceholder') : ''" />
+                  <button type="button" tabindex="-1" @click="tokenVisible = !tokenVisible"
+                    class="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-muted-foreground transition-colors">
+                    <EyeIcon v-if="tokenVisible" class="size-4" />
+                    <EyeSlashIcon v-else class="size-4" />
+                  </button>
+                </div>
+              </FormField>
+              <FormField :label="t('settings.network.repository')">
+                <div class="relative">
+                  <CodeBracketIcon class="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground/60" />
+                  <Input v-model="drawerForm.repository" class="pl-8" placeholder="repo-name"
+                    @update:model-value="onRepositoryChange" />
+                </div>
+              </FormField>
+              <FormField :label="t('settings.network.branch')">
+                <div class="relative">
+                  <BranchIcon class="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground/60" />
+                  <Input v-model="drawerForm.branch" class="pl-8" :placeholder="drawerPlatform === 'github' ? 'main' : 'master'" />
+                </div>
+              </FormField>
+              <FormField :label="t('settings.network.domain')">
+                <div class="relative">
+                  <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">https://</span>
+                  <Input v-model="drawerForm.domain"
+                    class="pl-16"
+                    :placeholder="drawerPlatform === 'github' ? 'username.github.io' : drawerPlatform === 'gitee' ? 'username.gitee.io' : ''" />
+                </div>
               </FormField>
               <FormField label="CNAME">
                 <Input v-model="drawerForm.cname" placeholder="mydomain.com" />
@@ -277,8 +288,16 @@
                 <Input v-model="drawerForm.netlifySiteId" />
               </FormField>
               <FormField :label="t('settings.network.accessToken')">
-                <Input v-model="drawerForm.netlifyAccessToken" type="password"
-                  :placeholder="hasExistingCredential('netlify', 'netlifyAccessToken') ? t('settings.network.tokenPlaceholder') : ''" />
+                <div class="relative">
+                  <Input v-model="drawerForm.netlifyAccessToken" :type="tokenVisible ? 'text' : 'password'"
+                    class="pr-9"
+                    :placeholder="hasExistingCredential('netlify', 'netlifyAccessToken') ? t('settings.network.tokenPlaceholder') : ''" />
+                  <button type="button" tabindex="-1" @click="tokenVisible = !tokenVisible"
+                    class="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-muted-foreground transition-colors">
+                    <EyeIcon v-if="tokenVisible" class="size-4" />
+                    <EyeSlashIcon v-else class="size-4" />
+                  </button>
+                </div>
                 <template #hint>
                   <a href="https://gridea.pro/netlify" target="_blank"
                     class="text-primary/70 hover:text-primary text-xs">
@@ -301,8 +320,16 @@
                 <template #hint>{{ t('settings.network.vercelProjectDesc') }}</template>
               </FormField>
               <FormField :label="t('settings.network.accessToken')">
-                <Input v-model="drawerForm.token" type="password"
-                  :placeholder="hasExistingCredential('vercel', 'token') ? t('settings.network.tokenPlaceholder') : ''" />
+                <div class="relative">
+                  <Input v-model="drawerForm.token" :type="tokenVisible ? 'text' : 'password'"
+                    class="pr-9"
+                    :placeholder="hasExistingCredential('vercel', 'token') ? t('settings.network.tokenPlaceholder') : ''" />
+                  <button type="button" tabindex="-1" @click="tokenVisible = !tokenVisible"
+                    class="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-muted-foreground transition-colors">
+                    <EyeIcon v-if="tokenVisible" class="size-4" />
+                    <EyeSlashIcon v-else class="size-4" />
+                  </button>
+                </div>
                 <template #hint>{{ t('settings.network.vercelTokenDesc') }}</template>
               </FormField>
               <FormField :label="t('settings.network.customDomain')">
@@ -422,7 +449,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSiteStore } from '@/stores/site'
 import { toast } from '@/helpers/toast'
-import { FolderOpenIcon, Cog6ToothIcon, ArrowPathIcon, InformationCircleIcon, KeyIcon, GlobeAltIcon, CodeBracketIcon, ServerStackIcon, UserIcon, LinkIcon } from '@heroicons/vue/24/outline'
+import { FolderOpenIcon, Cog6ToothIcon, ArrowPathIcon, InformationCircleIcon, KeyIcon, GlobeAltIcon, CodeBracketIcon, ServerStackIcon, UserIcon, LinkIcon, EyeIcon, EyeSlashIcon } from '@heroicons/vue/24/outline'
 import DeleteConfirmDialog from '@/components/ConfirmDialog/DeleteConfirmDialog.vue'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet'
 import { Switch } from '@/components/ui/switch'
@@ -468,6 +495,7 @@ const detectLoading = ref(false)
 const saveLoading = ref(false)
 const revokeDialogOpen = ref(false)
 const revokePlatformId = ref('')
+const tokenVisible = ref(false)
 
 // 抽屉状态
 const drawerOpen = ref(false)
@@ -630,6 +658,7 @@ async function savePlatformSelection() {
 // 抽屉
 function openDrawer(platformId: string) {
   drawerPlatform.value = platformId
+  tokenVisible.value = false
   loadDrawerForm(platformId)
   drawerOpen.value = true
 }
@@ -663,6 +692,21 @@ function loadDrawerForm(platformId: string) {
   const setting = siteStore.site.setting
   drawerForm.proxyEnabled = setting.proxyEnabled || false
   drawerForm.proxyURL = setting.proxyURL || ''
+}
+
+// 输入仓库名称后自动联动填写域名
+function onRepositoryChange(val: string) {
+  drawerForm.repository = val
+  if (['github', 'gitee'].includes(drawerPlatform.value) && val) {
+    // 仓库名即为域名的子域（如 repo.github.io）
+    const suffix = drawerPlatform.value === 'github' ? '.github.io' : '.gitee.io'
+    // 如果仓库名本身就是 xxx.github.io 格式，直接用
+    if (val.endsWith(suffix)) {
+      drawerForm.domain = val
+    } else {
+      drawerForm.domain = val + suffix
+    }
+  }
 }
 
 function handleProtocolChange(v: string) {
