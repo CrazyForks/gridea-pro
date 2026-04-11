@@ -294,7 +294,7 @@ func generateOAuthState() (string, error) {
 
 func oauthResultHTML(success bool, errMsg, username, avatarURL string) string {
 	const pageStyle = `*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#1a1a2e}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#000}
 .card{text-align:center;padding:48px 56px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:24px;backdrop-filter:blur(20px);max-width:420px;width:100%}
 .brand{margin-bottom:32px}
 .brand img{width:56px;height:56px;border-radius:14px;margin-bottom:10px}
