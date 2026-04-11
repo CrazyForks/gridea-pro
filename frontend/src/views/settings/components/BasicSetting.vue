@@ -1,6 +1,6 @@
 <template>
   <div class="pb-20 pt-4 px-4 w-full">
-    <div class="space-y-10">
+    <div v-if="statusLoaded" class="space-y-10">
 
     <!-- ── 当前平台 ───────────────────────────────────────────── -->
     <div v-if="activePlatformData" class="space-y-4">
@@ -486,6 +486,7 @@ const platforms = [
 
 // ── 状态 ──────────────────────────────────────────────────────────────────
 
+const statusLoaded = ref(false)
 const statuses = ref<Record<string, service.PlatformStatus>>({})
 const oauthLoading = ref<Record<string, boolean>>({})
 const activePlatform = ref('github')
@@ -610,6 +611,8 @@ async function loadStatuses() {
     statuses.value = result
   } catch (e) {
     console.error('获取平台状态失败', e)
+  } finally {
+    statusLoaded.value = true
   }
 }
 
