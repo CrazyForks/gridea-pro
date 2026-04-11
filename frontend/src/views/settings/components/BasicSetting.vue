@@ -183,30 +183,24 @@
       @confirm="confirmRevoke" />
 
     <!-- ── 手动配置抽屉 ───────────────────────────────────────── -->
-    <Transition name="drawer">
-      <div v-if="drawerOpen" class="fixed inset-0 z-50 flex justify-end" @click.self="closeDrawer">
-        <div class="absolute inset-0 bg-black/30 backdrop-blur-[2px]" @click="closeDrawer" />
-        <div class="relative w-[420px] h-full bg-background border-l border-border shadow-2xl flex flex-col overflow-hidden">
+    <Sheet :open="drawerOpen" @update:open="drawerOpen = $event">
+      <SheetContent side="right" class="w-[400px] sm:max-w-md p-0 gap-0 flex flex-col">
           <!-- 抽屉头部 -->
-          <div class="flex items-center justify-between px-5 py-4 border-b border-border flex-shrink-0">
-            <div class="flex items-center gap-3">
+          <SheetHeader class="px-6 py-6 border-b">
+            <SheetTitle class="flex items-center gap-3">
               <div class="size-7 rounded-lg flex items-center justify-center text-white text-xs"
                 :style="{ background: currentPlatform?.color }">
                 <component v-if="currentPlatform?.icon" :is="currentPlatform.icon" class="size-3.5" />
               </div>
               <div>
                 <div class="text-sm font-semibold">{{ currentPlatform?.name }}</div>
-                <div class="text-xs text-muted-foreground">{{ t('settings.network.manualConfigTitle') }}</div>
+                <div class="text-xs text-muted-foreground font-normal">{{ t('settings.network.manualConfigTitle') }}</div>
               </div>
-            </div>
-            <button class="size-7 flex items-center justify-center rounded-lg hover:bg-muted transition-colors"
-              @click="closeDrawer">
-              <XMarkIcon class="size-4 text-muted-foreground" />
-            </button>
-          </div>
+            </SheetTitle>
+          </SheetHeader>
 
           <!-- 抽屉内容 -->
-          <div class="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+          <div class="flex-1 overflow-y-auto px-6 py-6 space-y-4">
 
             <!-- 已连接用户信息 -->
             <div v-if="statuses[drawerPlatform]?.connected && statuses[drawerPlatform]?.username"
@@ -379,27 +373,28 @@
           </div>
 
           <!-- 抽屉底部按钮 -->
-          <div class="flex items-center justify-between gap-3 px-5 py-4 border-t border-border flex-shrink-0">
-            <Button variant="outline" size="sm" class="h-8 text-xs rounded-full px-4"
+          <SheetFooter class="flex-shrink-0 px-6 py-4 border-t gap-3">
+            <Button variant="outline"
+              class="h-8 text-xs justify-center rounded-full border border-primary/20 text-primary/80 hover:bg-primary/5 hover:text-primary cursor-pointer"
               :disabled="detectLoading"
               @click="testConnection">
               {{ detectLoading ? t('settings.network.checking') : t('settings.network.testConnection') }}
             </Button>
-            <div class="flex gap-2">
-              <Button variant="ghost" size="sm" class="h-8 text-xs rounded-full px-4"
-                @click="closeDrawer">
-                {{ t('common.cancel') }}
-              </Button>
-              <Button variant="default" size="sm" class="h-8 text-xs rounded-full px-4"
-                :disabled="saveLoading"
-                @click="saveDrawer">
-                {{ saveLoading ? '...' : t('settings.network.saveAndClose') }}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Transition>
+            <div class="flex-1"></div>
+            <Button variant="outline"
+              class="w-18 h-8 text-xs justify-center rounded-full border border-primary/20 text-primary/80 hover:bg-primary/5 hover:text-primary cursor-pointer"
+              @click="closeDrawer">
+              {{ t('common.cancel') }}
+            </Button>
+            <Button variant="default"
+              class="w-18 h-8 text-xs justify-center rounded-full bg-primary text-background hover:bg-primary/90 cursor-pointer"
+              :disabled="saveLoading"
+              @click="saveDrawer">
+              {{ saveLoading ? '...' : t('common.save') }}
+            </Button>
+          </SheetFooter>
+      </SheetContent>
+    </Sheet>
 
   </div>
 </template>
@@ -409,8 +404,9 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSiteStore } from '@/stores/site'
 import { toast } from '@/helpers/toast'
-import { FolderOpenIcon, Cog6ToothIcon, ArrowPathIcon, XMarkIcon, InformationCircleIcon, KeyIcon, GlobeAltIcon, CodeBracketIcon, ServerStackIcon, UserIcon, LinkIcon } from '@heroicons/vue/24/outline'
+import { FolderOpenIcon, Cog6ToothIcon, ArrowPathIcon, InformationCircleIcon, KeyIcon, GlobeAltIcon, CodeBracketIcon, ServerStackIcon, UserIcon, LinkIcon } from '@heroicons/vue/24/outline'
 import DeleteConfirmDialog from '@/components/ConfirmDialog/DeleteConfirmDialog.vue'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet'
 import { Switch } from '@/components/ui/switch'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -872,24 +868,3 @@ export const PasswordInput = {
   `
 }
 </script>
-
-<style scoped>
-.drawer-enter-active,
-.drawer-leave-active {
-  transition: opacity 0.2s ease;
-}
-.drawer-enter-active .relative,
-.drawer-leave-active .relative {
-  transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1);
-}
-.drawer-enter-from,
-.drawer-leave-to {
-  opacity: 0;
-}
-.drawer-enter-from .relative {
-  transform: translateX(100%);
-}
-.drawer-leave-to .relative {
-  transform: translateX(100%);
-}
-</style>
