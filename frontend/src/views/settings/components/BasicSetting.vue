@@ -73,18 +73,22 @@
         <div v-if="!activeStatus?.connected" class="px-6 pb-5 -mt-1">
           <div class="border-t border-border/40 pt-4">
             <div class="flex items-center gap-3">
-              <Button v-if="oauthSupported[activePlatformData.id] && !oauthLoading[activePlatformData.id]"
-                variant="default" size="sm" class="h-9 text-xs rounded-full px-5"
-                @click="handleOAuth(activePlatformData.id)">
-                <KeyIcon class="size-3.5 mr-1.5" />
-                {{ t('settings.network.connectViaOAuth') }}
-              </Button>
-              <Button v-if="oauthSupported[activePlatformData.id] && oauthLoading[activePlatformData.id]"
-                variant="default" size="sm" class="h-9 text-xs rounded-full px-5" disabled>
-                <ArrowPathIcon class="size-3.5 animate-spin mr-1.5" />
-                {{ t('settings.network.waitingAuth') }}
-              </Button>
-              <Button :variant="oauthSupported[activePlatformData.id] ? 'outline' : 'default'"
+              <!-- OAuth 授权（主要入口，支持 OAuth 的平台始终显示） -->
+              <template v-if="activePlatformData.hasOAuth">
+                <Button v-if="!oauthLoading[activePlatformData.id]"
+                  variant="default" size="sm" class="h-9 text-xs rounded-full px-5"
+                  @click="handleOAuth(activePlatformData.id)">
+                  <KeyIcon class="size-3.5 mr-1.5" />
+                  {{ t('settings.network.connectViaOAuth') }}
+                </Button>
+                <Button v-else
+                  variant="default" size="sm" class="h-9 text-xs rounded-full px-5" disabled>
+                  <ArrowPathIcon class="size-3.5 animate-spin mr-1.5" />
+                  {{ t('settings.network.waitingAuth') }}
+                </Button>
+              </template>
+              <!-- 手动配置（备选方案，有 OAuth 时为 outline，无 OAuth 时为 default） -->
+              <Button :variant="activePlatformData.hasOAuth ? 'outline' : 'default'"
                 size="sm" class="h-9 text-xs rounded-full px-5"
                 @click="openDrawer(activePlatformData.id)">
                 <Cog6ToothIcon class="size-3.5 mr-1.5" />
@@ -374,7 +378,7 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { EventsEmit, EventsOn } from '@/wailsjs/runtime'
 import { SaveSettingFromFrontend, RemoteDetectFromFrontend } from '@/wailsjs/go/facade/SettingFacade'
-import { GetAllStatuses, StartOAuthFlow, RevokeToken, HasCredential, IsOAuthAvailable } from '@/wailsjs/go/facade/OAuthFacade'
+import { GetAllStatuses, StartOAuthFlow, RevokeToken, HasCredential } from '@/wailsjs/go/facade/OAuthFacade'
 import { OpenKeyFileDialog } from '@/wailsjs/go/app/App'
 import { domain } from '@/wailsjs/go/models'
 import type { service } from '@/wailsjs/go/models'
@@ -390,20 +394,20 @@ const GenericIcon = { template: `<svg viewBox="0 0 24 24" fill="none" stroke="cu
 const ServerIcon = { template: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="5" rx="1"/><rect x="2" y="10" width="20" height="5" rx="1"/><rect x="2" y="17" width="20" height="5" rx="1"/><circle cx="6" cy="5.5" r=".8" fill="currentColor"/><circle cx="6" cy="12.5" r=".8" fill="currentColor"/></svg>` }
 const BranchIcon = { template: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>` }
 
+// hasOAuth: 该平台是否支持 OAuth（始终显示授权按钮，不依赖后端 client ID 是否配置）
 const platforms = [
-  { id: 'github',  name: 'GitHub Pages',  color: '#24292f', icon: GitHubIcon,  description: t('settings.network.githubDesc') },
-  { id: 'netlify', name: 'Netlify',       color: '#00c7b7', icon: GenericIcon, description: t('settings.network.netlifyDesc') },
-  { id: 'vercel',  name: 'Vercel',        color: '#000000', icon: VercelIcon,  description: t('settings.network.vercelDesc') },
-  { id: 'gitee',   name: 'Gitee Pages',   color: '#c71d23', icon: GenericIcon, description: t('settings.network.giteeDesc') },
-  { id: 'coding',  name: 'Coding Pages',  color: '#0066ff', icon: GenericIcon, description: t('settings.network.codingDesc') },
-  { id: 'sftp',    name: 'SFTP / FTP',    color: '#5856d6', icon: ServerIcon,  description: t('settings.network.sftpDesc') },
+  { id: 'github',  name: 'GitHub Pages',  color: '#24292f', icon: GitHubIcon,  hasOAuth: true,  description: t('settings.network.githubDesc') },
+  { id: 'netlify', name: 'Netlify',       color: '#00c7b7', icon: GenericIcon, hasOAuth: true,  description: t('settings.network.netlifyDesc') },
+  { id: 'vercel',  name: 'Vercel',        color: '#000000', icon: VercelIcon,  hasOAuth: false, description: t('settings.network.vercelDesc') },
+  { id: 'gitee',   name: 'Gitee Pages',   color: '#c71d23', icon: GenericIcon, hasOAuth: true,  description: t('settings.network.giteeDesc') },
+  { id: 'coding',  name: 'Coding Pages',  color: '#0066ff', icon: GenericIcon, hasOAuth: false, description: t('settings.network.codingDesc') },
+  { id: 'sftp',    name: 'SFTP / FTP',    color: '#5856d6', icon: ServerIcon,  hasOAuth: false, description: t('settings.network.sftpDesc') },
 ]
 
 // ── 状态 ──────────────────────────────────────────────────────────────────
 
 const statuses = ref<Record<string, service.PlatformStatus>>({})
 const oauthLoading = ref<Record<string, boolean>>({})
-const oauthSupported = ref<Record<string, boolean>>({})
 const activePlatform = ref('github')
 const detectLoading = ref(false)
 const saveLoading = ref(false)
@@ -474,11 +478,7 @@ onMounted(async () => {
   const setting = siteStore.site.setting
   activePlatform.value = setting.platform || 'github'
 
-  // 并行加载状态和 OAuth 可用性
-  await Promise.all([
-    loadStatuses(),
-    loadOAuthAvailability(),
-  ])
+  await loadStatuses()
 
   // 监听 OAuth 授权结果
   EventsOn('oauth:success', (data: any) => {
@@ -510,21 +510,6 @@ async function loadStatuses() {
   } catch (e) {
     console.error('获取平台状态失败', e)
   }
-}
-
-async function loadOAuthAvailability() {
-  const oauthPlatforms = ['github', 'gitee', 'netlify']
-  const results: Record<string, boolean> = {}
-  await Promise.all(
-    oauthPlatforms.map(async (pid) => {
-      try {
-        results[pid] = await IsOAuthAvailable(pid)
-      } catch {
-        results[pid] = false
-      }
-    })
-  )
-  oauthSupported.value = results
 }
 
 async function handleOAuth(platformId: string) {
