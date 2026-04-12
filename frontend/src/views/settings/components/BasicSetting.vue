@@ -852,6 +852,11 @@ async function autoFillAfterOAuth(platformId: string, username: string, email: s
     cfg.domain = `https://${lowerUsername}.gitee.io`
   } else if (platformId === 'netlify') {
     // Netlify 无法自动推断 site id，仅填充已知信息
+  } else if (platformId === 'vercel') {
+    // Vercel 项目名默认为 username-blog（可修改），域名对应 vercel.app 子域
+    const projectName = `${lowerUsername}-blog`
+    cfg.repository = projectName
+    cfg.domain = `https://${projectName}.vercel.app`
   }
 
   existingConfigs[platformId] = cfg

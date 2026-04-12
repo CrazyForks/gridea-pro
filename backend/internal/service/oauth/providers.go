@@ -277,9 +277,10 @@ var Providers = map[string]*Provider{
 			if name == "" {
 				name = wrapper.User.Name
 			}
+			// Vercel 官方头像 URL 格式：根据 username 获取
 			avatarURL := ""
-			if wrapper.User.Avatar != "" {
-				avatarURL = "https://api.vercel.com/www/avatar/" + wrapper.User.Avatar + "?s=160"
+			if name != "" {
+				avatarURL = "https://vercel.com/api/www/avatar/" + name + "?s=160"
 			}
 			return UserInfo{Username: name, AvatarURL: avatarURL, Email: wrapper.User.Email}
 		},
