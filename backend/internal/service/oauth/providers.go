@@ -32,6 +32,9 @@ type Provider struct {
 	ClientID       string
 	ClientSecret   string
 	Scopes         []string
+	// FixedPort 某些平台（如 Gitee）要求回调地址与注册时完全匹配，
+	// 不允许随机端口，此时使用固定端口
+	FixedPort      int
 	UserInfoParser func(body []byte) UserInfo
 }
 
@@ -120,8 +123,8 @@ func (p *Provider) GetUserInfo(client *http.Client, token string) UserInfo {
 var (
 	githubClientID      = "Ov23li2hRBoUIkY83knT"
 	githubClientSecret  = "43274fee8a5a8c922719fa1bd7b911a2e0022115"
-	giteeClientID       = "YOUR_GITEE_CLIENT_ID"
-	giteeClientSecret   = "YOUR_GITEE_CLIENT_SECRET"
+	giteeClientID       = "d10d5bebeb569e48ab8b128e5151c8f67a24fb110498898ccb58eb34a6995d56"
+	giteeClientSecret   = "dde3869c9c89edabb7b9a20b61044038c31fadeeacc2ca74565a218ba19209c8"
 	netlifyClientID     = "YOUR_NETLIFY_CLIENT_ID"
 	netlifyClientSecret = "YOUR_NETLIFY_CLIENT_SECRET"
 )
@@ -154,6 +157,8 @@ var Providers = map[string]*Provider{
 		ClientID:     giteeClientID,
 		ClientSecret: giteeClientSecret,
 		Scopes:       []string{"projects", "user_info", "emails"},
+		FixedPort:    53682, // Gitee 要求回调地址完全匹配，使用固定端口
+
 		UserInfoParser: func(body []byte) UserInfo {
 			var v struct {
 				Login     string `json:"login"`

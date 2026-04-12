@@ -48,7 +48,12 @@ func (s *OAuthService) StartOAuthFlow(ctx context.Context, providerID, lang stri
 	}
 	p := oauth.Providers[providerID]
 
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	// 某些平台（如 Gitee）要求回调地址完全匹配，使用固定端口
+	listenAddr := "127.0.0.1:0"
+	if p.FixedPort > 0 {
+		listenAddr = fmt.Sprintf("127.0.0.1:%d", p.FixedPort)
+	}
+	listener, err := net.Listen("tcp", listenAddr)
 	if err != nil {
 		return fmt.Errorf("无法启动本地回调服务器: %w", err)
 	}
