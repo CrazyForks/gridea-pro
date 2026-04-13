@@ -39,9 +39,11 @@ type Provider struct {
 	EmailURL       string
 	EmailParser    func(body []byte) string
 	UserInfoParser func(body []byte) UserInfo
-	// EnsureDefaultRepo 确保用户的默认部署仓库存在（不存在则创建，已存在则跳过）
-	// 返回默认仓库名，或错误（不影响授权流程）
-	EnsureDefaultRepo func(client *http.Client, token, username string) (repoName string, err error)
+	// Bootstrap 授权成功后的初始化钩子
+	// 可用于自动创建默认部署目标（仓库、站点、项目等）
+	// 返回平台特定的配置字段 map，将通过 oauth:success 事件传递给前端自动填充
+	// 失败不阻断授权流程，仅记录日志
+	Bootstrap func(client *http.Client, token, username string) (map[string]string, error)
 	// CustomBuildAuthURL 某些平台（如 Vercel Integration）的授权 URL 格式与标准 OAuth 不同，
 	// 如设置则使用此函数构建授权 URL
 	CustomBuildAuthURL func(p *Provider, redirectURI, state string) string
@@ -181,7 +183,7 @@ var Providers = map[string]*Provider{
 			json.Unmarshal(body, &v)
 			return UserInfo{Username: v.Login, AvatarURL: v.AvatarURL, Email: v.Email}
 		},
-		EnsureDefaultRepo: ensureGitHubRepo,
+		Bootstrap: ensureGitHubRepo,
 	},
 	"gitee": {
 		ID:           "gitee",
@@ -226,7 +228,7 @@ var Providers = map[string]*Provider{
 			}
 			return ""
 		},
-		EnsureDefaultRepo: ensureGiteeRepo,
+		Bootstrap: ensureGiteeRepo,
 	},
 	"netlify": {
 		ID:           "netlify",
@@ -238,6 +240,7 @@ var Providers = map[string]*Provider{
 		Scopes:       []string{},
 		// Netlify 要求回调地址完全匹配，使用固定端口
 		FixedPort: 53684,
+		Bootstrap: ensureNetlifySite,
 		UserInfoParser: func(body []byte) UserInfo {
 			var v struct {
 				Email     string `json:"email"`

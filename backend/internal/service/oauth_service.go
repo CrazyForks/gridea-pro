@@ -247,12 +247,15 @@ func (s *OAuthService) runCallbackServer(ctx context.Context, listener net.Liste
 		// 获取用户信息
 		userInfo := p.GetUserInfo(client, tokenResp.AccessToken)
 
-		// 确保默认部署仓库存在（不存在则创建，已存在则跳过，绝不覆盖）
-		if p.EnsureDefaultRepo != nil && userInfo.Username != "" {
-			if _, err := p.EnsureDefaultRepo(client, tokenResp.AccessToken, userInfo.Username); err != nil {
-				// 仓库创建失败不阻断授权流程，仅记录日志
-				fmt.Printf("[OAuth] EnsureDefaultRepo for %s failed: %v\n", providerID, err)
+		// 平台 Bootstrap（如自动创建默认仓库/站点）
+		var extraConfig map[string]string
+		if p.Bootstrap != nil && userInfo.Username != "" {
+			cfg, err := p.Bootstrap(client, tokenResp.AccessToken, userInfo.Username)
+			if err != nil {
+				// Bootstrap 失败不阻断授权流程，仅记录日志
+				fmt.Printf("[OAuth] Bootstrap for %s failed: %v\n", providerID, err)
 			}
+			extraConfig = cfg
 		}
 
 		// 保存 meta
@@ -265,10 +268,11 @@ func (s *OAuthService) runCallbackServer(ctx context.Context, listener net.Liste
 
 		// 通知前端
 		runtime.EventsEmit(ctx, "oauth:success", map[string]interface{}{
-			"provider":  providerID,
-			"username":  userInfo.Username,
-			"avatarUrl": userInfo.AvatarURL,
-			"email":     userInfo.Email,
+			"provider":    providerID,
+			"username":    userInfo.Username,
+			"avatarUrl":   userInfo.AvatarURL,
+			"email":       userInfo.Email,
+			"extraConfig": extraConfig,
 		})
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")

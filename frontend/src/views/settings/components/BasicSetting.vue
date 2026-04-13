@@ -621,7 +621,7 @@ onMounted(async () => {
 
   // 监听 OAuth 授权结果
   EventsOn('oauth:success', async (data: any) => {
-    const { provider, username, avatarUrl, email } = data
+    const { provider, username, avatarUrl, email, extraConfig } = data
     oauthLoading.value[provider] = false
     if (oauthTimeouts.value[provider]) {
       clearTimeout(oauthTimeouts.value[provider])
@@ -637,7 +637,7 @@ onMounted(async () => {
     toast.success(`${getPlatformName(provider)} ${t('settings.network.authSuccess')}`)
 
     // 自动填充默认配置并保存
-    await autoFillAfterOAuth(provider, username, email || '')
+    await autoFillAfterOAuth(provider, username, email || '', extraConfig)
   })
 
   EventsOn('oauth:error', (data: any) => {
@@ -832,7 +832,7 @@ async function saveDrawer() {
 }
 
 // OAuth 成功后自动填充默认配置
-async function autoFillAfterOAuth(platformId: string, username: string, email: string) {
+async function autoFillAfterOAuth(platformId: string, username: string, email: string, extraConfig?: Record<string, string>) {
   const existingConfigs = JSON.parse(JSON.stringify(siteStore.site.setting.platformConfigs || {}))
   const cfg = existingConfigs[platformId] || {}
 
@@ -851,12 +851,17 @@ async function autoFillAfterOAuth(platformId: string, username: string, email: s
     cfg.email = email || cfg.email || ''
     cfg.domain = `https://${lowerUsername}.gitee.io`
   } else if (platformId === 'netlify') {
-    // Netlify 无法自动推断 site id，仅填充已知信息
+    // Netlify 的 site id 和 domain 由后端 Bootstrap 动态获取（见 extraConfig）
   } else if (platformId === 'vercel') {
     // Vercel 项目名默认为 username-blog（可修改），域名对应 vercel.app 子域
     const projectName = `${lowerUsername}-blog`
     cfg.repository = projectName
     cfg.domain = `https://${projectName}.vercel.app`
+  }
+
+  // 后端 Bootstrap 返回的平台特定字段优先级最高（如 Netlify 的 siteId 和实际域名）
+  if (extraConfig) {
+    Object.assign(cfg, extraConfig)
   }
 
   existingConfigs[platformId] = cfg
