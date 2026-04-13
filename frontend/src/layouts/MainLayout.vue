@@ -146,11 +146,11 @@ href="#" class="text-primary hover:underline"
     </Dialog>
 
     <Dialog v-model:open="systemModalVisible">
-      <DialogContent class="max-w-[800px]">
+      <DialogContent class="max-w-[800px] overflow-hidden">
         <DialogHeader>
           <DialogTitle>{{ t('settings.basic.title') }}</DialogTitle>
         </DialogHeader>
-        <div class="h-[600px]">
+        <div class="h-[600px] overflow-hidden">
           <app-system />
         </div>
       </DialogContent>

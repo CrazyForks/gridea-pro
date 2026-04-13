@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-full min-h-[400px] bg-background rounded-xl overflow-hidden text-foreground">
+  <div class="flex h-full min-h-[400px] w-full max-w-full bg-background rounded-xl overflow-hidden text-foreground">
     <!-- 左侧导航 -->
     <div class="w-[200px] bg-secondary/20 py-4 px-2 border-r border-border">
       <div class="flex flex-col gap-1">
@@ -14,7 +14,7 @@ v-for="item in navItems" :key="item.key"
     </div>
 
     <!-- 右侧内容 -->
-    <div class="flex-1 p-8 overflow-y-auto">
+    <div class="flex-1 min-w-0 max-w-full p-8 overflow-y-auto overflow-x-hidden">
       <!-- 外观设置 -->
       <div v-if="activeTab === 'appearance'" class="animate-fade-in">
         <h2 class="text-xl font-semibold mb-6 text-foreground">{{ t('settings.theme.appearance') }}</h2>
@@ -44,8 +44,8 @@ v-for="item in navItems" :key="item.key"
       </div>
 
       <!-- 站点管理 -->
-      <div v-if="activeTab === 'sites'" class="animate-fade-in">
-        <div class="flex justify-between items-center mb-6">
+      <div v-if="activeTab === 'sites'" class="animate-fade-in flex flex-col min-w-0">
+        <div class="flex justify-between items-center mb-6 flex-shrink-0">
           <h2 class="text-xl font-semibold text-foreground">{{ t('settings.sites.title') }}</h2>
           <Button variant="outline" size="sm" class="h-8 px-3 text-xs rounded-full" @click="handleAddSite">
             <PlusIcon class="size-4 mr-1" />
@@ -53,42 +53,44 @@ v-for="item in navItems" :key="item.key"
           </Button>
         </div>
 
-        <draggable v-model="sites" handle=".handle" item-key="path" @change="handleSiteSort">
+        <draggable v-model="sites" handle=".handle" item-key="path" class="w-full min-w-0 flex-1 overflow-y-auto overflow-x-hidden" @change="handleSiteSort">
           <template #item="{ element: site }">
             <div
-              class="group flex items-center gap-3 px-4 py-3 mb-2 rounded-lg border transition-all duration-200"
+              class="group flex w-full min-w-0 max-w-full items-center gap-3 px-4 py-3 mb-2 rounded-lg border transition-all duration-200 overflow-hidden"
               :class="site.active
                 ? 'bg-primary/5 border-primary/30'
                 : 'bg-card/50 border-border/50 hover:bg-primary/2 hover:border-primary/20'">
               <!-- 拖拽手柄 -->
-              <div class="handle cursor-move text-muted-foreground/40 hover:text-muted-foreground">
+              <div class="handle flex-shrink-0 cursor-move text-muted-foreground/40 hover:text-muted-foreground">
                 <Bars3Icon class="size-3.5" />
               </div>
 
               <!-- 站点信息 -->
-              <div class="flex-1 min-w-0">
-                <div class="text-sm font-medium text-foreground truncate">{{ site.name }}</div>
-                <div class="text-xs text-muted-foreground/60 truncate mt-0.5">{{ site.path }}</div>
+              <div class="flex-1 min-w-0 overflow-hidden">
+                <div class="text-sm font-medium text-foreground truncate block w-full">{{ site.name }}</div>
+                <div class="text-xs text-muted-foreground/60 truncate mt-0.5 block w-full">{{ site.path }}</div>
               </div>
 
               <!-- 编辑按钮 -->
               <button
-                class="text-muted-foreground/30 hover:text-foreground transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
+                class="flex-shrink-0 text-muted-foreground/30 hover:text-foreground transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
                 @click="handleEditSite(site)">
                 <PencilIcon class="size-3.5" />
               </button>
 
               <!-- 删除按钮 -->
               <button
-                class="text-muted-foreground/30 hover:text-destructive transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
+                class="flex-shrink-0 text-muted-foreground/30 hover:text-destructive transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
                 @click="handleDeleteSite(site)">
                 <TrashIcon class="size-3.5" />
               </button>
 
               <!-- Switch 开关 -->
-              <Switch
-                :checked="site.active" size="sm"
-                @update:checked="(v: boolean) => handleSwitchSite(site, v)" />
+              <div class="flex-shrink-0">
+                <Switch
+                  :checked="site.active" size="sm"
+                  @update:checked="(v: boolean) => handleSwitchSite(site, v)" />
+              </div>
             </div>
           </template>
         </draggable>
