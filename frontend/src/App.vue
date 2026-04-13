@@ -219,10 +219,14 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
-/* 恢复输入框的系统原生选中文本机制（解决 Wails WKWebView 下无法 Cmd+V 粘贴的问题） */
+/* 恢复输入框和编辑器的系统原生选中文本机制 */
 input,
 textarea,
-[contenteditable="true"] {
+[contenteditable="true"],
+.monaco-editor,
+.monaco-editor *,
+.monaco-editor-wrapper,
+.monaco-editor-container {
   -webkit-user-select: auto !important;
   user-select: auto !important;
 }
