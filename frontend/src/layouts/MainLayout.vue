@@ -106,7 +106,7 @@ fill-rule="evenodd" clip-rule="evenodd"
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-1 flex flex-col min-h-0 overflow-hidden bg-background">
+    <main class="flex-1 flex flex-col min-h-0 overflow-hidden bg-background select-none">
       <div class="flex-1 w-full overflow-y-auto overflow-x-hidden p-0">
         <router-view v-slot="{ Component }">
           <keep-alive exclude="Loading,Theme">
