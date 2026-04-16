@@ -10,9 +10,27 @@
         <div class="page-content">
             <div class="editor-wrapper">
                 <input ref="titleInputRef" v-model="form.title"
-                    class="post-title py-4 border-none pt-10 pb-10 bg-transparent text-xl focus:outline-none focus:ring-0 text-foreground placeholder:text-muted-foreground/50 font-bold"
+                    class="post-title py-4 border-none pt-10 pb-2 bg-transparent text-xl focus:outline-none focus:ring-0 text-foreground placeholder:text-muted-foreground/50 font-bold"
                     :placeholder="$t('article.title')" @change="handleTitleChange" @focus="handleTitleFocus"
                     @keydown="(e: KeyboardEvent) => handleInputKeydown(e, form.content)" />
+
+                <div class="post-meta">
+                    <span class="meta-item">
+                        <CalendarIcon class="meta-icon" />
+                        {{ form.createdAt.isValid() ? form.createdAt.format('YYYY-MM-DD') : '' }}
+                    </span>
+                    <span v-if="form.category" class="meta-item">
+                        <FolderIcon class="meta-icon" />
+                        {{ form.category }}
+                    </span>
+                    <span v-if="form.tags.length" class="meta-item">
+                        <TagIcon class="meta-icon" />
+                        {{ form.tags.join(', ') }}
+                    </span>
+                    <span class="meta-item meta-status" :class="form.published ? 'text-emerald-500' : 'text-amber-500'">
+                        {{ form.published ? $t('article.published') : $t('article.draft') }}
+                    </span>
+                </div>
 
                 <monaco-markdown-editor ref="monacoMarkdownEditor" v-model:value="form.content" :is-post-page="true"
                     :placeholder="$t('article.editorPlaceholder')"
@@ -57,6 +75,8 @@ import MonacoMarkdownEditor from '@/components/MonacoMarkdownEditor/index.vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from '@/helpers/toast'
 import { GenerateSlug } from '@/wailsjs/go/facade/AIFacade'
+
+import { CalendarIcon, FolderIcon, TagIcon } from '@heroicons/vue/24/outline'
 
 import EditorHeader from './components/EditorHeader.vue'
 import ArticleSettingsDrawer from './components/ArticleSettingsDrawer.vue'
@@ -287,6 +307,35 @@ onUnmounted(() => {
         width: 728px;
         margin: 0 auto;
         display: block;
+    }
+
+    .post-meta {
+        width: 728px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding-bottom: 16px;
+        font-size: 12px;
+        color: var(--muted-foreground);
+        flex-wrap: wrap;
+
+        .meta-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .meta-icon {
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+            opacity: 0.7;
+        }
+
+        .meta-status {
+            font-weight: 500;
+        }
     }
 
     .post-editor {
