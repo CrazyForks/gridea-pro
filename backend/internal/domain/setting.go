@@ -83,12 +83,12 @@ func (s *Setting) InjectCredentials(credentials map[string]string) {
 
 // platformFieldOrder 定义各平台配置项的输出顺序，与前端表单顺序一致
 var platformFieldOrder = map[string][]string{
-	"github": {"domain", "repository", "branch", "username", "email", "tokenUsername", "token", "cname"},
-	"gitee":  {"domain", "repository", "branch", "username", "email", "tokenUsername", "token", "cname"},
-	"coding": {"domain", "repository", "branch", "username", "email", "tokenUsername", "token", "cname"},
+	"github":  {"domain", "repository", "branch", "username", "email", "tokenUsername", "token", "cname"},
+	"gitee":   {"domain", "repository", "branch", "username", "email", "tokenUsername", "token", "cname"},
+	"coding":  {"domain", "repository", "branch", "username", "email", "tokenUsername", "token", "cname"},
 	"netlify": {"domain", "netlifySiteId", "netlifyAccessToken"},
-	"vercel": {"domain", "repository", "token", "cname"},
-	"sftp":   {"domain", "transferProtocol", "server", "port", "username", "password", "privateKey", "remotePath"},
+	"vercel":  {"domain", "repository", "token", "cname"},
+	"sftp":    {"domain", "transferProtocol", "server", "port", "username", "password", "privateKey", "remotePath"},
 }
 
 // MarshalJSON 自定义 JSON 序列化，确保平台配置项按前端表单顺序输出
@@ -193,8 +193,17 @@ func (s *Setting) Get(key string) string {
 	if m == nil {
 		return ""
 	}
-	v, _ := m[key].(string)
-	return v
+	switch v := m[key].(type) {
+	case string:
+		return v
+	case float64:
+		if v >= 0 && v <= 65535 && v == float64(int(v)) {
+			return strconv.Itoa(int(v))
+		}
+	case int:
+		return strconv.Itoa(v)
+	}
+	return ""
 }
 
 // GetFrom 获取指定平台的指定配置项
@@ -206,8 +215,17 @@ func (s *Setting) GetFrom(platform, key string) string {
 	if m == nil {
 		return ""
 	}
-	v, _ := m[key].(string)
-	return v
+	switch v := m[key].(type) {
+	case string:
+		return v
+	case float64:
+		if v >= 0 && v <= 65535 && v == float64(int(v)) {
+			return strconv.Itoa(int(v))
+		}
+	case int:
+		return strconv.Itoa(v)
+	}
+	return ""
 }
 
 // Domain 当前平台的域名
