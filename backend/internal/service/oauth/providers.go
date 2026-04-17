@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 )
 
@@ -25,13 +26,13 @@ type TokenResponse struct {
 
 // Provider OAuth 提供商配置
 type Provider struct {
-	ID             string
-	AuthURL        string
-	TokenURL       string
-	UserInfoURL    string
-	ClientID       string
-	ClientSecret   string
-	Scopes         []string
+	ID           string
+	AuthURL      string
+	TokenURL     string
+	UserInfoURL  string
+	ClientID     string
+	ClientSecret string
+	Scopes       []string
 	// FixedPort 某些平台（如 Gitee）要求回调地址与注册时完全匹配，
 	// 不允许随机端口，此时使用固定端口
 	FixedPort int
@@ -148,18 +149,31 @@ func (p *Provider) GetUserInfo(client *http.Client, token string) UserInfo {
 //            Redirect URI: http://127.0.0.1/oauth/callback（Wails 使用 localhost 随机端口，无需固定端口）
 //   Gitee:   https://gitee.com/oauth/applications
 //
-// 在编译时通过 ldflags 注入凭证：
-//   wails build -ldflags "-X 'gridea-pro/backend/internal/service/oauth.githubClientID=xxx' -X 'gridea-pro/backend/internal/service/oauth.githubClientSecret=xxx'"
+// 凭证优先级：环境变量 > ldflags 编译时注入 > 代码默认值
+//
+// 环境变量配置（推荐本地开发使用）：
+//   cp .env.example .env
+//   # 编辑 .env 填入真实凭证
+//
+// 编译时注入（CI/CD 使用）：
+//   wails build -ldflags "-X 'gridea-pro/backend/internal/service/oauth.githubClientID=xxx' ..."
+
+func getEnvOrDefault(key, defaultVal string) string {
+	if val := os.Getenv(key); val != "" {
+		return val
+	}
+	return defaultVal
+}
 
 var (
-	githubClientID      = "Ov23li2hRBoUIkY83knT"
-	githubClientSecret  = "43274fee8a5a8c922719fa1bd7b911a2e0022115"
-	giteeClientID       = "d10d5bebeb569e48ab8b128e5151c8f67a24fb110498898ccb58eb34a6995d56"
-	giteeClientSecret   = "dde3869c9c89edabb7b9a20b61044038c31fadeeacc2ca74565a218ba19209c8"
-	netlifyClientID     = "SPW1yhDPBWamrHXkpjh602uoKcO0jOAhvRDuKYJ4XBA"
-	netlifyClientSecret = "U49gVdf4GnytSkjfxs_KyVUGtm6cgeUkso5pGLZt75I"
-	vercelClientID      = "oac_Dveh2ueHQLSym2UcJB1vRzXD"
-	vercelClientSecret  = "gECj7VpFOS7fmH7cHGoxC4L1"
+	githubClientID      = getEnvOrDefault("GITHUB_CLIENT_ID", "")
+	githubClientSecret  = getEnvOrDefault("GITHUB_CLIENT_SECRET", "")
+	giteeClientID       = getEnvOrDefault("GITEE_CLIENT_ID", "")
+	giteeClientSecret   = getEnvOrDefault("GITEE_CLIENT_SECRET", "")
+	netlifyClientID     = getEnvOrDefault("NETLIFY_CLIENT_ID", "")
+	netlifyClientSecret = getEnvOrDefault("NETLIFY_CLIENT_SECRET", "")
+	vercelClientID      = getEnvOrDefault("VERCEL_CLIENT_ID", "")
+	vercelClientSecret  = getEnvOrDefault("VERCEL_CLIENT_SECRET", "")
 	// vercelIntegrationSlug 是在 Vercel Integration Console 创建时指定的 slug
 	vercelIntegrationSlug = "gridea-pro"
 )
@@ -298,13 +312,13 @@ func IsOAuthSupported(providerID string) bool {
 	return ok
 }
 
-// IsOAuthConfigured 平台 OAuth 凭证是否已配置（非占位符）
+// IsOAuthConfigured 平台 OAuth 凭证是否已配置
 func IsOAuthConfigured(providerID string) bool {
 	p, ok := Providers[providerID]
 	if !ok {
 		return false
 	}
-	return p.ClientID != "" && !strings.HasPrefix(p.ClientID, "YOUR_")
+	return p.ClientID != "" && p.ClientSecret != ""
 }
 
 // SupportedProviders 返回所有支持 OAuth 的平台 ID 列表
