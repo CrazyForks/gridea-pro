@@ -4,7 +4,7 @@
 
 ## Commit 信息规范
 
-遵循 [Conventional Commits](https://www.conventionalcommits.org/zh-hans/) 规范：
+遵循 [Conventional Commits](https://www.conventionalcommits.org/zh-hans/) 规范，**使用中文撰写 commit 信息**：
 
 ```
 <类型>(<范围>): <简短描述> (#PR号)
