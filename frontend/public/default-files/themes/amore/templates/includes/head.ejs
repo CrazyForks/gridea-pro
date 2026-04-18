@@ -98,7 +98,7 @@
     <meta name="theme-color" content="#292a2d" media="(prefers-color-scheme: dark)">
 
     <% 
-    let cdnPrefix = themeConfig.domain;
+    let cdnPrefix = '';
     if (site.customConfig.cdnPrefix) {
         cdnPrefix = site.customConfig.cdnPrefix;
     } else if (site.customConfig.githubUser && site.customConfig.repoName) {

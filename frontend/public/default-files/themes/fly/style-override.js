@@ -95,8 +95,6 @@ const generateOverride = (params = {}) => {
     `
   }
 
-  console.log('result', result)
-
   return result
 }
 

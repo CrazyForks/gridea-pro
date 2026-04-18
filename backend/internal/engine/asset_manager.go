@@ -2,6 +2,8 @@ package engine
 
 import (
 	"bytes"
+	"crypto/sha1"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"log/slog"
@@ -9,6 +11,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/dop251/goja"
 	"github.com/tdewolff/minify/v2"
@@ -28,7 +31,7 @@ func (r *lessFileReader) ReadFile(path string) ([]byte, error) {
 }
 
 func inlineLess(content string, baseDir string, visited map[string]bool) (string, error) {
-	importRe := regexp.MustCompile(`@import\s+["']([^"']+)["'];?`)
+	importRe := regexp.MustCompile(`@import\s+(?:url\s*\(\s*["']?|["'])([^"')\s]+)["']?\s*\)?;?`)
 
 	var result bytes.Buffer
 	lastEnd := 0
@@ -161,38 +164,45 @@ func (m *AssetManager) CopyThemeAssets(buildDir, themeName string) error {
 	return nil
 }
 
-// compileLess 编译 LESS 文件为 CSS
+// compileLess 编译 LESS 文件为 CSS。对第三方 LESS 主题启用跨渲染缓存，
+// 缓存基于所有源文件（LESS、style-override.js、主题 config.json、站点 config.json）
+// 的最大 mtime 失效，保证用户修改源文件后能立即生效。
 func (m *AssetManager) compileLess(lessPath, buildDir string) error {
 	cssPath := filepath.Join(buildDir, DirStyles, FileMainCSS)
-
 	if err := os.MkdirAll(filepath.Dir(cssPath), 0755); err != nil {
 		return fmt.Errorf("创建输出目录失败: %w", err)
 	}
 
-	// Optimization: Check if recompilation is needed
-	lessInfo, errLess := os.Stat(lessPath)
-	configInfo, errConf := os.Stat(filepath.Join(m.appDir, "config", "config.json"))
-	if errLess == nil {
-		if cssInfo, errCss := os.Stat(cssPath); errCss == nil {
-			isNewerThanLess := cssInfo.ModTime().After(lessInfo.ModTime())
-			isNewerThanConfig := true
-			if errConf == nil {
-				isNewerThanConfig = cssInfo.ModTime().After(configInfo.ModTime())
-			}
-			if isNewerThanLess && isNewerThanConfig {
+	stylesDir := filepath.Dir(lessPath)
+	themePath := filepath.Dir(filepath.Dir(stylesDir))
+	themeName := filepath.Base(themePath)
+	overridePath := filepath.Join(themePath, FileStyleOverride)
+
+	// 收集所有可能影响 CSS 输出的源文件最大 mtime
+	latestMtime := maxLessSourceMtime(
+		stylesDir,
+		overridePath,
+		filepath.Join(themePath, "config.json"),
+		filepath.Join(m.appDir, "config", "config.json"),
+	)
+
+	// 尝试命中缓存：cache mtime >= latest source mtime 即有效
+	cachePath := m.lessCachePath(themeName)
+	if cachePath != "" {
+		if cacheInfo, err := os.Stat(cachePath); err == nil && !latestMtime.After(cacheInfo.ModTime()) {
+			if err := copyFile(cachePath, cssPath); err == nil {
+				m.logger.Info("LESS 缓存命中，跳过编译", "theme", themeName)
 				return nil
 			}
 		}
 	}
 
-	// 读取 LESS 文件内容
+	// 缓存未命中 → 完整编译
 	lessContent, err := os.ReadFile(lessPath)
 	if err != nil {
 		return fmt.Errorf("读取 LESS 文件失败: %w", err)
 	}
 
-	// 内联所有 @import 语句
-	stylesDir := filepath.Dir(lessPath)
 	visited := make(map[string]bool)
 	absPath, _ := filepath.Abs(lessPath)
 	visited[absPath] = true
@@ -202,36 +212,69 @@ func (m *AssetManager) compileLess(lessPath, buildDir string) error {
 		return fmt.Errorf("LESS import 内联失败: %w", err)
 	}
 
-	// 使用 lessgo 编译
-	m.logger.Info("正在编译 LESS 文件", "less", lessPath, "css", cssPath)
+	m.logger.Info("正在编译 LESS 文件", "theme", themeName)
 	cssContent, err := less.Render(inlinedContent, map[string]interface{}{"compress": false})
 	if err != nil {
 		return fmt.Errorf("LESS 编译失败: %w", err)
 	}
 
-	// 写入 CSS 文件
+	// 合并 style-override.js 生成的自定义样式
+	if _, err := os.Stat(overridePath); err == nil {
+		if customCSS, err := m.applyStyleOverride(overridePath); err != nil {
+			m.logger.Warn("应用 style-override.js 失败", "error", err)
+		} else if customCSS != "" {
+			cssContent = cssContent + "\n/* style-override */\n" + customCSS
+		}
+	}
+
+	// 写入输出目录
 	if err := os.WriteFile(cssPath, []byte(cssContent), 0644); err != nil {
 		return fmt.Errorf("写入 CSS 文件失败: %w", err)
 	}
 
-	// 检查并应用 style-override.js
-	themePath := filepath.Dir(filepath.Dir(filepath.Dir(lessPath)))
-	overridePath := filepath.Join(themePath, FileStyleOverride)
-	if _, err := os.Stat(overridePath); err == nil {
-		m.logger.Info("检测到 style-override.js，应用自定义样式...")
-		customCSS, err := m.applyStyleOverride(overridePath)
-		if err != nil {
-			m.logger.Warn("应用 style-override.js 失败", "error", err)
-		} else if customCSS != "" {
-			cssContent = cssContent + "\n/* style-override */\n" + customCSS
-			if err := os.WriteFile(cssPath, []byte(cssContent), 0644); err != nil {
-				return fmt.Errorf("写入 CSS 文件失败: %w", err)
-			}
-			m.logger.Info("自定义样式应用成功")
+	// 写入缓存（失败不影响本次渲染）
+	if cachePath != "" {
+		if err := os.MkdirAll(filepath.Dir(cachePath), 0755); err == nil {
+			_ = os.WriteFile(cachePath, []byte(cssContent), 0644)
 		}
 	}
 
 	return nil
+}
+
+// maxLessSourceMtime 返回 stylesDir 下所有 .less 文件及 extraFiles 中最大 mtime
+func maxLessSourceMtime(stylesDir string, extraFiles ...string) time.Time {
+	var latest time.Time
+
+	_ = filepath.Walk(stylesDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() {
+			return err
+		}
+		if strings.HasSuffix(path, ".less") && info.ModTime().After(latest) {
+			latest = info.ModTime()
+		}
+		return nil
+	})
+
+	for _, p := range extraFiles {
+		if info, err := os.Stat(p); err == nil && info.ModTime().After(latest) {
+			latest = info.ModTime()
+		}
+	}
+
+	return latest
+}
+
+// lessCachePath 返回 LESS 编译结果的缓存路径（OS 标准缓存目录，按站点隔离）
+func (m *AssetManager) lessCachePath(themeName string) string {
+	userCacheDir, err := os.UserCacheDir()
+	if err != nil {
+		return ""
+	}
+	h := sha1.New()
+	_, _ = h.Write([]byte(m.appDir))
+	siteHash := hex.EncodeToString(h.Sum(nil))[:8]
+	return filepath.Join(userCacheDir, "gridea-pro", "less", fmt.Sprintf("%s-%s.css", siteHash, themeName))
 }
 
 // applyStyleOverride 执行 style-override.js 并返回自定义 CSS
@@ -251,6 +294,15 @@ func (m *AssetManager) applyStyleOverride(jsPath string) (string, error) {
 	_ = moduleObj.Set("exports", exportsObj)
 	_ = vm.Set("module", moduleObj)
 	_ = vm.Set("exports", exportsObj)
+
+	// 注入 console 兼容层，避免主题 JS 使用 console.log 时报错
+	consoleObj := vm.NewObject()
+	noop := func(goja.FunctionCall) goja.Value { return goja.Undefined() }
+	_ = consoleObj.Set("log", noop)
+	_ = consoleObj.Set("warn", noop)
+	_ = consoleObj.Set("error", noop)
+	_ = consoleObj.Set("info", noop)
+	_ = vm.Set("console", consoleObj)
 
 	// 执行 JS 代码
 	_, err = vm.RunString(string(jsCode))
