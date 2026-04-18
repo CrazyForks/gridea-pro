@@ -45,6 +45,33 @@
               </div>
               <div v-if="field.desc" class="text-xs text-muted-foreground">{{ field.desc }}</div>
             </template>
+
+            <!-- Picture Upload -->
+            <template v-else-if="field.type === 'picture-upload'">
+              <label class="block text-sm font-medium text-foreground">{{ field.label }}</label>
+              <Input v-model="form[field.name]" :placeholder="field.placeholder" class="max-w-sm" />
+              <div class="flex items-start gap-4">
+                <div
+                  class="w-24 h-24 border border-dashed border-input rounded-lg flex items-center justify-center cursor-pointer hover:border-primary transition-colors relative overflow-hidden bg-background shrink-0"
+                  @mouseenter="($event.currentTarget as HTMLElement).querySelector('.delete-btn')?.classList.remove('hidden')"
+                  @mouseleave="($event.currentTarget as HTMLElement).querySelector('.delete-btn')?.classList.add('hidden')"
+                  @click="handleImageUpload(field.name)">
+                  <img v-if="form[field.name]" :src="getImageUrl(form[field.name])"
+                    class="w-full h-full object-cover" />
+                  <div v-else class="flex flex-col items-center text-muted-foreground">
+                    <i class="ri-upload-2-line text-2xl mb-1"></i>
+                  </div>
+                  <div v-if="form[field.name]"
+                    class="delete-btn hidden absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center z-10 shadow-sm border border-white transition-colors cursor-pointer"
+                    :title="t('settings.theme.removeImage')" @click.stop="form[field.name] = ''">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5">
+                      <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              <div v-if="field.desc" class="text-xs text-muted-foreground">{{ field.desc }}</div>
+            </template>
           </div>
         </div>
 
@@ -73,11 +100,14 @@ import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { GetSeoSetting, SaveSeoSettingFromFrontend } from '@/wailsjs/go/facade/SeoSettingFacade'
+import { UploadThemeCustomConfigImage } from '@/wailsjs/go/facade/ThemeFacade'
 import { domain } from '@/wailsjs/go/models'
+import { useSiteStore } from '@/stores/site'
 
 const { t } = useI18n()
+const siteStore = useSiteStore()
 
-type FieldType = 'switch' | 'input' | 'textarea'
+type FieldType = 'switch' | 'input' | 'textarea' | 'picture-upload'
 interface FieldDef {
   group: string
   name: string
@@ -105,7 +135,7 @@ const fields = computed<FieldDef[]>(() => [
     desc: t('settings.seo.metaKeywordsDesc') },
   { group: 'basic', name: 'enableCanonicalURL', type: 'switch',
     label: t('settings.seo.canonicalURL'), desc: t('settings.seo.canonicalURLDesc') },
-  { group: 'basic', name: 'ogDefaultImage', type: 'input',
+  { group: 'basic', name: 'ogDefaultImage', type: 'picture-upload',
     label: t('settings.seo.ogDefaultImage'), placeholder: t('settings.seo.ogDefaultImagePlaceholder'),
     desc: t('settings.seo.ogDefaultImageDesc') },
 
@@ -226,6 +256,31 @@ const submit = async () => {
   } catch (e) {
     console.error(e)
     toast.error(t('settings.seo.saveFailed'))
+  }
+}
+
+// Picture upload helpers（参照 CustomSetting.vue 的实现）
+const getImageUrl = (path: string) => {
+  if (!path) return ''
+  if (path.startsWith('http') || path.startsWith('data:')) return path
+  let fullPath = path
+  if (path.startsWith('/media/')) {
+    fullPath = `${siteStore.site.appDir}/themes/${siteStore.site.themeConfig.themeName}/assets${path}`
+  } else if (path.startsWith('/images/')) {
+    fullPath = `${siteStore.site.appDir}${path}`
+  }
+  return `/local-file?path=${encodeURIComponent(fullPath)}`
+}
+
+const handleImageUpload = async (fieldName: string) => {
+  try {
+    const filePath = await (window as any).go.app.App.OpenImageDialog()
+    if (!filePath) return
+    const uploadedUrl = await UploadThemeCustomConfigImage(filePath)
+    form[fieldName] = uploadedUrl
+  } catch (error) {
+    console.error('Image upload error', error)
+    toast.error(`${t('settings.theme.uploadFailed')}: ${error}`)
   }
 }
 </script>
