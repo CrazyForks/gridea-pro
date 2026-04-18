@@ -272,6 +272,7 @@ func (b *TemplateDataBuilder) Build(ctx context.Context, posts []domain.Post, co
 			TagsPath:         config.TagsPath,
 			LinkPath:         config.LinkPath,
 			MemosPath:        config.MemosPath,
+			ShowFeatureImage: true,
 		},
 		Site: template.SiteView{
 			CustomConfig: customConfig,

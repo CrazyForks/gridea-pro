@@ -77,9 +77,11 @@ func buildPagination(currentPage, totalPages, totalPosts int, baseURL string) te
 		} else {
 			pv.PrevURL = fmt.Sprintf("%spage/%d/", baseURL, currentPage-1)
 		}
+		pv.Prev = pv.PrevURL
 	}
 	if pv.HasNext {
 		pv.NextURL = fmt.Sprintf("%spage/%d/", baseURL, currentPage+1)
+		pv.Next = pv.NextURL
 	}
 	return pv
 }
@@ -508,11 +510,31 @@ func (r *PageRenderer) RenderCategoryPages(ctx context.Context, buildDir string,
 	return nil
 }
 
+// buildArchivesByYear 将文章列表按年份分组
+func buildArchivesByYear(posts []template.PostView) []template.ArchiveYearView {
+	yearIndex := make(map[int]int)
+	var archives []template.ArchiveYearView
+	for _, p := range posts {
+		y := p.Date.Year()
+		if idx, ok := yearIndex[y]; ok {
+			archives[idx].Posts = append(archives[idx].Posts, p)
+		} else {
+			yearIndex[y] = len(archives)
+			archives = append(archives, template.ArchiveYearView{Year: y, Posts: []template.PostView{p}})
+		}
+	}
+	return archives
+}
+
 // RenderArchives 渲染归档页（支持分页）
 func (r *PageRenderer) RenderArchives(ctx context.Context, buildDir string, data *template.TemplateData) error {
 	archivesPath := DefaultArchivesPath
 
 	listPosts := getVisiblePosts(data.Posts)
+
+	// 构建按年份分组的归档数据（供 Go 模板主题使用）
+	archivesData := *data
+	archivesData.Archives = buildArchivesByYear(listPosts)
 
 	archivesDir := filepath.Join(buildDir, archivesPath)
 	err := r.renderPaginated(ctx, paginatedRenderConfig{
@@ -522,7 +544,7 @@ func (r *PageRenderer) RenderArchives(ctx context.Context, buildDir string, data
 		pageBaseDir:  archivesDir,
 		pageSize:     pageSize(data.ThemeConfig.ArchivesPageSize, 10),
 		items:        listPosts,
-		baseData:     data,
+		baseData:     &archivesData,
 	})
 	if err != nil {
 		r.logger.Error(fmt.Sprintf("归档页模板不存在或渲染失败: %v，跳过", err))

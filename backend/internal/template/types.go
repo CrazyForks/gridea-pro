@@ -42,6 +42,9 @@ type TemplateData struct {
 
 	// 闪念列表（闪念页使用）
 	Memos []MemoView `json:"memos"`
+
+	// 归档数据（按年份分组，归档页使用）
+	Archives []ArchiveYearView `json:"archives"`
 }
 
 // ThemeConfigView 主题配置视图
@@ -64,6 +67,13 @@ type ThemeConfigView struct {
 	TagsPath         string `json:"tagsPath"`
 	LinkPath         string `json:"linkPath"`
 	MemosPath        string `json:"memosPath"`
+	ShowFeatureImage bool   `json:"showFeatureImage"`
+}
+
+// ArchiveYearView 归档年份分组视图
+type ArchiveYearView struct {
+	Year  int
+	Posts []PostView
 }
 
 // SiteView 站点视图
@@ -166,6 +176,8 @@ type PaginationView struct {
 	HasNext     bool   `json:"hasNext"`     // 是否有下一页
 	PrevURL     string `json:"prevURL"`     // 上一页 URL
 	NextURL     string `json:"nextURL"`     // 下一页 URL
+	Prev        string `json:"prev"`        // 上一页 URL（别名，兼容旧主题）
+	Next        string `json:"next"`        // 下一页 URL（别名，兼容旧主题）
 }
 
 // CommentSettingView 评论设置视图（用于模板渲染）
