@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"gridea-pro/backend/internal/domain"
 	"gridea-pro/backend/internal/template"
+	"gridea-pro/backend/internal/version"
 	"strings"
 )
 
@@ -41,6 +42,9 @@ func (p *HtmlPostProcessor) Process(html, pageType, pageURL string, post *templa
 		return html
 	}
 
+	// Generator meta 注入（无开关，始终注入）
+	html = p.injectGenerator(html)
+
 	// SEO 注入
 	html = p.injectSeo(html, pageType, pageURL, post)
 
@@ -49,6 +53,30 @@ func (p *HtmlPostProcessor) Process(html, pageType, pageURL string, post *templa
 
 	// CDN URL 重写
 	html = p.rewriteCdnURLs(html)
+
+	return html
+}
+
+// injectGenerator 插入 <meta name="generator">，标识 Gridea Pro 渲染。
+// 优先插到 <title> 之前（紧邻 charset/viewport 等元信息的位置）；无 <title> 时
+// 兜底插到 </head> 前。
+func (p *HtmlPostProcessor) injectGenerator(html string) string {
+	tag := fmt.Sprintf(`<meta name="generator" content="%s">`, escapeAttr(version.Generator()))
+	lowerHTML := strings.ToLower(html)
+
+	if idx := strings.Index(lowerHTML, "<title"); idx != -1 {
+		// 复用 <title> 所在行的缩进，避免 <title> 被挤到行首
+		lineStart := strings.LastIndex(html[:idx], "\n") + 1
+		indent := html[lineStart:idx]
+		if strings.TrimLeft(indent, " \t") != "" {
+			indent = "" // 非纯空白（title 与其他内容同行）则不复用
+		}
+		return html[:idx] + tag + "\n" + indent + html[idx:]
+	}
+
+	if idx := strings.LastIndex(lowerHTML, "</head>"); idx != -1 {
+		return html[:idx] + tag + "\n" + html[idx:]
+	}
 
 	return html
 }
