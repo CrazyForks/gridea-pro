@@ -1,7 +1,7 @@
 <footer id="footer" class="footer">
     <nav>
         {% for menu in menus %}
-        {% if index > 0 %} · {% endif %}
+        {% if forloop.Counter0 > 0 %} · {% endif %}
         <a class="menu-item" href="{{ menu.link }}">{{ menu.name }}</a>
         {% endfor %}
     </nav>
@@ -10,10 +10,10 @@
             config.siteName }}</a></div>
     <script>document.querySelector('.current-year').textContent = new Date().getFullYear();</script>
 
-    <footer id="footer" class="index_footer">
+    <div class="index_footer">
         {{ themeConfig.footerInfo | safe }} ·
-        <a class="rss" href="{{ config.domain }}/atom.xml" target="_blank" rel="noopener noreferrer">
+        <a class="rss" href="/feed.xml" target="_blank" rel="noopener noreferrer">
             <i class="ri-rss-line"></i>RSS
         </a>
-    </footer>
+    </div>
 </footer>

@@ -27,7 +27,7 @@
 <div class="wrapper">
     <div class="main">
         <div class="mod-index__logo">
-            <a href="{{ config.domain }}">
+            <a href="/">
                 {% if theme_config.avatar %}
                 <img class="mod-index__logo" alt="avatar" src="{{ theme_config.avatar }}">
                 {% elif theme_config.githubUser and theme_config.repoName %}
@@ -35,7 +35,7 @@
                     src="https://cdn.jsdelivr.net/gh/{{ theme_config.githubUser }}/{{ theme_config.repoName }}@{{ theme_config.branch | default:'master' }}/media/images/avatar.jpg">
                 {% else %}
                 <img class="mod-index__logo" alt="avatar"
-                    src="{{ theme_config.cdnPrefix | default:config.domain }}/media/images/avatar.jpg">
+                    src="/media/images/avatar.jpg">
                 {% endif %}
             </a>
         </div>
@@ -114,7 +114,7 @@
 
                 <div class="menu links">
                     {% for menu in menus %}
-                    {% if index> 0 %} · {% endif %}
+                    {% if forloop.Counter0 > 0 %} · {% endif %}
                     <a class="menu-item" href="{{ menu.link }}">
                         {{ menu.name }}
                     </a>
@@ -156,7 +156,7 @@
 
         <footer id="footer" class="index_footer">
             {{ themeConfig.footerInfo | safe }} ·
-            <a class="rss" href="{{ config.domain }}/atom.xml" target="_blank">
+            <a class="rss" href="/feed.xml" target="_blank">
                 <i class="ri-rss-line"></i> 🍀 RSS
             </a>
         </footer>

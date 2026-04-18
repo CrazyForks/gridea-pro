@@ -22,13 +22,13 @@
 <header class="mod-head">
     <div class="mod-head__left">
         <div class="mod-head__logo">
-            <a href="{{ config.domain }}">
+            <a href="/">
                 {% if theme_config.avatar %}
                 <img class="avatar" alt="avatar" src="{{ theme_config.avatar }}">
                 {% elif theme_config.githubUser and theme_config.repoName %}
                 <img class="avatar" alt="avatar" src="https://cdn.jsdelivr.net/gh/{{ theme_config.githubUser }}/{{ theme_config.repoName }}@{{ theme_config.branch | default:'master' }}/media/images/avatar.jpg">
                 {% else %}
-                <img class="avatar" alt="avatar" src="{{ theme_config.cdnPrefix | default:config.domain }}/media/images/avatar.jpg">
+                <img class="avatar" alt="avatar" src="/media/images/avatar.jpg">
                 {% endif %}
             </a>
         </div>

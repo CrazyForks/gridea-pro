@@ -1,0 +1,51 @@
+{{/* head.html - Go Template partial for <head> section */}}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="theme-color" content="#09090b">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="/styles/main.css">
+
+{{ if .ThemeConfig.Domain }}
+<link rel="icon" href="{{ .ThemeConfig.Domain }}/favicon.ico" type="image/x-icon">
+{{ end }}
+
+{{ if .Post.Title }}
+<meta name="description" content="{{ truncate 160 .Post.Description }}">
+{{ else }}
+<meta name="description" content="{{ .ThemeConfig.SiteDescription }}">
+{{ end }}
+
+<meta property="og:site_name" content="{{ .ThemeConfig.SiteName }}">
+{{ if .Post.Title }}
+<meta property="og:type" content="article">
+<meta property="og:title" content="{{ .Post.Title }} - {{ .ThemeConfig.SiteName }}">
+<meta property="og:description" content="{{ truncate 200 .Post.Description }}">
+<meta property="og:url" content="{{ .ThemeConfig.Domain }}{{ .Post.Link }}">
+{{ if .Post.Feature }}
+<meta property="og:image" content="{{ .Post.Feature }}">
+{{ end }}
+{{ else }}
+<meta property="og:type" content="website">
+<meta property="og:title" content="{{ .ThemeConfig.SiteName }}">
+<meta property="og:description" content="{{ .ThemeConfig.SiteDescription }}">
+<meta property="og:url" content="{{ .ThemeConfig.Domain }}">
+{{ end }}
+
+<meta name="twitter:card" content="summary_large_image">
+{{ if .Post.Title }}
+<meta name="twitter:title" content="{{ .Post.Title }} - {{ .ThemeConfig.SiteName }}">
+<meta name="twitter:description" content="{{ truncate 200 .Post.Description }}">
+{{ if .Post.Feature }}
+<meta name="twitter:image" content="{{ .Post.Feature }}">
+{{ end }}
+{{ else }}
+<meta name="twitter:title" content="{{ .ThemeConfig.SiteName }}">
+<meta name="twitter:description" content="{{ .ThemeConfig.SiteDescription }}">
+{{ end }}
+
+<link rel="alternate" type="application/rss+xml" title="{{ .ThemeConfig.SiteName }}" href="/feed.xml">

@@ -14,12 +14,6 @@
   <meta property="og:type" content="{% block og_type %}website{% endblock %}">
   <meta property="og:url" content="{{ config.domain }}">
 
-  {# CDN/Domain Prefix - same pattern as amore-jinja2 theme #}
-  {% set cdnPrefix = config.domain %}
-  {% if theme_config.cdnPrefix %}
-  {% set cdnPrefix = theme_config.cdnPrefix %}
-  {% endif %}
-
   {# Fonts #}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -28,10 +22,10 @@
     rel="stylesheet">
 
   {# Main Stylesheet #}
-  <link rel="stylesheet" href="{{ cdnPrefix }}/styles/main.css">
+  <link rel="stylesheet" href="/styles/main.css">
 
   {# RSS #}
-  <link rel="alternate" type="application/rss+xml" title="{{ config.siteName }}" href="{{ config.domain }}/atom.xml">
+  <link rel="alternate" type="application/rss+xml" title="{{ config.siteName }}" href="/feed.xml">
 
   {# Custom Header Code #}
   {% if theme_config.customHeader %}

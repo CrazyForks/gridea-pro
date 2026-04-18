@@ -1,8 +1,8 @@
 <div class="sidebar" :class="{ 'full-height': menuVisible }">
   <div class="top-container" data-aos="fade-right">
     <div class="top-header-container">
-      <a class="site-title-container" href="<%= themeConfig.domain %>">
-        <img src="<%= themeConfig.domain %>/images/avatar.png?v=<%= site.utils.now %>" class="site-logo">
+      <a class="site-title-container" href="/">
+        <img src="/images/avatar.png?v=<%= site.utils.now %>" class="site-logo">
         <h1 class="site-title"><%= themeConfig.siteName %></h1>
       </a>
       <div class="menu-btn" @click="menuVisible = !menuVisible">
@@ -37,7 +37,7 @@
       <%- themeConfig.siteDescription %>
     </div>
     <div class="site-footer">
-      <%- themeConfig.footerInfo %> | <a class="rss" href="<%= themeConfig.domain %>/atom.xml" target="_blank">RSS</a>
+      <%- themeConfig.footerInfo %> | <a class="rss" href="/feed.xml" target="_blank">RSS</a>
     </div>
   </div>
 </div>

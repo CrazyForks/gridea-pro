@@ -19,7 +19,7 @@
         <a href="{{ tag.link }}">
             {{ tag.name }}
         </a>
-        {% if index < post.tags | length - 1 %} · {% endif %} {% endfor %} </div>
+        {% if forloop.Counter0 < post.tags | length - 1 %} · {% endif %} {% endfor %} </div>
 
 
 

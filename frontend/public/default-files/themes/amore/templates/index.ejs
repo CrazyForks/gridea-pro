@@ -26,12 +26,12 @@
             <div class="wrapper">
                 <div class="main">
                     <div class="mod-index__logo">
-                        <a href="<%= themeConfig.domain %>">
+                        <a href="/">
                             <% if (site.customConfig.avatar) { %>
                                 <img class="mod-index__logo" alt="avatar" src="<%= site.customConfig.avatar %>">
                                 <% } else { %>
                                     <img class="mod-index__logo" alt="avatar"
-                                        src="<%= (site.customConfig.cdnPrefix || (site.customConfig.githubUser && site.customConfig.repoName ? ('https://cdn.jsdelivr.net/gh/' + site.customConfig.githubUser + '/' + site.customConfig.repoName + '@' + (site.customConfig.branch || 'master')) : themeConfig.domain)) %>/media/images/avatar.jpg">
+                                        src="/media/images/avatar.jpg">
                                     <% } %>
                         </a>
                     </div>
@@ -135,7 +135,7 @@
 
                     <footer id="footer" class="index_footer">
                         <%- themeConfig.footerInfo %> ·
-                            <a class="rss" href="<%= themeConfig.domain %>/atom.xml" target="_blank">
+                            <a class="rss" href="/feed.xml" target="_blank">
                                 <i class="ri-rss-line"></i> 🍀 RSS
                             </a>
                     </footer>
