@@ -590,11 +590,12 @@ func (b *TemplateDataBuilder) buildMemoViews(ctx context.Context, config domain.
 		formatted := formatDate(m.CreatedAt, dateFormat)
 
 		views = append(views, template.MemoView{
-			ID:         m.ID,
-			Content:    htmlTemplate.HTML(htmlContent),
-			Tags:       m.Tags,
-			CreatedAt:  formatted,
-			DateFormat: formatted,
+			ID:           m.ID,
+			Content:      htmlTemplate.HTML(htmlContent),
+			Tags:         m.Tags,
+			CreatedAt:    formatted,
+			CreatedAtISO: m.CreatedAt.Format("2006-01-02"),
+			DateFormat:   formatted,
 		})
 	}
 	return views

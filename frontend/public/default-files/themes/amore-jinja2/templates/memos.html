@@ -34,7 +34,7 @@
         <!-- 闪念列表 -->
         <div class="memos-list">
             {% for memo in memos %}
-            <div class="memo-item {% if loop.index0 >= 20 %}memo-hide{% endif %}" data-created="{{ memo.createdAt }}">
+            <div class="memo-item {% if loop.index0 >= 20 %}memo-hide{% endif %}" data-created="{{ memo.createdAtISO }}">
                 <div class="memo-body">
                     <div class="memo-content">
                         {{ memo.content | safe }}

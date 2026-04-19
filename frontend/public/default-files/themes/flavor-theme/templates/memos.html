@@ -29,7 +29,7 @@
 
   <div class="memo-timeline">
     {% for memo in memos %}
-    <div class="memo-item" data-created="{{ memo.createdAt }}">
+    <div class="memo-item" data-created="{{ memo.createdAtISO }}">
       <div class="memo-item__marker"></div>
       <div class="memo-item__card">
         <div class="memo-item__content article-content">
