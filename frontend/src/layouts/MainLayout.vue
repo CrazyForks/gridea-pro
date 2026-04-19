@@ -122,7 +122,7 @@ fill-rule="evenodd" clip-rule="evenodd"
 
     <!-- Dialogs -->
     <Dialog v-model:open="updateModalVisible">
-      <DialogContent class="update-dialog p-0 max-w-[480px] overflow-hidden border-0 shadow-2xl">
+      <DialogContent class="update-dialog p-0 max-w-[420px] overflow-hidden border-0 shadow-2xl">
         <DialogTitle class="sr-only">{{ t('update.title') }}</DialogTitle>
 
         <!-- Hero -->
@@ -149,8 +149,8 @@ fill-rule="evenodd" clip-rule="evenodd"
         </div>
 
         <!-- Release notes -->
-        <div class="px-6 py-4 max-h-[320px] overflow-y-auto border-t border-border/60">
-          <div class="release-notes text-sm text-foreground/90 leading-relaxed" v-html="updateContent"></div>
+        <div class="px-8 py-5 max-h-[320px] overflow-y-auto border-t border-border/60">
+          <div class="release-notes text-xs text-foreground/90 leading-relaxed" v-html="updateContent"></div>
         </div>
 
         <!-- Progress (downloading / ready / error) -->
@@ -715,9 +715,9 @@ onMounted(() => {
 .release-notes :deep(h2),
 .release-notes :deep(h3),
 .release-notes :deep(h4) {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
-  margin: 1rem 0 0.5rem;
+  margin: 0.875rem 0 0.375rem;
   color: var(--foreground);
   display: flex;
   align-items: center;
@@ -763,7 +763,7 @@ onMounted(() => {
   padding: 0.125rem 0.375rem;
   border-radius: 0.25rem;
   background: var(--muted);
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
