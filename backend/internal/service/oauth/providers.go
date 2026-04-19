@@ -149,38 +149,59 @@ func (p *Provider) GetUserInfo(client *http.Client, token string) UserInfo {
 //            Redirect URI: http://127.0.0.1/oauth/callback（Wails 使用 localhost 随机端口，无需固定端口）
 //   Gitee:   https://gitee.com/oauth/applications
 //
-// 凭证优先级：环境变量 > ldflags 编译时注入 > 代码默认值
-//
-// 环境变量配置（推荐本地开发使用）：
-//   cp .env.example .env
-//   # 编辑 .env 填入真实凭证
+// 凭证优先级：ldflags 编译时注入（CI/Release）> 环境变量（本地开发）> 空
 //
 // 编译时注入（CI/CD 使用）：
 //   wails build -ldflags "-X 'gridea-pro/backend/internal/service/oauth.githubClientID=xxx' ..."
-
-func getEnvOrDefault(key, defaultVal string) string {
-	if val := os.Getenv(key); val != "" {
-		return val
-	}
-	return defaultVal
-}
+//
+// 环境变量配置（推荐本地开发使用）：
+//   cp .env.example .env && source .env
+//
+// ⚠ 下面的变量必须以字符串字面量形式初始化。Go 链接器的 -X 标志只对
+//   "uninitialized or initialized to a constant string expression" 生效，
+//   函数调用初始化（如 getEnvOrDefault(...)）会在 init 阶段覆盖注入值，
+//   导致 CI 构建出的 Release 里凭证全部为空。
 
 var (
-	githubClientID      = getEnvOrDefault("GITHUB_CLIENT_ID", "")
-	githubClientSecret  = getEnvOrDefault("GITHUB_CLIENT_SECRET", "")
-	giteeClientID       = getEnvOrDefault("GITEE_CLIENT_ID", "")
-	giteeClientSecret   = getEnvOrDefault("GITEE_CLIENT_SECRET", "")
-	netlifyClientID     = getEnvOrDefault("NETLIFY_CLIENT_ID", "")
-	netlifyClientSecret = getEnvOrDefault("NETLIFY_CLIENT_SECRET", "")
-	vercelClientID      = getEnvOrDefault("VERCEL_CLIENT_ID", "")
-	vercelClientSecret  = getEnvOrDefault("VERCEL_CLIENT_SECRET", "")
+	githubClientID      = ""
+	githubClientSecret  = ""
+	giteeClientID       = ""
+	giteeClientSecret   = ""
+	netlifyClientID     = ""
+	netlifyClientSecret = ""
+	vercelClientID      = ""
+	vercelClientSecret  = ""
 	// vercelIntegrationSlug 是在 Vercel Integration Console 创建时指定的 slug
 	vercelIntegrationSlug = "gridea-pro"
 )
 
-// Providers 所有支持 OAuth 的平台
-var Providers = map[string]*Provider{
-	"github": {
+// envFallback 未被 ldflags 注入的变量，尝试从环境变量读取（本地开发场景）
+func envFallback(dst *string, key string) {
+	if *dst == "" {
+		if v := os.Getenv(key); v != "" {
+			*dst = v
+		}
+	}
+}
+
+// Providers 所有支持 OAuth 的平台。在 init() 中构建，确保 envFallback 先于
+// ClientID / ClientSecret 捕获执行——否则本地开发（只有 env、无 ldflags）时
+// Providers 会捕获到空字符串。
+var Providers map[string]*Provider
+
+func init() {
+	// 未被 ldflags 注入的变量，尝试从环境变量补齐（本地开发）
+	envFallback(&githubClientID, "GH_OAUTH_CLIENT_ID")
+	envFallback(&githubClientSecret, "GH_OAUTH_CLIENT_SECRET")
+	envFallback(&giteeClientID, "GITEE_CLIENT_ID")
+	envFallback(&giteeClientSecret, "GITEE_CLIENT_SECRET")
+	envFallback(&netlifyClientID, "NETLIFY_CLIENT_ID")
+	envFallback(&netlifyClientSecret, "NETLIFY_CLIENT_SECRET")
+	envFallback(&vercelClientID, "VERCEL_CLIENT_ID")
+	envFallback(&vercelClientSecret, "VERCEL_CLIENT_SECRET")
+
+	Providers = map[string]*Provider{
+		"github": {
 		ID:           "github",
 		AuthURL:      "https://github.com/login/oauth/authorize",
 		TokenURL:     "https://github.com/login/oauth/access_token",
@@ -304,6 +325,7 @@ var Providers = map[string]*Provider{
 			return UserInfo{Username: name, AvatarURL: avatarURL, Email: wrapper.User.Email}
 		},
 	},
+	}
 }
 
 // IsOAuthSupported 平台是否支持 OAuth

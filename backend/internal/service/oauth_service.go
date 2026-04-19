@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"gridea-pro/backend/internal/config"
+	"gridea-pro/backend/internal/domain"
 	"gridea-pro/backend/internal/service/credential"
 	"gridea-pro/backend/internal/service/oauth"
 
@@ -32,13 +33,43 @@ type OAuthService struct {
 	configMgr    *config.ConfigManager
 	mu           sync.Mutex
 	activeServer *http.Server
+
+	// settingRepo 指向当前活跃站点的配置仓库，用于读取代理设置（国内连接
+	// github.com/login/oauth/access_token 基本必须走代理）。OAuthService 本身
+	// 是应用级单例，但代理跟随当前站点，切站时由 AppServices.UpdateAppDir
+	// 通过 SetSettingRepo 更新指针。
+	settingMu   sync.RWMutex
+	settingRepo domain.SettingRepository
 }
 
-func NewOAuthService(credService *credential.Service, configMgr *config.ConfigManager) *OAuthService {
+func NewOAuthService(credService *credential.Service, configMgr *config.ConfigManager, settingRepo domain.SettingRepository) *OAuthService {
 	return &OAuthService{
 		credService: credService,
 		configMgr:   configMgr,
+		settingRepo: settingRepo,
 	}
+}
+
+// SetSettingRepo 切换站点后更新代理读取源
+func (s *OAuthService) SetSettingRepo(repo domain.SettingRepository) {
+	s.settingMu.Lock()
+	s.settingRepo = repo
+	s.settingMu.Unlock()
+}
+
+// currentProxyURL 读取当前活跃站点的代理 URL，未启用或读取失败返回空串
+func (s *OAuthService) currentProxyURL() string {
+	s.settingMu.RLock()
+	repo := s.settingRepo
+	s.settingMu.RUnlock()
+	if repo == nil {
+		return ""
+	}
+	setting, err := repo.GetSetting(context.Background())
+	if err != nil || !setting.ProxyEnabled {
+		return ""
+	}
+	return setting.ProxyURL
 }
 
 // StartOAuthFlow 启动 OAuth 流程：打开本地回调服务器 + 唤起浏览器
@@ -228,7 +259,9 @@ func (s *OAuthService) runCallbackServer(ctx context.Context, listener net.Liste
 			return
 		}
 
-		client := &http.Client{Timeout: 15 * time.Second}
+		// 复用包内支持代理（HTTP/HTTPS/SOCKS）+ 60s 超时的 helper；
+		// 国内用户访问 github.com/login/oauth/access_token 基本必须走代理
+		client := newHTTPClient(s.currentProxyURL())
 		tokenResp, err := p.ExchangeCode(client, code, redirectURI)
 		if err != nil {
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")

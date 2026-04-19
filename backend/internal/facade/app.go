@@ -93,7 +93,7 @@ func NewAppServices(appDir string, assets embed.FS) *AppServices {
 	aiUsageRepo := repository.NewAIUsageRepository(cm.AppConfigDir())
 	// 凭证服务：系统 Keychain（Linux 无 libsecret 时降级为加密文件）
 	credService := credential.New(cm.AppConfigDir())
-	oauthService := service.NewOAuthService(credService, cm)
+	oauthService := service.NewOAuthService(credService, cm, settingRepo)
 
 	// 2. Init Services
 	tagService := service.NewTagService(tagRepo, postRepo)
@@ -246,7 +246,9 @@ func (s *AppServices) UpdateAppDir(appDir string) {
 	s.CdnUpload.internal = newServices.Services.CdnUpload
 	s.AI.repo = newServices.AI.repo
 	s.AI.service = newServices.AI.service
-	// OAuth 服务是应用级的（跨站点共享），UpdateAppDir 时无需重建
+	// OAuth 服务是应用级单例（跨站点共享 Keychain 状态），但代理配置要跟随
+	// 当前站点——切站时更新其 settingRepo 指针
+	s.OAuth.service.SetSettingRepo(newServices.Repositories.Setting)
 	// Scaffold service doesn't need update generally, but good to keep in sync
 	s.Services.Scaffold = newServices.Services.Scaffold
 	s.Services.Comment = newServices.Services.Comment
