@@ -87,8 +87,15 @@ func (b *TemplateDataBuilder) Build(ctx context.Context, posts []domain.Post, co
 				if c.ID != "" {
 					categoryByID[c.ID] = c
 				}
+				// 重名分类保留先添加的，避免隐式覆盖导致老文章（无 CategoryIDs）
+				// 按名查到的 Slug 不稳定
 				if c.Name != "" {
-					categoryByName[c.Name] = c
+					if _, exists := categoryByName[c.Name]; !exists {
+						categoryByName[c.Name] = c
+					} else {
+						b.logger.Warn("检测到重名分类，按名查找将保留先添加的",
+							"name", c.Name, "duplicate_id", c.ID)
+					}
 				}
 			}
 		}
