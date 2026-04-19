@@ -11,27 +11,31 @@ import (
 
 // HtmlPostProcessor 在模板渲染完成后对 HTML 进行后处理，注入 SEO 标签、PWA 标签和 CDN URL 重写
 type HtmlPostProcessor struct {
-	seoSetting *domain.SeoSetting
-	cdnSetting *domain.CdnSetting
-	pwaSetting *domain.PwaSetting
-	domain     string
-	siteName   string
-	siteDesc   string
-	language   string
-	avatar     string // 站点头像 URL，用作 og:image / JSON-LD logo 的兜底
+	seoSetting   *domain.SeoSetting
+	cdnSetting   *domain.CdnSetting
+	pwaSetting   *domain.PwaSetting
+	domain       string
+	siteName     string
+	siteDesc     string
+	language     string
+	avatar       string // 站点头像 URL，用作 og:image / JSON-LD logo 的兜底
+	themeName    string
+	themeVersion string
 }
 
 // NewHtmlPostProcessor 创建后处理器
-func NewHtmlPostProcessor(seo *domain.SeoSetting, cdn *domain.CdnSetting, pwa *domain.PwaSetting, domain, siteName, siteDesc, language, avatar string) *HtmlPostProcessor {
+func NewHtmlPostProcessor(seo *domain.SeoSetting, cdn *domain.CdnSetting, pwa *domain.PwaSetting, domain, siteName, siteDesc, language, avatar, themeName, themeVersion string) *HtmlPostProcessor {
 	return &HtmlPostProcessor{
-		seoSetting: seo,
-		cdnSetting: cdn,
-		pwaSetting: pwa,
-		domain:     domain,
-		siteName:   siteName,
-		siteDesc:   siteDesc,
-		language:   language,
-		avatar:     avatar,
+		seoSetting:   seo,
+		cdnSetting:   cdn,
+		pwaSetting:   pwa,
+		domain:       domain,
+		siteName:     siteName,
+		siteDesc:     siteDesc,
+		language:     language,
+		avatar:       avatar,
+		themeName:    themeName,
+		themeVersion: themeVersion,
 	}
 }
 
@@ -56,10 +60,46 @@ func (p *HtmlPostProcessor) Process(html, pageType, pageURL string, post *templa
 	// 自定义 body 代码注入
 	html = p.injectBody(html)
 
+	// 控制台徽标（始终注入）
+	html = p.injectConsoleBadge(html)
+
 	// CDN URL 重写
 	html = p.rewriteCdnURLs(html)
 
 	return html
+}
+
+// injectConsoleBadge 在 </body> 前注入控制台徽标脚本，打开 DevTools 即可看到 Gridea Pro 品牌标识。
+func (p *HtmlPostProcessor) injectConsoleBadge(html string) string {
+	idx := strings.LastIndex(strings.ToLower(html), "</body>")
+	if idx == -1 {
+		return html
+	}
+
+	themeLabel := p.themeName
+	if p.themeVersion != "" {
+		themeLabel = p.themeName + " v" + p.themeVersion
+	}
+
+	text := fmt.Sprintf(`\n%%c ✦ %s v%s %%c · Theme: %s · https://gridea.pro %%c\n`,
+		escapeJS(version.Product), escapeJS(version.Version), escapeJS(themeLabel))
+	leftStyle := `color:#fadfa3;background:#111111;padding:9px 14px;border-radius:4px 0 0 4px;font-weight:500;font-size:12px`
+	rightStyle := `color:#e05c00;background:#fff3ec;padding:9px 14px;border-radius:0 4px 4px 0;font-size:11px`
+
+	script := fmt.Sprintf("<script>console.log(\"%s\",\"%s\",\"%s\",\"\")</script>\n",
+		text, leftStyle, rightStyle)
+
+	return html[:idx] + script + html[idx:]
+}
+
+// escapeJS 转义 JS 双引号字符串中的特殊字符
+func escapeJS(s string) string {
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, `"`, `\"`)
+	s = strings.ReplaceAll(s, "\n", `\n`)
+	s = strings.ReplaceAll(s, "\r", `\r`)
+	s = strings.ReplaceAll(s, "<", `\u003c`) // 避免 </script> 截断脚本
+	return s
 }
 
 // injectGenerator 插入 <meta name="generator">，标识 Gridea Pro 渲染。

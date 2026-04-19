@@ -241,6 +241,15 @@ func (s *Engine) renderAllImpl(ctx context.Context) error {
 			pwaSetting, _ = s.pwaSettingRepo.GetPwaSetting(ctx)
 		}
 		avatar, _ := templateData.Site.CustomConfig["avatar"].(string)
+		themeVersion := ""
+		if themes, err := s.themeRepo.GetAll(ctx); err == nil {
+			for _, t := range themes {
+				if t.Folder == themeConfig.ThemeName || t.Name == themeConfig.ThemeName {
+					themeVersion = t.Version
+					break
+				}
+			}
+		}
 		postProcessor = NewHtmlPostProcessor(
 			&seoSetting, &cdnSetting, &pwaSetting,
 			templateData.ThemeConfig.Domain,
@@ -248,6 +257,8 @@ func (s *Engine) renderAllImpl(ctx context.Context) error {
 			templateData.ThemeConfig.SiteDescription,
 			templateData.ThemeConfig.Language,
 			avatar,
+			templateData.ThemeConfig.ThemeName,
+			themeVersion,
 		)
 		s.pageRenderer.SetPostProcessor(postProcessor)
 	}
