@@ -94,8 +94,12 @@
         "defaultUrl": "Tag URL Default",
         "urlPath": "Tag URL path",
         "urlRepeat": "Tag URL duplicated",
+        "nameRepeat": "Tag name already in use",
         "saved": "Tag saved",
-        "deleted": "Tag deleted"
+        "deleted": "Tag deleted",
+        "saveError": "Failed to save tag",
+        "deleteError": "Failed to delete tag",
+        "sortError": "Failed to sort tags"
     },
     "category": {
         "new": "New Category",
@@ -103,8 +107,12 @@
         "url": "Category URL",
         "description": "Category Description",
         "urlRepeat": "The URL of the category is duplicated with other categories",
+        "nameRepeat": "Category name already in use",
         "saved": "Category saved",
-        "deleted": "Category deleted"
+        "deleted": "Category deleted",
+        "saveError": "Failed to save category",
+        "deleteError": "Failed to delete category",
+        "sortError": "Failed to sort categories"
     },
     "link": {
         "new": "New Link",

@@ -105,21 +105,28 @@ export function useTag() {
         }
     }
 
-    const checkTagValid = () => {
+    // checkTagValid 分别检查 name / slug 冲突，返回明确的冲突类型；
+    // 优先检查 name（用户更直观的概念），其次 slug。
+    const checkTagValid = (): { ok: true } | { ok: false; reason: 'name' | 'slug' } => {
         const tags = [...siteStore.tags]
         if (isUpdate.value) {
             tags.splice(form.index, 1)
         }
-        const foundIndex = tags.findIndex((t: ITag) => t.slug === form.slug)
-        return foundIndex === -1
+        if (tags.some((t: ITag) => t.name === form.name)) {
+            return { ok: false, reason: 'name' }
+        }
+        if (tags.some((t: ITag) => t.slug === form.slug)) {
+            return { ok: false, reason: 'slug' }
+        }
+        return { ok: true }
     }
 
     const saveTag = async () => {
         buildSlug()
 
-        const valid = checkTagValid()
-        if (!valid) {
-            toast.error(t('tag.urlRepeat'))
+        const check = checkTagValid()
+        if (!check.ok) {
+            toast.error(check.reason === 'name' ? t('tag.nameRepeat') : t('tag.urlRepeat'))
             return
         }
 
@@ -142,7 +149,10 @@ export function useTag() {
                 visible.value = false
             }
         } catch (e: any) {
-            toast.error(e.message || 'Error saving tag')
+            // Wails v2 把 Go error 序列化成字符串，所以 e 可能是 string 而不是 Error 对象；
+            // 仅当两者都不可用时再回落到通用错误文案。
+            const msg = typeof e === 'string' ? e : (e?.message || t('tag.saveError'))
+            toast.error(msg)
         }
     }
 
@@ -166,7 +176,8 @@ export function useTag() {
                         toast.success(t('tag.deleted'))
                     }
                 } catch (e: any) {
-                    toast.error(e.message || 'Error deleting tag')
+                    const msg = typeof e === 'string' ? e : (e?.message || t('tag.deleteError'))
+                    toast.error(msg)
                 }
             }
         }
@@ -179,7 +190,8 @@ export function useTag() {
             const tags = tagList.value.map(t => new domain.Tag(t))
             await SaveTags(tags)
         } catch (e: any) {
-            toast.error(e.message || 'Error sorting tags')
+            const msg = typeof e === 'string' ? e : (e?.message || t('tag.sortError'))
+            toast.error(msg)
         }
     }
 

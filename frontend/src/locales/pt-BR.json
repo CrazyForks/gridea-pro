@@ -94,8 +94,12 @@
         "defaultUrl": "URL padrão da Tag",
         "urlPath": "Caminho da URL da Tag",
         "urlRepeat": "URL da Tag duplicada",
+        "nameRepeat": "Nome da tag já em uso",
         "saved": "Tag salva",
-        "deleted": "Tag excluída"
+        "deleted": "Tag excluída",
+        "saveError": "Falha ao salvar tag",
+        "deleteError": "Falha ao excluir tag",
+        "sortError": "Falha ao ordenar tags"
     },
     "category": {
         "new": "Nova Categoria",
@@ -103,8 +107,12 @@
         "url": "URL da Categoria",
         "description": "Descrição da Categoria",
         "urlRepeat": "A URL da categoria está duplicada com outra categoria",
+        "nameRepeat": "Nome da categoria já em uso",
         "saved": "Categoria salva",
-        "deleted": "Categoria excluída"
+        "deleted": "Categoria excluída",
+        "saveError": "Falha ao salvar categoria",
+        "deleteError": "Falha ao excluir categoria",
+        "sortError": "Falha ao ordenar categorias"
     },
     "link": {
         "new": "Novo Link",

@@ -94,8 +94,12 @@
         "defaultUrl": "Standard-Tag-URL",
         "urlPath": "Tag-URL-Pfad",
         "urlRepeat": "Tag-URL ist doppelt vorhanden",
+        "nameRepeat": "Tag-Name ist bereits in Verwendung",
         "saved": "Tag gespeichert",
-        "deleted": "Tag gelöscht"
+        "deleted": "Tag gelöscht",
+        "saveError": "Fehler beim Speichern des Tags",
+        "deleteError": "Fehler beim Löschen des Tags",
+        "sortError": "Fehler beim Sortieren der Tags"
     },
     "category": {
         "new": "Neue Kategorie",
@@ -103,8 +107,12 @@
         "url": "Kategorie-URL",
         "description": "Kategoriebeschreibung",
         "urlRepeat": "Die URL der Kategorie ist mit anderen Kategorien doppelt vorhanden",
+        "nameRepeat": "Kategoriename ist bereits in Verwendung",
         "saved": "Kategorie gespeichert",
-        "deleted": "Kategorie gelöscht"
+        "deleted": "Kategorie gelöscht",
+        "saveError": "Fehler beim Speichern der Kategorie",
+        "deleteError": "Fehler beim Löschen der Kategorie",
+        "sortError": "Fehler beim Sortieren der Kategorien"
     },
     "link": {
         "new": "Neuer Link",

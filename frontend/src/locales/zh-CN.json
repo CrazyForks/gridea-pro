@@ -94,8 +94,12 @@
     "defaultUrl": "标签 URL 默认格式",
     "urlPath": "标签 URL 路径",
     "urlRepeat": "标签的 URL 与其他标签重复",
+    "nameRepeat": "标签名已被其他标签使用",
     "saved": "标签已保存",
-    "deleted": "标签已删除"
+    "deleted": "标签已删除",
+    "saveError": "保存标签失败",
+    "deleteError": "删除标签失败",
+    "sortError": "标签排序失败"
   },
   "category": {
     "new": "新分类",
@@ -103,8 +107,12 @@
     "url": "分类 URL",
     "description": "分类描述",
     "urlRepeat": "分类的 URL 与其他分类重复",
+    "nameRepeat": "分类名已被其他分类使用",
     "saved": "分类已保存",
-    "deleted": "分类已删除"
+    "deleted": "分类已删除",
+    "saveError": "保存分类失败",
+    "deleteError": "删除分类失败",
+    "sortError": "分类排序失败"
   },
   "link": {
     "new": "新友链",

@@ -94,8 +94,12 @@
         "defaultUrl": "태그 URL 기본 형식",
         "urlPath": "태그 URL 경로",
         "urlRepeat": "태그 URL이 다른 태그와 중복됩니다",
+        "nameRepeat": "태그 이름이 이미 사용 중입니다",
         "saved": "태그 저장됨",
-        "deleted": "태그 삭제됨"
+        "deleted": "태그 삭제됨",
+        "saveError": "태그 저장 실패",
+        "deleteError": "태그 삭제 실패",
+        "sortError": "태그 정렬 실패"
     },
     "category": {
         "new": "새 카테고리",
@@ -103,8 +107,12 @@
         "url": "카테고리 URL",
         "description": "카테고리 설명",
         "urlRepeat": "카테고리 URL이 다른 카테고리와 중복됩니다",
+        "nameRepeat": "카테고리 이름이 이미 사용 중입니다",
         "saved": "카테고리 저장됨",
-        "deleted": "카테고리 삭제됨"
+        "deleted": "카테고리 삭제됨",
+        "saveError": "카테고리 저장 실패",
+        "deleteError": "카테고리 삭제 실패",
+        "sortError": "카테고리 정렬 실패"
     },
     "link": {
         "new": "새 링크",

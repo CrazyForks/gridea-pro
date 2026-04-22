@@ -67,13 +67,20 @@ export function useCategory() {
         }
     }
 
-    const checkCategoryValid = () => {
+    // checkCategoryValid 分别检查 name / slug 冲突，返回明确的冲突类型；
+    // 优先检查 name（用户更直观），其次 slug。
+    const checkCategoryValid = (): { ok: true } | { ok: false; reason: 'name' | 'slug' } => {
         const categories = [...siteStore.categories]
         if (isUpdate.value) {
             categories.splice(form.index, 1)
         }
-        const foundIndex = categories.findIndex((c: ICategory) => c.slug === form.slug)
-        return foundIndex === -1
+        if (categories.some((c: ICategory) => c.name === form.name)) {
+            return { ok: false, reason: 'name' }
+        }
+        if (categories.some((c: ICategory) => c.slug === form.slug)) {
+            return { ok: false, reason: 'slug' }
+        }
+        return { ok: true }
     }
 
     const openCreateSheet = () => {
@@ -105,9 +112,9 @@ export function useCategory() {
     const saveCategory = async () => {
         buildSlug()
 
-        const valid = checkCategoryValid()
-        if (!valid) {
-            toast.error(t('category.urlRepeat'))
+        const check = checkCategoryValid()
+        if (!check.ok) {
+            toast.error(check.reason === 'name' ? t('category.nameRepeat') : t('category.urlRepeat'))
             return
         }
 
@@ -130,7 +137,9 @@ export function useCategory() {
                 visible.value = false
             }
         } catch (e: any) {
-            toast.error(e.message || 'Error saving category')
+            // Wails v2 把 Go error 序列化成字符串，优先取字符串本体
+            const msg = typeof e === 'string' ? e : (e?.message || t('category.saveError'))
+            toast.error(msg)
         }
     }
 
@@ -152,7 +161,8 @@ export function useCategory() {
                     toast.success(t('category.deleted'))
                 }
             } catch (e: any) {
-                toast.error(e.message || 'Error deleting category')
+                const msg = typeof e === 'string' ? e : (e?.message || t('category.deleteError'))
+                toast.error(msg)
             }
         }
         deleteModalVisible.value = false
@@ -163,7 +173,8 @@ export function useCategory() {
         try {
             await SaveCategories(JSON.parse(JSON.stringify(categoryList.value)))
         } catch (e: any) {
-            toast.error(e.message || 'Error sorting categories')
+            const msg = typeof e === 'string' ? e : (e?.message || t('category.sortError'))
+            toast.error(msg)
         }
     }
 

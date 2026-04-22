@@ -94,8 +94,12 @@
         "defaultUrl": "タグ URL のデフォルト形式",
         "urlPath": "タグ URL パス",
         "urlRepeat": "タグの URL が他のタグと重複しています",
+        "nameRepeat": "タグ名は既に使用されています",
         "saved": "タグを保存しました",
-        "deleted": "タグを削除しました"
+        "deleted": "タグを削除しました",
+        "saveError": "タグの保存に失敗しました",
+        "deleteError": "タグの削除に失敗しました",
+        "sortError": "タグの並び替えに失敗しました"
     },
     "category": {
         "new": "新規カテゴリー",
@@ -103,8 +107,12 @@
         "url": "カテゴリー URL",
         "description": "カテゴリーの説明",
         "urlRepeat": "カテゴリーの URL が他のカテゴリーと重複しています",
+        "nameRepeat": "カテゴリー名は既に使用されています",
         "saved": "カテゴリーを保存しました",
-        "deleted": "カテゴリーを削除しました"
+        "deleted": "カテゴリーを削除しました",
+        "saveError": "カテゴリーの保存に失敗しました",
+        "deleteError": "カテゴリーの削除に失敗しました",
+        "sortError": "カテゴリーの並び替えに失敗しました"
     },
     "link": {
         "new": "新規リンク",

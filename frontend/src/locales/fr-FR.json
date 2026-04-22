@@ -94,8 +94,12 @@
         "defaultUrl": "URL par défaut de l'étiquette",
         "urlPath": "Chemin URL de l'étiquette",
         "urlRepeat": "URL de l'étiquette en double",
+        "nameRepeat": "Nom d'étiquette déjà utilisé",
         "saved": "Étiquette enregistrée",
-        "deleted": "Étiquette supprimée"
+        "deleted": "Étiquette supprimée",
+        "saveError": "Erreur lors de l'enregistrement de l'étiquette",
+        "deleteError": "Erreur lors de la suppression de l'étiquette",
+        "sortError": "Erreur lors du tri des étiquettes"
     },
     "category": {
         "new": "Nouvelle catégorie",
@@ -103,8 +107,12 @@
         "url": "URL de la catégorie",
         "description": "Description de la catégorie",
         "urlRepeat": "L'URL de la catégorie est en double avec d'autres catégories",
+        "nameRepeat": "Nom de catégorie déjà utilisé",
         "saved": "Catégorie enregistrée",
-        "deleted": "Catégorie supprimée"
+        "deleted": "Catégorie supprimée",
+        "saveError": "Erreur lors de l'enregistrement de la catégorie",
+        "deleteError": "Erreur lors de la suppression de la catégorie",
+        "sortError": "Erreur lors du tri des catégories"
     },
     "link": {
         "new": "Nouveau lien",

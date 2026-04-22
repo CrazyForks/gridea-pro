@@ -94,8 +94,12 @@
         "defaultUrl": "標籤 URL 預設格式",
         "urlPath": "標籤 URL 路徑",
         "urlRepeat": "標籤的 URL 與其他標籤重複",
+        "nameRepeat": "標籤名已被其他標籤使用",
         "saved": "標籤已儲存",
-        "deleted": "標籤已刪除"
+        "deleted": "標籤已刪除",
+        "saveError": "儲存標籤失敗",
+        "deleteError": "刪除標籤失敗",
+        "sortError": "標籤排序失敗"
     },
     "category": {
         "new": "新增分類",
@@ -103,8 +107,12 @@
         "url": "分類 URL",
         "description": "分類描述",
         "urlRepeat": "分類的 URL 與其他分類重複",
+        "nameRepeat": "分類名已被其他分類使用",
         "saved": "分類已儲存",
-        "deleted": "分類已刪除"
+        "deleted": "分類已刪除",
+        "saveError": "儲存分類失敗",
+        "deleteError": "刪除分類失敗",
+        "sortError": "分類排序失敗"
     },
     "link": {
         "new": "新增友鏈",
