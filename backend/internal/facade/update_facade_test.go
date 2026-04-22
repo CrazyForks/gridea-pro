@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sync/atomic"
@@ -326,5 +327,107 @@ func TestDoDownload_RejectsUntrustedURL(t *testing.T) {
 
 	if n := hits.Load(); n != 0 {
 		t.Errorf("untrusted URL should not trigger HTTP request, got %d hits", n)
+	}
+}
+
+// ─── 重定向域名白名单（#53 / PR #81） ────────────────────────────────────────
+
+func TestHasTrustedRedirectHost(t *testing.T) {
+	tests := []struct {
+		host string
+		want bool
+	}{
+		{"github.com", true},
+		{"objects.githubusercontent.com", true},
+		{"release-assets.githubusercontent.com", true},
+		{"codeload.github.com", true},
+		{"github.com:443", true}, // 带端口号
+
+		{"evil.com", false},
+		{"github.com.evil.com", false},
+		{"xgithub.com", false}, // 无点边界，不是合法子域
+		{"githubusercontent.com.evil.com", false},
+		{"", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.host, func(t *testing.T) {
+			got := hasTrustedRedirectHost(tt.host)
+			if got != tt.want {
+				t.Errorf("hasTrustedRedirectHost(%q) = %v, want %v", tt.host, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTrustedRedirectChecker(t *testing.T) {
+	mkReq := func(rawurl string) *http.Request {
+		u, err := url.Parse(rawurl)
+		if err != nil {
+			t.Fatalf("parse %q: %v", rawurl, err)
+		}
+		return &http.Request{URL: u}
+	}
+
+	cases := []struct {
+		name    string
+		target  string
+		viaLen  int
+		wantErr bool
+	}{
+		{"allowed_github", "https://github.com/foo/bar", 1, false},
+		{"allowed_subdomain", "https://objects.githubusercontent.com/xxx", 2, false},
+		{"http_scheme_rejected", "http://github.com/foo/bar", 1, true},
+		{"third_party_host_rejected", "https://evil.example.com/x", 1, true},
+		{"lookalike_domain_rejected", "https://github.com.evil.com/x", 1, true},
+		{"too_many_redirects", "https://github.com/x", 10, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			via := make([]*http.Request, tc.viaLen)
+			err := trustedRedirectChecker(mkReq(tc.target), via)
+			if tc.wantErr && err == nil {
+				t.Errorf("expected error, got nil")
+			}
+			if !tc.wantErr && err != nil {
+				t.Errorf("expected no error, got %v", err)
+			}
+		})
+	}
+}
+
+// 集成测：本地服务器发起 302 跳到非白名单域名；下载客户端必须拒绝。
+//
+// 注意：合入 #52（PR #80）后，doDownload 入口会先校验 URL 前缀，
+// 所以本测试中 redirector.URL（非 github 前缀）会在到达重定向逻辑前就被拒绝。
+// 这意味着本测试的"零 hit"保证由 #52 + #53 两层共同提供 —— 测试目的退化为
+// 验证"攻击者可控 URL 无论如何也到达不了下载"，恰好也是预期的防御纵深。
+// TestTrustedRedirectChecker（纯单测）独立验证重定向回调自身的逻辑。
+func TestDoDownload_RejectsThirdPartyRedirect(t *testing.T) {
+	var evilHits atomic.Int32
+	evil := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		evilHits.Add(1)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("attacker payload"))
+	}))
+	defer evil.Close()
+
+	// "合法"入口：返回 302 指向攻击者服务器
+	redirector := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, evil.URL+"/fake.zip", http.StatusFound)
+	}))
+	defer redirector.Close()
+
+	f := &UpdateFacade{
+		releasesURL: "unused",
+		httpClient:  &http.Client{Timeout: 2 * time.Second},
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	f.doDownload(ctx, redirector.URL+"/entry", "fake.zip", 1024)
+
+	if n := evilHits.Load(); n != 0 {
+		t.Errorf("third-party redirect should be rejected before HTTP body is fetched, got %d hits", n)
 	}
 }
