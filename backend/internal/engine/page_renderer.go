@@ -413,10 +413,12 @@ func (r *PageRenderer) RenderTagPages(ctx context.Context, buildDir string, data
 			default:
 			}
 
+			// 按 Slug 匹配（与 RenderCategoryPages 对齐）。Slug 唯一性由数据层约束（#66）
+			// 保证，重名 Name 也不会导致错误的文章分组。
 			var tagPosts []template.PostView
 			for _, post := range data.Posts {
 				for _, pt := range post.Tags {
-					if pt.Name == tg.Name {
+					if pt.Slug == tg.Slug {
 						tagPosts = append(tagPosts, post)
 						break
 					}

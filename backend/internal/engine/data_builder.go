@@ -35,6 +35,7 @@ type TemplateDataBuilder struct {
 	logger             *slog.Logger
 
 	// Build() 阶段缓存的查找映射，供 ConvertPost() 复用
+	cachedTagByID        map[string]domain.Tag
 	cachedTagByName      map[string]domain.Tag
 	cachedCategoryByID   map[string]domain.Category
 	cachedCategoryByName map[string]domain.Category
@@ -102,18 +103,32 @@ func (b *TemplateDataBuilder) Build(ctx context.Context, posts []domain.Post, co
 	}
 
 	// 3. 预加载标签映射，供 convertPost 使用
+	//    - tagByID: id → Tag（主键，与 Category 对齐；Post.TagIDs 优先走此路径）
+	//    - tagByName: name → Tag（兜底，用于老文章无 TagIDs 时按名称反查 slug）
+	tagByID := make(map[string]domain.Tag)
 	tagByName := make(map[string]domain.Tag)
 	if b.tagRepo != nil {
 		if repoTags, err := b.tagRepo.List(ctx); err == nil {
 			for _, rt := range repoTags {
+				if rt.ID != "" {
+					tagByID[rt.ID] = rt
+				}
+				// 重名标签（手工编辑 JSON 造成）保留先添加的，避免隐式覆盖导致
+				// 按名查到的 slug 不稳定；数据层唯一性约束（#66）已阻止新建重名
 				if rt.Name != "" {
-					tagByName[rt.Name] = rt
+					if _, exists := tagByName[rt.Name]; !exists {
+						tagByName[rt.Name] = rt
+					} else {
+						b.logger.Warn("检测到重名标签，按名查找将保留先添加的",
+							"name", rt.Name, "duplicate_id", rt.ID)
+					}
 				}
 			}
 		}
 	}
 
 	// 缓存查找映射，供 ConvertPost() 在渲染单篇文章时复用
+	b.cachedTagByID = tagByID
 	b.cachedTagByName = tagByName
 	b.cachedCategoryByID = categoryByID
 	b.cachedCategoryByName = categoryByName
@@ -130,7 +145,7 @@ func (b *TemplateDataBuilder) Build(ctx context.Context, posts []domain.Post, co
 			sem <- struct{}{}        // Acquire
 			defer func() { <-sem }() // Release
 
-			postViews[idx] = b.convertPost(p, config, categoryByID, categoryByName, tagByName)
+			postViews[idx] = b.convertPost(p, config, categoryByID, categoryByName, tagByID, tagByName)
 		}(i, post)
 	}
 	wg.Wait()
@@ -402,11 +417,11 @@ func (b *TemplateDataBuilder) ConvertPost(post domain.Post, config domain.ThemeC
 	if categoryByID == nil {
 		categoryByID = b.cachedCategoryByID
 	}
-	return b.convertPost(post, config, categoryByID, b.cachedCategoryByName, b.cachedTagByName)
+	return b.convertPost(post, config, categoryByID, b.cachedCategoryByName, b.cachedTagByID, b.cachedTagByName)
 }
 
 // convertPost 将 domain.Post 转换为 template.PostView
-func (b *TemplateDataBuilder) convertPost(post domain.Post, config domain.ThemeConfig, categoryByID map[string]domain.Category, categoryByName map[string]domain.Category, tagByName map[string]domain.Tag) template.PostView {
+func (b *TemplateDataBuilder) convertPost(post domain.Post, config domain.ThemeConfig, categoryByID map[string]domain.Category, categoryByName map[string]domain.Category, tagByID map[string]domain.Tag, tagByName map[string]domain.Tag) template.PostView {
 	postPath := config.PostPath
 	if postPath == "" {
 		postPath = DefaultPostPath
@@ -415,23 +430,40 @@ func (b *TemplateDataBuilder) convertPost(post domain.Post, config domain.ThemeC
 	// 生成链接
 	link := "/" + postPath + "/" + post.FileName + "/"
 
-	// 转换标签
+	// 转换标签：优先走 TagIDs（与 Category 对齐），未命中 / 老文章回退到 Name 反查。
+	// 这样同名但不同 ID 的标签也能被正确解析到各自的 Slug，不受 map 覆盖影响。
 	var tags []template.TagView
 	var tagNames []string
-	for _, tag := range post.Tags {
-		tagSlug := tag
-		if tagByName != nil {
-			if t, ok := tagByName[tag]; ok {
-				tagSlug = t.Slug
+	if len(post.TagIDs) > 0 && tagByID != nil {
+		for _, tagID := range post.TagIDs {
+			if t, ok := tagByID[tagID]; ok {
+				tags = append(tags, template.TagView{
+					Name: t.Name,
+					Slug: t.Slug,
+					Link: "/" + config.TagPath + "/" + t.Slug + "/",
+				})
+				tagNames = append(tagNames, t.Name)
 			}
+			// ID 未命中（标签被删除后仍被 post 引用）：跳过，不渲染死链；
+			// 处理方式与 Category ID 未命中的容错保持一致的思路（此处直接丢弃，
+			// 不输出 NanoID 作为 Name，避免前台出现形如 "V1StGXR8" 的假标签）
 		}
-		tagView := template.TagView{
-			Name: tag,
-			Slug: tagSlug,
-			Link: "/" + config.TagPath + "/" + tagSlug + "/",
+	} else {
+		// 向后兼容：老文章无 TagIDs，按 Name 反查
+		for _, tag := range post.Tags {
+			tagSlug := tag
+			if tagByName != nil {
+				if t, ok := tagByName[tag]; ok {
+					tagSlug = t.Slug
+				}
+			}
+			tags = append(tags, template.TagView{
+				Name: tag,
+				Slug: tagSlug,
+				Link: "/" + config.TagPath + "/" + tagSlug + "/",
+			})
+			tagNames = append(tagNames, tag)
 		}
-		tags = append(tags, tagView)
-		tagNames = append(tagNames, tag)
 	}
 
 	// 转换分类：严格基于 CategoryIDs 查找
