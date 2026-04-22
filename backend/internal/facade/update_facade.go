@@ -40,6 +40,16 @@ func NewUpdateFacade() *UpdateFacade {
 	}
 }
 
+// trustedDownloadPrefix 自更新下载 URL 必须的前缀：本仓库 releases 资源。
+// 即便 Release 的 browser_download_url 字段被篡改指向第三方域，也会被这里拦掉。
+// 不要改为可配置 —— 这条硬编码是自更新安全链的最后一道关。
+const trustedDownloadPrefix = "https://github.com/Gridea-Pro/gridea-pro/releases/download/"
+
+// isTrustedDownloadURL 校验 URL 前缀是否在白名单内。
+func isTrustedDownloadURL(url string) bool {
+	return strings.HasPrefix(url, trustedDownloadPrefix)
+}
+
 // UpdateInfo 更新检查结果
 type UpdateInfo struct {
 	HasUpdate      bool   `json:"hasUpdate"`
@@ -240,6 +250,13 @@ func (f *UpdateFacade) fetchAssetForCurrentPlatform(ctx context.Context) (*githu
 }
 
 func (f *UpdateFacade) doDownload(ctx context.Context, url, assetName string, expectedSize int64) {
+	// 安全检查：即使 GitHub API 返回的 browser_download_url 被篡改（凭证泄漏 / Release 被接管 /
+	// 上游代理中间人等场景），也必须走本仓库 releases 资源前缀；其他一律拒绝下载。
+	if !isTrustedDownloadURL(url) {
+		f.emitError(fmt.Errorf("拒绝下载：非预期的更新包 URL: %s", url))
+		return
+	}
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		f.emitError(err)
