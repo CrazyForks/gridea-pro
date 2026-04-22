@@ -204,6 +204,9 @@ func (r *postRepository) save(ctx context.Context, post *domain.Post, isUpdate b
 	if isUpdate {
 		if post.DeleteFileName != "" && post.DeleteFileName != post.FileName {
 			oldPath := filepath.Join(postsDir, post.DeleteFileName+".md")
+			// 标记为 self-write：rename 场景下 fsnotify 会看到 oldPath REMOVE 事件，
+			// 让 watcher 跳过这次自激，避免"改文件名保存 → 两次渲染"。
+			DefaultWriteGate.MarkSelfWrite(oldPath)
 			_ = os.Remove(oldPath)
 			// Remove from cache logic below handles "old" file by filtering/looping
 		}
@@ -295,6 +298,9 @@ func (r *postRepository) Delete(ctx context.Context, fileName string) error {
 		}
 	}
 
+	// 标记为 self-write 后再 Remove：前端 DeletePostFromFrontend 已经显式 emit
+	// app-site-reload，watcher 不需要对这次 REMOVE 事件重复触发渲染。
+	DefaultWriteGate.MarkSelfWrite(postPath)
 	if err := os.Remove(postPath); err != nil && !os.IsNotExist(err) {
 		return err
 	}

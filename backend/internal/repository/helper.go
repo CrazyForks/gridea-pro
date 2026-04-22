@@ -75,6 +75,11 @@ func WriteFileAtomic(filename string, data []byte, perm os.FileMode) error {
 		return err
 	}
 
+	// 在 rename 前打上 self-write 标记。rename 完成后 fsnotify 几乎立刻就会投递事件，
+	// ResourceWatcher 据此过滤"app 保存 → watcher → 再次渲染"的自激循环。
+	// 外部编辑器（不走本函数）的改动不会触发 WriteGate，watcher 仍会照常响应。
+	DefaultWriteGate.MarkSelfWrite(filename)
+
 	// Atomic rename
 	return os.Rename(tmpName, filename)
 }

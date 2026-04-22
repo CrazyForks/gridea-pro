@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"gridea-pro/backend/internal/repository"
+
 	"github.com/fsnotify/fsnotify"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -91,6 +93,14 @@ func (w *ResourceWatcher) watchLoop() {
 
 			// 2. 忽略原子写临时文件（模式：*.tmp.*，覆盖所有 WriteFileAtomic 生成的临时文件）
 			if strings.Contains(baseName, ".tmp.") {
+				continue
+			}
+
+			// 3. 忽略"app 自己刚写过"的文件：前端保存文章已经显式 emit app-site-reload，
+			//    fsnotify 在同一写入上再触发一次会形成"保存 → watcher → 再次渲染"的叠加。
+			//    外部编辑器（Typora / VSCode / git checkout）不走 WriteFileAtomic，
+			//    不会在 WriteGate 上留下标记，仍能正常触发。
+			if repository.DefaultWriteGate.IsSelfWrite(event.Name) {
 				continue
 			}
 
