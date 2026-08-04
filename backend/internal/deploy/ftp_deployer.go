@@ -110,7 +110,7 @@ func (p *FtpProvider) Deploy(ctx context.Context, outputDir string, setting *dom
 	//    早期版本先上传到 staging 再整目录 rename，虽然切换是原子的，
 	//    却让远端目录换了 inode，把 docker bind mount 挂在旧 inode 上的站点打成空目录（issue #139）。
 	appDir := appDirFromOutput(outputDir)
-	manifest := LoadDeployManifest(appDir, DeployTargetKey("ftp", server, remotePath))
+	manifest := LoadDeployManifest(appDir, DeployTargetKey("ftp", server, port, remotePath))
 	if !manifest.Known() {
 		logger("未找到该目标的部署记录，本次将完整上传，且不清理远端可能存在的旧文件")
 	}

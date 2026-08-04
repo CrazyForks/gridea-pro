@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"sync"
@@ -37,9 +38,14 @@ func deployManifestPath(appDir, target string) string {
 	return filepath.Join(appDir, fmt.Sprintf(".deploy-manifest-%x.json", sum[:6]))
 }
 
-// DeployTargetKey 构造部署目标的唯一标识
-func DeployTargetKey(platform, server, remotePath string) string {
-	return platform + "|" + server + "|" + remotePath
+// DeployTargetKey 构造部署目标的唯一标识。
+//
+// remotePath 必须归一化后入键：用户把 /var/www/html 改成 /var/www/html/ 属于同一个目标，
+// 若因此换了键，上一份清单就此失联，那批文件会变成谁也删不掉的孤儿。
+// 端口同样是目标的一部分——同一主机上两个不同端口的站点若共用一个键，
+// 会把对方的文件算进自己的删除集合，那是会真删线上文件的。
+func DeployTargetKey(platform, server string, port int, remotePath string) string {
+	return fmt.Sprintf("%s|%s:%d|%s", platform, server, port, path.Clean(remotePath))
 }
 
 // LoadDeployManifest 读取指定目标的部署清单。
@@ -119,15 +125,55 @@ func (m *DeployManifest) Paths() []string {
 // 更糟的是它们会永远进不了删除集合，变成删不掉的孤儿。
 func (m *DeployManifest) Save() error {
 	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	payload := struct {
 		Version int               `json:"version"`
 		Target  string            `json:"target"`
 		Entries map[string]string `json:"entries"`
 	}{Version: deployManifestVersion, Target: m.Target, Entries: m.Entries}
 	data, err := json.MarshalIndent(payload, "", "  ")
-	m.mu.Unlock()
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(m.path, data, 0o644)
+	return writeFileAtomic(m.path, data)
+}
+
+// writeFileAtomic 先写同目录临时文件再 rename 覆盖目标。
+//
+// 清单在一次部署里会被反复重写（每传若干文件保存一次），直接 os.WriteFile 意味着
+// 每次都存在一个"已截断、未写完"的窗口。用户在部署中途强退 App 恰好撞上这个窗口，
+// 留下的半截 JSON 会让下次加载失败：部署清单失效只是丢掉孤儿追踪，
+// 渲染清单失效却会让引擎降级为清空整个输出目录，连用户自己放进去的文件一起删掉。
+func writeFileAtomic(path string, data []byte) error {
+	dir := filepath.Dir(path)
+	tmp, err := os.CreateTemp(dir, filepath.Base(path)+".tmp-*")
+	if err != nil {
+		return err
+	}
+	tmpName := tmp.Name()
+
+	if _, err := tmp.Write(data); err != nil {
+		tmp.Close()
+		_ = os.Remove(tmpName)
+		return err
+	}
+	if err := tmp.Sync(); err != nil {
+		tmp.Close()
+		_ = os.Remove(tmpName)
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		_ = os.Remove(tmpName)
+		return err
+	}
+	if err := os.Chmod(tmpName, 0o644); err != nil {
+		_ = os.Remove(tmpName)
+		return err
+	}
+	if err := os.Rename(tmpName, path); err != nil {
+		_ = os.Remove(tmpName)
+		return err
+	}
+	return nil
 }

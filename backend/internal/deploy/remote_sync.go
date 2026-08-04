@@ -2,6 +2,7 @@ package deploy
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -11,6 +12,9 @@ import (
 
 	"gridea-pro/backend/internal/engine"
 )
+
+// uploadPartSuffix 是上传中间态文件的后缀，见 sftpFS.Upload
+const uploadPartSuffix = ".gridea-part"
 
 // RemoteEntry 是远端目录中的一项
 type RemoteEntry struct {
@@ -52,6 +56,8 @@ type SyncResult struct {
 	Uploaded int
 	Skipped  int
 	Deleted  int
+	// DeleteFailed 是清理阶段删除失败、已留待下次部署重试的文件数
+	DeleteFailed int
 }
 
 // SyncTree 把本地构建产物增量同步到远端。
@@ -90,14 +96,26 @@ func SyncTree(ctx context.Context, fs RemoteFS, opts SyncOptions) (SyncResult, e
 		return result, fmt.Errorf("创建远端目录 %s 失败: %w", opts.RemoteRoot, err)
 	}
 
-	// 列出远端实际内容。失败时降级为"完全信任清单"——多传一些总比漏传安全，
-	// 所以这里的降级只影响性能，不影响正确性。
-	remote, remoteKnown := listRemoteFiles(fs, opts.RemoteRoot)
-	if !remoteKnown {
-		logger("提示：无法列出远端目录内容，本次将依据本地清单判断需要上传的文件")
-	}
-
 	manifest := opts.Manifest
+
+	// 列出远端实际内容，用于发现"清单说传过、远端其实没有"的文件。
+	//
+	// 清单为空时这一步没有意义（所有文件都会因"清单没记过"而上传），可以省掉——
+	// 在 FTP 上每个目录都是一次 LIST 往返，站点根目录下若有用户自己的大目录会白等很久。
+	//
+	// 枚举失败则退回完全信任清单。注意这是有代价的降级：一旦某个文件在远端被手动删除，
+	// 而清单又认为它已经传过，这次就补不回来，站点会持续 404，直到内容变化触发重传。
+	var remote map[string]struct{}
+	remoteKnown := false
+	if manifest.Known() {
+		remote, remoteKnown = listRemoteFiles(fs, opts.RemoteRoot)
+		if !remoteKnown {
+			logger("提示：无法列出远端目录内容，本次仅依据本地清单判断需要上传的文件；" +
+				"若远端有文件被手动删除，本次可能不会补传")
+		} else {
+			cleanupStaleParts(fs, opts.RemoteRoot, remote, logger)
+		}
+	}
 	plan := buildSyncPlan(local, manifest, remote, remoteKnown)
 	result.Skipped = len(local) - len(plan.Upload)
 
@@ -112,20 +130,29 @@ func SyncTree(ctx context.Context, fs RemoteFS, opts SyncOptions) (SyncResult, e
 	for _, rel := range plan.Upload {
 		select {
 		case <-ctx.Done():
-			_ = manifest.Save()
+			if err := manifest.Save(); err != nil {
+				logger(fmt.Sprintf("提示：部署清单保存失败（%v），下次部署会重新上传全部文件", err))
+			}
 			return result, ctx.Err()
 		default:
 		}
 
 		remoteFile := path.Join(opts.RemoteRoot, rel)
 		if err := ensureRemoteDir(fs, path.Dir(remoteFile), createdDirs); err != nil {
-			_ = manifest.Save()
+			if saveErr := manifest.Save(); saveErr != nil {
+				logger(fmt.Sprintf("提示：部署清单保存失败（%v），下次部署会重新上传全部文件", saveErr))
+			}
 			return result, err
 		}
 
 		localFile := filepath.Join(opts.LocalDir, filepath.FromSlash(rel))
 		if err := fs.Upload(localFile, remoteFile); err != nil {
-			_ = manifest.Save()
+			// 上传失败时远端可能残留半成品甚至被清空，清单里的旧指纹已不可信；
+			// 移除该条目，强制下次部署重传这个文件。
+			manifest.Delete(rel)
+			if saveErr := manifest.Save(); saveErr != nil {
+				logger(fmt.Sprintf("提示：部署清单保存失败（%v），下次部署会重新上传全部文件", saveErr))
+			}
 			return result, fmt.Errorf("上传 %s 失败: %w", rel, err)
 		}
 
@@ -134,7 +161,9 @@ func SyncTree(ctx context.Context, fs RemoteFS, opts SyncOptions) (SyncResult, e
 		if result.Uploaded%20 == 0 {
 			logger(fmt.Sprintf("已上传 %d/%d 个文件...", result.Uploaded, len(plan.Upload)))
 			// 阶段性落盘：中断后下次部署不必重传这些文件
-			_ = manifest.Save()
+			if err := manifest.Save(); err != nil {
+				logger(fmt.Sprintf("提示：部署清单保存失败（%v），下次部署会重新上传全部文件", err))
+			}
 		}
 	}
 
@@ -145,22 +174,42 @@ func SyncTree(ctx context.Context, fs RemoteFS, opts SyncOptions) (SyncResult, e
 	// 清理阶段：删除上次传过、这次已经不存在的文件
 	if len(plan.Delete) > 0 {
 		logger(fmt.Sprintf("正在清理 %d 个已删除的旧文件...", len(plan.Delete)))
+		var pruned []string
 		for _, rel := range plan.Delete {
 			select {
 			case <-ctx.Done():
-				_ = manifest.Save()
+				if err := manifest.Save(); err != nil {
+					logger(fmt.Sprintf("提示：部署清单保存失败（%v），下次部署会重新上传全部文件", err))
+				}
 				return result, ctx.Err()
 			default:
 			}
-			if err := fs.Remove(path.Join(opts.RemoteRoot, rel)); err != nil {
-				// 远端文件可能已被手动删除，这不是错误；清单同步移除即可
-				logger(fmt.Sprintf("提示：删除 %s 失败（%v），已从清单移除", rel, err))
+
+			err := fs.Remove(path.Join(opts.RemoteRoot, rel))
+			switch {
+			case err == nil, errors.Is(err, os.ErrNotExist):
+				// 删掉了，或者本来就不在——两种情况目的都已达成，可以忘掉这个条目
+			default:
+				// 连接中断、权限不足、只读文件系统等：文件还在远端。
+				// 此时绝不能把条目从清单里抹掉，否则它再也进不了任何一次删除集合，
+				// 会变成谁都清不掉的永久孤儿（已删除文章的页面会一直留在线上）。
+				logger(fmt.Sprintf("提示：删除 %s 失败（%v），已保留记录，下次部署会重试", rel, err))
+				result.DeleteFailed++
+				continue
 			}
+
 			manifest.Delete(rel)
+			pruned = append(pruned, rel)
 			result.Deleted++
 		}
-		_ = manifest.Save()
-		pruneEmptyDirs(fs, opts.RemoteRoot, plan.Delete)
+		if err := manifest.Save(); err != nil {
+			logger(fmt.Sprintf("提示：部署清单保存失败（%v），下次部署会重新上传全部文件", err))
+		}
+		pruneEmptyDirs(fs, opts.RemoteRoot, pruned)
+
+		if result.DeleteFailed > 0 {
+			logger(fmt.Sprintf("⚠️ 有 %d 个旧文件未能删除，仍留在服务器上，下次部署会自动重试", result.DeleteFailed))
+		}
 	}
 
 	return result, nil
@@ -178,6 +227,9 @@ func buildSyncPlan(local map[string]engine.FileEntry, manifest *DeployManifest, 
 	var plan syncPlan
 
 	for rel, entry := range local {
+		if !isSafeRelPath(rel) {
+			continue
+		}
 		known, recorded := manifest.Get(rel)
 		switch {
 		case !recorded:
@@ -197,6 +249,12 @@ func buildSyncPlan(local map[string]engine.FileEntry, manifest *DeployManifest, 
 	// 删除集合只从清单取：没被我们传过的文件（用户自己放的 CNAME、.well-known 等）
 	// 永远进不了这个集合。清单为空时集合自然为空，即"现状未知就不删"。
 	for _, rel := range manifest.Paths() {
+		// 清单是本地 JSON，可能被外部改动或被历史版本写坏。
+		// path.Join 会把 "../.." 解析掉，一个坏条目就足以让删除操作打到站点目录之外，
+		// 因此在这里挡住——engine 侧的 CleanOrphans 同样有这道防御。
+		if !isSafeRelPath(rel) {
+			continue
+		}
 		if _, stillExists := local[rel]; stillExists {
 			continue
 		}
@@ -214,6 +272,54 @@ func buildSyncPlan(local map[string]engine.FileEntry, manifest *DeployManifest, 
 func containsRemote(remote map[string]struct{}, rel string) bool {
 	_, ok := remote[rel]
 	return ok
+}
+
+// isSafeRelPath 校验一个相对路径能否安全地拼到远端根目录之下。
+//
+// 站点根目录之外的一切都不属于我们，误删的后果是用户服务器上的真实文件消失，
+// 所以任何形式的越界都在这里挡掉：绝对路径、含 .. 的路径、以及未归一化的写法
+// （"a//b"、"./a"），后者会让同一个文件在清单里有多种写法，破坏比对。
+func isSafeRelPath(rel string) bool {
+	if rel == "" || rel == "." || rel == ".." {
+		return false
+	}
+	if strings.HasPrefix(rel, "/") {
+		return false
+	}
+	if path.Clean(rel) != rel {
+		return false
+	}
+	// Clean 后仍以 ../ 开头说明确实指向父级
+	return !strings.HasPrefix(rel, "../")
+}
+
+// cleanupStaleParts 清掉上传过程中被中断留下的临时文件。
+//
+// SFTP 上传走"先写 <目标>.gridea-part 再改名"，进程若在两步之间被杀掉，
+// 这个半成品就会留在站点目录里且公网可访问。它不在部署清单里，
+// 常规的孤儿清理够不着，只能在这里按后缀识别。
+func cleanupStaleParts(fs RemoteFS, root string, remote map[string]struct{}, logger LogFunc) {
+	var stale []string
+	for rel := range remote {
+		if strings.HasSuffix(rel, uploadPartSuffix) && isSafeRelPath(rel) {
+			stale = append(stale, rel)
+		}
+	}
+	if len(stale) == 0 {
+		return
+	}
+
+	sort.Strings(stale)
+	removed := 0
+	for _, rel := range stale {
+		if err := fs.Remove(path.Join(root, rel)); err == nil {
+			delete(remote, rel)
+			removed++
+		}
+	}
+	if removed > 0 {
+		logger(fmt.Sprintf("已清理 %d 个上次中断残留的临时文件", removed))
+	}
 }
 
 // collectLocalFiles 扫描构建输出目录，返回 相对路径 → 内容指纹。

@@ -101,7 +101,7 @@ func (p *SftpProvider) Deploy(ctx context.Context, outputDir string, setting *do
 	//    早期版本先上传到 staging 再整目录 rename，虽然切换是原子的，
 	//    却让远端目录换了 inode，把 docker bind mount 挂在旧 inode 上的站点打成空目录（issue #139）。
 	appDir := appDirFromOutput(outputDir)
-	manifest := LoadDeployManifest(appDir, DeployTargetKey("sftp", server, remotePath))
+	manifest := LoadDeployManifest(appDir, DeployTargetKey("sftp", server, port, remotePath))
 	if !manifest.Known() {
 		logger("未找到该目标的部署记录，本次将完整上传，且不清理远端可能存在的旧文件")
 	}
@@ -151,8 +151,8 @@ func (f *sftpFS) RemoveDir(dir string) error { return f.client.RemoveDirectory(d
 // 服务器不支持时退回"先删目标再改名"；仍失败则直接覆盖写入目标文件。
 // 越往后原子性越弱，但都能完成部署——不能因为服务器缺个扩展就让用户发不了站。
 func (f *sftpFS) Upload(localPath, remotePath string) error {
-	tmpPath := remotePath + ".gridea-part"
-	if err := f.write(localPath, tmpPath); err != nil {
+	tmpPath := remotePath + uploadPartSuffix
+	if err := f.write(localPath, tmpPath, true); err != nil {
 		return err
 	}
 
@@ -165,11 +165,16 @@ func (f *sftpFS) Upload(localPath, remotePath string) error {
 		return nil
 	}
 
+	// 走到这里说明目标文件已经被删掉了，且改名两次都没成功。
+	// 最后一级降级直接覆盖写入目标；失败也不再清理目标文件——
+	// 留下一个写坏的文件，也好过留下一个空洞让站点 404。
 	_ = f.client.Remove(tmpPath)
-	return f.write(localPath, remotePath)
+	return f.write(localPath, remotePath, false)
 }
 
-func (f *sftpFS) write(localPath, remotePath string) error {
+// write 把本地文件写到远端。cleanupOnError 决定写失败时是否删除写了一半的目标文件：
+// 写临时文件时该清（否则残留垃圾），直接写正式文件时不清（清了站点就少一个文件）。
+func (f *sftpFS) write(localPath, remotePath string, cleanupOnError bool) error {
 	local, err := os.Open(localPath)
 	if err != nil {
 		return err
@@ -183,7 +188,9 @@ func (f *sftpFS) write(localPath, remotePath string) error {
 
 	if _, err := io.Copy(remote, local); err != nil {
 		remote.Close()
-		_ = f.client.Remove(remotePath)
+		if cleanupOnError {
+			_ = f.client.Remove(remotePath)
+		}
 		return err
 	}
 	return remote.Close()

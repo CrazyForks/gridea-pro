@@ -242,7 +242,45 @@ func (m *RenderManifest) Save(appDir string) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(appDir, ManifestFileName), data, 0644)
+	return writeFileAtomic(filepath.Join(appDir, ManifestFileName), data)
+}
+
+// writeFileAtomic 先写同目录临时文件再 rename 覆盖目标。
+//
+// 直接 os.WriteFile 会先截断再写，中途崩溃/断电会留下半截 JSON；
+// 而清单一旦解析失败，下次渲染就会被判为首次，退回清空整个输出目录的兜底路径，
+// 把用户放在 output 里的自定义文件一并删掉。
+func writeFileAtomic(path string, data []byte) error {
+	dir := filepath.Dir(path)
+	tmp, err := os.CreateTemp(dir, filepath.Base(path)+".tmp-*")
+	if err != nil {
+		return err
+	}
+	tmpName := tmp.Name()
+
+	if _, err := tmp.Write(data); err != nil {
+		tmp.Close()
+		_ = os.Remove(tmpName)
+		return err
+	}
+	if err := tmp.Sync(); err != nil {
+		tmp.Close()
+		_ = os.Remove(tmpName)
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		_ = os.Remove(tmpName)
+		return err
+	}
+	if err := os.Chmod(tmpName, 0644); err != nil {
+		_ = os.Remove(tmpName)
+		return err
+	}
+	if err := os.Rename(tmpName, path); err != nil {
+		_ = os.Remove(tmpName)
+		return err
+	}
+	return nil
 }
 
 // LoadPreviousManifest 读取 appDir 下的上次清单。

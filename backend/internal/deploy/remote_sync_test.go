@@ -22,6 +22,8 @@ type fakeRemoteFS struct {
 	uploaded     []string
 	readDirFails bool
 	onUpload     func(remotePath string)
+	removeErr    func(remotePath string) error
+	uploadErr    func(remotePath string) error
 }
 
 func newFakeRemoteFS(dirs ...string) *fakeRemoteFS {
@@ -74,6 +76,11 @@ func (f *fakeRemoteFS) Upload(localPath, remotePath string) error {
 	if f.onUpload != nil {
 		f.onUpload(remotePath)
 	}
+	if f.uploadErr != nil {
+		if err := f.uploadErr(remotePath); err != nil {
+			return err
+		}
+	}
 	data, err := os.ReadFile(localPath)
 	if err != nil {
 		return err
@@ -87,8 +94,13 @@ func (f *fakeRemoteFS) Upload(localPath, remotePath string) error {
 }
 
 func (f *fakeRemoteFS) Remove(remotePath string) error {
+	if f.removeErr != nil {
+		if err := f.removeErr(remotePath); err != nil {
+			return err
+		}
+	}
 	if _, ok := f.files[remotePath]; !ok {
-		return fmt.Errorf("文件不存在: %s", remotePath)
+		return fmt.Errorf("文件不存在 %s: %w", remotePath, os.ErrNotExist)
 	}
 	delete(f.files, remotePath)
 	f.removedFiles = append(f.removedFiles, remotePath)
@@ -138,7 +150,7 @@ func setupLocal(t *testing.T, files map[string]string) (appDir, outputDir string
 
 func syncOnce(t *testing.T, fs RemoteFS, appDir, outputDir, root string) (SyncResult, error) {
 	t.Helper()
-	m := LoadDeployManifest(appDir, DeployTargetKey("sftp", "example.com", root))
+	m := LoadDeployManifest(appDir, DeployTargetKey("sftp", "example.com", 22, root))
 	return SyncTree(context.Background(), fs, SyncOptions{
 		LocalDir:   outputDir,
 		RemoteRoot: root,
@@ -260,6 +272,9 @@ func TestSyncTreeDeletesOnlyItsOwnOrphans(t *testing.T) {
 	fs := newFakeRemoteFS(root)
 	fs.seed(root+"/CNAME", "blog.example.com")
 	fs.seed(root+"/.well-known/acme-challenge/token", "challenge")
+	// 这个文件既不在清单里、也不在保留名单里：它单独验证第一道防线
+	//（删除集合只取自清单）确实在起作用，而不是靠保留名单兜住的
+	fs.seed(root+"/user-notes.txt", "用户自己传的文件")
 
 	if _, err := syncOnce(t, fs, appDir, outputDir, root); err != nil {
 		t.Fatalf("首次同步失败: %v", err)
@@ -284,6 +299,9 @@ func TestSyncTreeDeletesOnlyItsOwnOrphans(t *testing.T) {
 	}
 	if _, ok := fs.files[root+"/.well-known/acme-challenge/token"]; !ok {
 		t.Error("用户的 .well-known 文件被误删了")
+	}
+	if _, ok := fs.files[root+"/user-notes.txt"]; !ok {
+		t.Error("不在保留名单里的用户文件被误删了——删除集合不该来自远端实际内容")
 	}
 }
 
@@ -375,7 +393,7 @@ func TestSyncTreeStopsOnCancelAndKeepsProgress(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	fs.onUpload = func(string) { cancel() } // 第一个文件传完就取消
 
-	m := LoadDeployManifest(appDir, DeployTargetKey("sftp", "example.com", root))
+	m := LoadDeployManifest(appDir, DeployTargetKey("sftp", "example.com", 22, root))
 	_, err := SyncTree(ctx, fs, SyncOptions{
 		LocalDir:   outputDir,
 		RemoteRoot: root,
@@ -389,13 +407,210 @@ func TestSyncTreeStopsOnCancelAndKeepsProgress(t *testing.T) {
 		t.Errorf("取消后仍上传了 %d 个文件，期望停在 1 个", len(fs.uploaded))
 	}
 
-	reloaded := LoadDeployManifest(appDir, DeployTargetKey("sftp", "example.com", root))
+	reloaded := LoadDeployManifest(appDir, DeployTargetKey("sftp", "example.com", 22, root))
 	if !reloaded.Known() {
 		t.Fatal("取消前已上传的文件没有被记进清单")
 	}
 	uploadedRel := path.Base(fs.uploaded[0])
 	if _, ok := reloaded.Get(uploadedRel); !ok {
 		t.Errorf("清单里缺少已上传的 %s", uploadedRel)
+	}
+}
+
+// 删除失败（连接断了、权限不足）时必须保留清单条目：抹掉条目意味着这个文件
+// 再也进不了任何一次删除集合，会变成永久孤儿，而且用户还会收到"清理成功"的假象。
+func TestSyncTreeKeepsManifestEntryWhenDeleteFails(t *testing.T) {
+	appDir, outputDir := setupLocal(t, map[string]string{
+		"index.html": "home",
+		"old.html":   "will be deleted",
+	})
+	const root = "/srv/www"
+	fs := newFakeRemoteFS(root)
+
+	if _, err := syncOnce(t, fs, appDir, outputDir, root); err != nil {
+		t.Fatalf("首次同步失败: %v", err)
+	}
+	if err := os.Remove(filepath.Join(outputDir, "old.html")); err != nil {
+		t.Fatalf("删除本地文件失败: %v", err)
+	}
+
+	fs.removeErr = func(string) error { return fmt.Errorf("connection reset by peer") }
+	result, err := syncOnce(t, fs, appDir, outputDir, root)
+	if err != nil {
+		t.Fatalf("删除失败不应中断部署: %v", err)
+	}
+	if result.Deleted != 0 {
+		t.Errorf("删除失败却计入 Deleted = %d，期望 0", result.Deleted)
+	}
+	if result.DeleteFailed != 1 {
+		t.Errorf("DeleteFailed = %d，期望 1", result.DeleteFailed)
+	}
+
+	// 关键：条目必须还在清单里，下次才有机会重试
+	reloaded := LoadDeployManifest(appDir, DeployTargetKey("sftp", "example.com", 22, root))
+	if _, ok := reloaded.Get("old.html"); !ok {
+		t.Fatal("删除失败后条目被移出清单，该文件已成为永久孤儿")
+	}
+
+	// 恢复后下一次部署应当真的把它删掉
+	fs.removeErr = nil
+	retry, err := syncOnce(t, fs, appDir, outputDir, root)
+	if err != nil {
+		t.Fatalf("重试同步失败: %v", err)
+	}
+	if retry.Deleted != 1 {
+		t.Errorf("恢复后重试的清理数 = %d，期望 1", retry.Deleted)
+	}
+	if _, ok := fs.files[root+"/old.html"]; ok {
+		t.Error("重试后文件仍未被删除")
+	}
+}
+
+// 远端文件本来就不存在时，目的已经达成，条目应当从清单里移除而不是无限重试
+func TestSyncTreeForgetsEntryWhenRemoteAlreadyGone(t *testing.T) {
+	appDir, outputDir := setupLocal(t, map[string]string{
+		"index.html": "home",
+		"old.html":   "will be deleted",
+	})
+	const root = "/srv/www"
+	fs := newFakeRemoteFS(root)
+
+	if _, err := syncOnce(t, fs, appDir, outputDir, root); err != nil {
+		t.Fatalf("首次同步失败: %v", err)
+	}
+	if err := os.Remove(filepath.Join(outputDir, "old.html")); err != nil {
+		t.Fatalf("删除本地文件失败: %v", err)
+	}
+	// 远端文件被别人先删了
+	delete(fs.files, root+"/old.html")
+
+	result, err := syncOnce(t, fs, appDir, outputDir, root)
+	if err != nil {
+		t.Fatalf("同步失败: %v", err)
+	}
+	if result.DeleteFailed != 0 {
+		t.Errorf("文件本就不存在不应计入失败，DeleteFailed = %d", result.DeleteFailed)
+	}
+
+	reloaded := LoadDeployManifest(appDir, DeployTargetKey("sftp", "example.com", 22, root))
+	if _, ok := reloaded.Get("old.html"); ok {
+		t.Error("远端已不存在的文件仍留在清单里，会被无限重试")
+	}
+}
+
+// 清单被外部改坏、混入越界路径时，删除操作绝不能打到站点根目录之外
+func TestSyncTreeRejectsEscapingManifestPaths(t *testing.T) {
+	appDir, outputDir := setupLocal(t, map[string]string{"index.html": "home"})
+	const root = "/srv/www/site"
+
+	fs := newFakeRemoteFS(root)
+	fs.seed("/srv/secret.conf", "机密配置")
+	fs.seed("/srv/www/other-site/index.html", "别的站点")
+
+	target := DeployTargetKey("sftp", "example.com", 22, root)
+	m := LoadDeployManifest(appDir, target)
+	m.Set("index.html", "stale-sha")
+	m.Set("../../secret.conf", "sha")
+	m.Set("../other-site/index.html", "sha")
+	m.Set("/srv/secret.conf", "sha")
+	if err := m.Save(); err != nil {
+		t.Fatalf("保存清单失败: %v", err)
+	}
+
+	if _, err := syncOnce(t, fs, appDir, outputDir, root); err != nil {
+		t.Fatalf("同步失败: %v", err)
+	}
+
+	if _, ok := fs.files["/srv/secret.conf"]; !ok {
+		t.Error("站点根目录之外的文件被删除了")
+	}
+	if _, ok := fs.files["/srv/www/other-site/index.html"]; !ok {
+		t.Error("相邻站点的文件被删除了")
+	}
+	for _, d := range fs.removedDirs {
+		if d == "/srv" || d == "/srv/www" {
+			t.Errorf("站点根目录的祖先 %s 被尝试删除", d)
+		}
+	}
+}
+
+// 上传失败后清单里不能留着该文件的旧指纹，否则下次会误判为"没变过"而跳过
+func TestSyncTreeDropsManifestEntryWhenUploadFails(t *testing.T) {
+	appDir, outputDir := setupLocal(t, map[string]string{"index.html": "v1"})
+	const root = "/srv/www"
+	fs := newFakeRemoteFS(root)
+
+	if _, err := syncOnce(t, fs, appDir, outputDir, root); err != nil {
+		t.Fatalf("首次同步失败: %v", err)
+	}
+
+	writeLocal(t, outputDir, map[string]string{"index.html": "v2"})
+	fs.uploadErr = func(string) error { return fmt.Errorf("磁盘写满") }
+	if _, err := syncOnce(t, fs, appDir, outputDir, root); err == nil {
+		t.Fatal("上传失败时应返回错误")
+	}
+
+	reloaded := LoadDeployManifest(appDir, DeployTargetKey("sftp", "example.com", 22, root))
+	if _, ok := reloaded.Get("index.html"); ok {
+		t.Error("上传失败后清单仍留着旧指纹，下次部署会误判为未变化而跳过")
+	}
+
+	// 恢复后必须重传
+	fs.uploadErr = nil
+	retry, err := syncOnce(t, fs, appDir, outputDir, root)
+	if err != nil {
+		t.Fatalf("重试同步失败: %v", err)
+	}
+	if retry.Uploaded != 1 {
+		t.Errorf("恢复后上传数 = %d，期望 1", retry.Uploaded)
+	}
+}
+
+// 上次中断留下的 .gridea-part 半成品要被清掉，否则它公网可访问且没人管得着
+func TestSyncTreeCleansStalePartFiles(t *testing.T) {
+	appDir, outputDir := setupLocal(t, map[string]string{"index.html": "home"})
+	const root = "/srv/www"
+	fs := newFakeRemoteFS(root)
+
+	if _, err := syncOnce(t, fs, appDir, outputDir, root); err != nil {
+		t.Fatalf("首次同步失败: %v", err)
+	}
+
+	fs.seed(root+"/index.html"+uploadPartSuffix, "half written")
+	fs.seed(root+"/post/a.html"+uploadPartSuffix, "half written")
+
+	if _, err := syncOnce(t, fs, appDir, outputDir, root); err != nil {
+		t.Fatalf("二次同步失败: %v", err)
+	}
+
+	for _, p := range []string{root + "/index.html" + uploadPartSuffix, root + "/post/a.html" + uploadPartSuffix} {
+		if _, ok := fs.files[p]; ok {
+			t.Errorf("残留的临时文件 %s 没有被清理", p)
+		}
+	}
+	if _, ok := fs.files[root+"/index.html"]; !ok {
+		t.Error("正式文件被误删了")
+	}
+}
+
+func TestIsSafeRelPath(t *testing.T) {
+	safe := []string{"index.html", "post/a/index.html", ".well-known/x", "a.b.c"}
+	for _, p := range safe {
+		if !isSafeRelPath(p) {
+			t.Errorf("%q 应被判为安全", p)
+		}
+	}
+
+	unsafe := []string{
+		"", ".", "..",
+		"../secret", "../../secret", "a/../../b",
+		"/etc/passwd", "/srv/x",
+		"./a", "a//b", "a/./b", "a/",
+	}
+	for _, p := range unsafe {
+		if isSafeRelPath(p) {
+			t.Errorf("%q 应被判为不安全", p)
+		}
 	}
 }
 

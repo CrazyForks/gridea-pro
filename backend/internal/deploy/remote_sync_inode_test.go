@@ -81,7 +81,7 @@ func TestSyncTreeKeepsRemoteRootInode(t *testing.T) {
 	mountedInode := inodeOf(t, remoteRoot)
 
 	fs := &osRemoteFS{t: t}
-	target := DeployTargetKey("sftp", "example.com", remoteRoot)
+	target := DeployTargetKey("sftp", "example.com", 22, remoteRoot)
 
 	sync := func() SyncResult {
 		t.Helper()
