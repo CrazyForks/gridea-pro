@@ -219,8 +219,9 @@ func (s *Engine) renderAllImpl(ctx context.Context) error {
 	}
 	_ = os.MkdirAll(buildDir, 0755)
 
-	// 初始化本次渲染的 tracker，注入到各子模块
-	s.manifest = NewRenderManifest(buildDir)
+	// 初始化本次渲染的 tracker，注入到各子模块。
+	// 带上上一轮清单：未变化的文件可直接复用已算好的 SHA，省去重复读盘。
+	s.manifest = NewRenderManifestWithPrevious(buildDir, previousManifest)
 	s.pageRenderer.SetManifest(s.manifest)
 	s.assetManager.SetManifest(s.manifest)
 	s.seoGenerator.SetManifest(s.manifest)

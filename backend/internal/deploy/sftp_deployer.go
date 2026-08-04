@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -36,7 +34,7 @@ func NewSftpProviderWithKnownHosts(knownHostsPath string) *SftpProvider {
 }
 
 // Deploy 实现 Provider 接口
-// 流程：SSH 连接 → SFTP 客户端 → 清理远程目录 → 上传文件
+// 流程：SSH 连接 → SFTP 客户端 → 按部署清单增量同步（站点目录原地更新）
 func (p *SftpProvider) Deploy(ctx context.Context, outputDir string, setting *domain.Setting, logger LogFunc) error {
 	logger("🚀 开始准备 SFTP 部署...")
 
@@ -99,116 +97,96 @@ func (p *SftpProvider) Deploy(ctx context.Context, outputDir string, setting *do
 	}
 	defer client.Close()
 
-	// 5. 原子切换策略（issue #40）：
-	//    a. 上传到 <remotePath>.new-<ts>（staging），旧站点完好无损
-	//    b. 全部成功 → 把旧目录 rename 到 <remotePath>.old-<ts>，再把 staging rename 为 remotePath
-	//    c. 失败 → 清理 staging，旧站点保持原样，访客零感知
-	//
-	// 好处：上传期间访客全程访问旧版本；中途断网不毁站；失败可直接 dropping staging 重新开始。
-	ts := time.Now().Format("20060102-150405")
-	stagingPath := remotePath + ".new-" + ts
-	backupPath := remotePath + ".old-" + ts
-
-	logger(fmt.Sprintf("正在上传到暂存目录: %s（旧站点保持可用）", stagingPath))
-	if err := client.MkdirAll(stagingPath); err != nil {
-		return fmt.Errorf("创建暂存目录失败: %w", err)
+	// 5. 增量同步：站点目录全程原地，只在其内部增删文件。
+	//    早期版本先上传到 staging 再整目录 rename，虽然切换是原子的，
+	//    却让远端目录换了 inode，把 docker bind mount 挂在旧 inode 上的站点打成空目录（issue #139）。
+	appDir := appDirFromOutput(outputDir)
+	manifest := LoadDeployManifest(appDir, DeployTargetKey("sftp", server, remotePath))
+	if !manifest.Known() {
+		logger("未找到该目标的部署记录，本次将完整上传，且不清理远端可能存在的旧文件")
 	}
 
-	// 6. 上传文件到 staging
-	fileCount := 0
-	uploadErr := filepath.Walk(outputDir, func(localPath string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		// 跳过无关目录和文件
-		if info.IsDir() {
-			name := info.Name()
-			if name == ".git" || name == ".github" {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-		name := info.Name()
-		if name == ".DS_Store" || name == ".gitignore" {
-			return nil
-		}
-
-		// 检查 context 是否已取消
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-		}
-
-		relPath, err := filepath.Rel(outputDir, localPath)
-		if err != nil {
-			return err
-		}
-		// 远程路径始终使用 Unix 风格；上传到 staging 目录
-		remoteFile := path.Join(stagingPath, filepath.ToSlash(relPath))
-
-		// 创建远程目录
-		remoteDir := path.Dir(remoteFile)
-		if err := client.MkdirAll(remoteDir); err != nil {
-			return fmt.Errorf("创建目录 %s 失败: %w", remoteDir, err)
-		}
-
-		// 上传文件
-		if err := p.uploadFile(client, localPath, remoteFile); err != nil {
-			return fmt.Errorf("上传 %s 失败: %w", relPath, err)
-		}
-
-		fileCount++
-		if fileCount%20 == 0 {
-			logger(fmt.Sprintf("已上传 %d 个文件...", fileCount))
-		}
-
-		return nil
+	result, err := SyncTree(ctx, &sftpFS{client: client}, SyncOptions{
+		LocalDir:   outputDir,
+		RemoteRoot: remotePath,
+		Manifest:   manifest,
+		Logger:     logger,
 	})
-
-	if uploadErr != nil {
-		// 清理 staging（尽力而为），旧站点保持原样
-		logger(fmt.Sprintf("上传失败，正在清理暂存目录 %s...", stagingPath))
-		p.cleanRemoteDir(client, stagingPath)
-		_ = client.RemoveDirectory(stagingPath)
-		return uploadErr
+	if err != nil {
+		return err
 	}
 
-	// 7. 原子切换：rename 旧→backup、rename staging→remote
-	logger("上传完成，正在切换到新版本（原子 rename）...")
-
-	// 旧目录可能不存在（首次部署），尝试 rename 失败不视为错误
-	oldExists := false
-	if _, err := client.Stat(remotePath); err == nil {
-		oldExists = true
-	}
-	if oldExists {
-		if err := client.Rename(remotePath, backupPath); err != nil {
-			// 清理 staging，保留旧目录
-			p.cleanRemoteDir(client, stagingPath)
-			_ = client.RemoveDirectory(stagingPath)
-			return fmt.Errorf("重命名旧目录失败: %w", err)
-		}
-	}
-	if err := client.Rename(stagingPath, remotePath); err != nil {
-		// 尝试把 backup 改回来，尽量不让站点挂掉
-		if oldExists {
-			_ = client.Rename(backupPath, remotePath)
-		}
-		p.cleanRemoteDir(client, stagingPath)
-		_ = client.RemoveDirectory(stagingPath)
-		return fmt.Errorf("重命名新目录失败: %w", err)
-	}
-
-	// 8. 清理旧备份（best-effort，失败不影响部署成功）
-	if oldExists {
-		p.cleanRemoteDir(client, backupPath)
-		_ = client.RemoveDirectory(backupPath)
-	}
-
-	logger(fmt.Sprintf("✅ SFTP 部署成功！共上传 %d 个文件到 %s", fileCount, remotePath))
+	logger(fmt.Sprintf("✅ SFTP 部署成功！上传 %d 个 / 跳过 %d 个 / 清理 %d 个，目标目录 %s",
+		result.Uploaded, result.Skipped, result.Deleted, remotePath))
 	return nil
+}
+
+// sftpFS 把 sftp.Client 适配成 RemoteFS
+type sftpFS struct {
+	client *sftp.Client
+}
+
+func (f *sftpFS) ReadDir(dir string) ([]RemoteEntry, error) {
+	infos, err := f.client.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+	entries := make([]RemoteEntry, 0, len(infos))
+	for _, info := range infos {
+		entries = append(entries, RemoteEntry{Name: info.Name(), IsDir: info.IsDir()})
+	}
+	return entries, nil
+}
+
+func (f *sftpFS) MkdirAll(dir string) error { return f.client.MkdirAll(dir) }
+
+func (f *sftpFS) Remove(remotePath string) error { return f.client.Remove(remotePath) }
+
+func (f *sftpFS) RemoveDir(dir string) error { return f.client.RemoveDirectory(dir) }
+
+// Upload 先写同目录下的临时文件再改名，让读取方要么看到旧版本、要么看到新版本，
+// 不会读到写了一半的内容。
+//
+// 改名分两级降级：优先用 OpenSSH 的 posix-rename 扩展（可直接覆盖目标）；
+// 服务器不支持时退回"先删目标再改名"；仍失败则直接覆盖写入目标文件。
+// 越往后原子性越弱，但都能完成部署——不能因为服务器缺个扩展就让用户发不了站。
+func (f *sftpFS) Upload(localPath, remotePath string) error {
+	tmpPath := remotePath + ".gridea-part"
+	if err := f.write(localPath, tmpPath); err != nil {
+		return err
+	}
+
+	if err := f.client.PosixRename(tmpPath, remotePath); err == nil {
+		return nil
+	}
+
+	_ = f.client.Remove(remotePath)
+	if err := f.client.Rename(tmpPath, remotePath); err == nil {
+		return nil
+	}
+
+	_ = f.client.Remove(tmpPath)
+	return f.write(localPath, remotePath)
+}
+
+func (f *sftpFS) write(localPath, remotePath string) error {
+	local, err := os.Open(localPath)
+	if err != nil {
+		return err
+	}
+	defer local.Close()
+
+	remote, err := f.client.Create(remotePath)
+	if err != nil {
+		return err
+	}
+
+	if _, err := io.Copy(remote, local); err != nil {
+		remote.Close()
+		_ = f.client.Remove(remotePath)
+		return err
+	}
+	return remote.Close()
 }
 
 // buildAuthMethods 根据配置构建 SSH 认证方式
@@ -243,40 +221,4 @@ func (p *SftpProvider) buildAuthMethods(setting *domain.Setting) ([]ssh.AuthMeth
 	}
 
 	return methods, nil
-}
-
-// cleanRemoteDir 清理远程目录下的所有文件和子目录
-func (p *SftpProvider) cleanRemoteDir(client *sftp.Client, remotePath string) {
-	entries, err := client.ReadDir(remotePath)
-	if err != nil {
-		return // 目录不存在或无法读取，忽略
-	}
-
-	for _, entry := range entries {
-		fullPath := path.Join(remotePath, entry.Name())
-		if entry.IsDir() {
-			p.cleanRemoteDir(client, fullPath)
-			_ = client.RemoveDirectory(fullPath)
-		} else {
-			_ = client.Remove(fullPath)
-		}
-	}
-}
-
-// uploadFile 上传单个文件
-func (p *SftpProvider) uploadFile(client *sftp.Client, localPath, remotePath string) error {
-	local, err := os.Open(localPath)
-	if err != nil {
-		return err
-	}
-	defer local.Close()
-
-	remote, err := client.Create(remotePath)
-	if err != nil {
-		return err
-	}
-	defer remote.Close()
-
-	_, err = io.Copy(remote, local)
-	return err
 }
